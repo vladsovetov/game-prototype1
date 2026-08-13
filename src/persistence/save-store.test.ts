@@ -1,0 +1,8 @@
+import { describe,expect,it } from 'vitest';
+import { generateCharacter } from '../domain/character'; import { createInitialState } from '../domain/simulation'; import { createSaveStore } from './save-store';
+class MemoryStorage{data=new Map<string,string>();getItem(k:string){return this.data.get(k)??null}setItem(k:string,v:string){this.data.set(k,v)}removeItem(k:string){this.data.delete(k)}}
+describe('save store',()=>{
+ it('round trips game state',()=>{const storage=new MemoryStorage(),store=createSaveStore(storage);expect(store.load().kind).toBe('empty');const state=createInitialState(generateCharacter(4));store.save(state);const result=store.load();expect(result.kind).toBe('loaded');if(result.kind==='loaded')expect(result.state.character).toEqual(state.character)});
+ it('preserves malformed data as a diagnostic',()=>{const storage=new MemoryStorage();storage.setItem('unwritten.prototype.save.v1','not-json');const store=createSaveStore(storage);expect(store.load().kind).toBe('corrupt');expect(store.exportDiagnostic()).toBe('not-json')});
+ it('refuses newer saves and clears both keys',()=>{const storage=new MemoryStorage();storage.setItem('unwritten.prototype.save.v1',JSON.stringify({version:2}));const store=createSaveStore(storage);expect(store.load().kind).toBe('newer-version');store.clear();expect(store.load().kind).toBe('empty')});
+});

@@ -1,6 +1,6 @@
 # The Unwritten — local prototype
 
-A browser-first story game about helping a strange companion reconstruct who they were. Each recovered memory has concrete clues, a revealed event, and one unanswered question that the player decides. Those choices become the companion's biography and the sanctuary makes their story visible.
+A browser-first story game about helping a strange companion reconstruct who they were. Every fully restored object reveals an authored chapter of their past. Plant any six recovered memories in the sanctuary to discover who they were and complete the Lantern House story.
 
 ## Run locally
 
@@ -23,7 +23,9 @@ Open [http://127.0.0.1:4173](http://127.0.0.1:4173). After dependencies are inst
 
 On a phone, drag the golden joystick at the lower left to move. Contextual action petals appear at the lower right for using a Gift, borrowing another Gift, exploring, and planting memories.
 
-The first guided story is **The Road Home**. You uncover a rain-covered sign, restore it, learn why it mattered to your companion, bring its Waypost home, and decide who kept a light burning for them. The game introduces one action at a time and has no timer, so you can wander as long as you like.
+The first guided story is **The Road Home**. You uncover a rain-covered sign, restore it, learn why it mattered to your companion, bring its Waypost home, and decide who kept a light burning for them. Later recoveries reveal chapters such as **The Song Below**, **The Storm Bell**, and **Letters with Wings**. Story cards survive reloads and every recovered chapter remains readable in the field journal.
+
+The HUD tracks the central goal: plant six memories in the sanctuary. Filling all six circles reveals **The Keeper of Lantern House**, records the conclusion in the journal, and leaves the meadow open for continued exploration. There is no timer and the other two optional memories can still be recovered afterward.
 
 The northwest enclosure is your sanctuary. Colored diamonds lend temporary Gifts; approach one and press `E`. Some objects need your own Gift and a borrowed Gift in sequence.
 
@@ -47,4 +49,4 @@ npm run build
 
 ## Prototype limits
 
-This build is single-player with keyboard and phone touch controls. It has no accounts, cloud saves, multiplayer, chat, payments, combat, trading, live AI calls, generated media, uploaded content, or procedural quests. It tests the full authored first-memory loop, player-shaped meaning, character import, sanctuary expression, and persistence.
+This build is single-player with keyboard and phone touch controls. It has no accounts, cloud saves, multiplayer, chat, payments, combat, trading, live AI calls, generated media, uploaded content, or procedural quests. It includes eight authored memories, an any-six sanctuary goal, a persistent story ending, player-shaped meaning, character import, sanctuary expression, and local persistence.

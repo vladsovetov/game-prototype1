@@ -107,6 +107,20 @@ test('continues an older unfinished route without switching it to The Road Home'
   await expect(page.getByTestId('tutorial-objective')).toContainText('FIRST MEMORY');
 });
 
+test('opens an untouched legacy route without relabeling it The Road Home', async ({ page }) => {
+  await page.evaluate(() => {
+    const key = 'unwritten.prototype.save.v1';
+    const state = JSON.parse(localStorage.getItem(key)!);
+    state.character.gift = { id: 'echo', name: 'Echo', description: 'Repeats a hidden sound.' };
+    state.tutorial = { ...state.tutorial, step: 'wake', targetAnomalyId: 'stone', borrowedGift: 'grow' };
+    localStorage.setItem(key, JSON.stringify(state));
+  });
+  await page.reload();
+
+  await expect(page.getByText('A First Discovery', { exact: true })).toBeVisible();
+  await expect(page.getByText('The Road Home')).toHaveCount(0);
+});
+
 test('preserves a save from a newer build instead of overwriting it', async ({ page }) => {
   const raw = JSON.stringify({ version: 2, memories: ['from the future'] });
   await page.evaluate(({ key, rawValue }) => localStorage.setItem(key, rawValue), { key: 'unwritten.prototype.save.v1', rawValue: raw });

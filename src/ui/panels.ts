@@ -27,14 +27,20 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     return section.querySelector<HTMLElement>('[data-slot=content]')!;
   };
 
-  function showWake(character: Character, onWake: () => void) {
+  function showWake(character: Character, onWake: () => void, isRoadHome = true) {
     currentCharacter = character;
     clear();
     const section = document.createElement('section');
     section.className = 'story-card wake-card';
-    section.innerHTML = `<span class="eyebrow">Your companion</span><h1 data-testid="tutorial-character-name"></h1><p class="wake-purpose"></p><div class="first-memory"><small>FIRST MEMORY</small><strong>The Road Home</strong><span>Recover two clues to learn who was waiting for them.</span></div><button class="button primary">Wake up <span aria-hidden="true">→</span></button>`;
+    section.innerHTML = `<span class="eyebrow">Your companion</span><h1 data-testid="tutorial-character-name"></h1><p class="wake-purpose"></p><div class="first-memory"><small>FIRST MEMORY</small><strong></strong><span data-summary></span></div><button class="button primary">Wake up <span aria-hidden="true">→</span></button>`;
     (section.querySelector('h1') as HTMLElement).textContent = character.name;
-    (section.querySelector('.wake-purpose') as HTMLElement).textContent = `Help ${character.name} recover a lost memory—and discover who they were before this meadow.`;
+    (section.querySelector('.wake-purpose') as HTMLElement).textContent = isRoadHome
+      ? `Help ${character.name} recover a lost memory—and discover who they were before this meadow.`
+      : `Help ${character.name} make a first discovery in this strange meadow.`;
+    (section.querySelector('.first-memory strong') as HTMLElement).textContent = isRoadHome ? 'The Road Home' : 'A First Discovery';
+    (section.querySelector('[data-summary]') as HTMLElement).textContent = isRoadHome
+      ? 'Recover two clues to learn who was waiting for them.'
+      : `Follow one glow and see what ${character.gift.name} reveals.`;
     section.querySelector('button')?.addEventListener('click', onWake);
     root.append(section);
   }

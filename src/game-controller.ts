@@ -153,7 +153,9 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       const button = addAction('Plant memory', 'Plant memory', '⌁', interact, true);
       button.dataset.testid = 'touch-primary-action';
     } else if (step === 'resonate' && atResonance) {
-      const button = addAction('Borrow Mend', 'Borrow Mend', '◇', interact, true);
+      const borrowed = state.tutorial?.borrowedGift ?? 'mend';
+      const label = `Borrow ${borrowed[0]!.toUpperCase()}${borrowed.slice(1)}`;
+      const button = addAction(label, label, '◇', interact, true);
       button.dataset.testid = 'touch-primary-action';
     }
     hud.append(controls);
@@ -364,7 +366,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   addEventListener('resize', resize);
   updateHud();
   store.save(state);
-  if (state.tutorial?.step === 'wake') panels.showWake(state.character, wake);
+  if (state.tutorial?.step === 'wake') panels.showWake(state.character, wake, state.tutorial.targetAnomalyId === 'sign');
   else if (state.tutorial?.step === 'clue' || state.tutorial?.step === 'recovered') showCurrentStoryStep();
   else if (state.tutorial?.step === 'remember') panels.showMemoryChoice(state.character, rememberMemory);
   else if (state.tutorial?.step === 'personalize') panels.showPersonalize(state.character);

@@ -53,6 +53,21 @@ test('uses the contextual touch action during the first discovery', async ({ pag
   await expect(page.getByTestId('tutorial-objective')).toContainText('Find Mend');
 });
 
+test('names the correct borrowed Gift for an older touch save', async ({ page }) => {
+  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.evaluate((key) => {
+    const state = JSON.parse(localStorage.getItem(key)!);
+    state.character.gift = { id: 'echo', name: 'Echo', description: 'Repeats a hidden sound.' };
+    state.tutorial = { ...state.tutorial, step: 'resonate', targetAnomalyId: 'stone', borrowedGift: 'grow' };
+    state.player = { x: 1030, y: 600 };
+    localStorage.setItem(key, JSON.stringify(state));
+  }, SAVE_KEY);
+  await page.reload();
+
+  await expect(page.getByRole('button', { name: 'Borrow Grow' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Borrow Mend' })).toHaveCount(0);
+});
+
 test('keeps the first thumb in control when a second pointer touches the joystick', async ({ page }) => {
   await page.getByRole('button', { name: 'Wake up' }).click();
   const before = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);

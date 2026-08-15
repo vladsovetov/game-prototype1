@@ -1,6 +1,6 @@
 # The Unwritten — local prototype
 
-A browser-first gameplay prototype about helping a strange companion change a quiet meadow. It opens immediately with a random character and teaches its discovery loop one action at a time.
+A browser-first story game about helping a strange companion reconstruct who they were. Each recovered memory has concrete clues, a revealed event, and one unanswered question that the player decides. Those choices become the companion's biography and the sanctuary makes their story visible.
 
 ## Run locally
 
@@ -16,16 +16,16 @@ Open [http://127.0.0.1:4173](http://127.0.0.1:4173). After dependencies are inst
 ## Controls
 
 - `WASD` or arrow keys: move
-- `F`: use your character's Gift near an anomaly
-- `E`: inspect an object, borrow a Resonance Gift, or plant a Memory Seed
+- `F`: use your character's Gift near a strange object
+- `E`: explore an object, borrow a temporary Gift, or plant a recovered keepsake
 - `J`: open the field journal
 - `C`: open the character passport
 
-On a phone, drag the golden joystick at the lower left to move. Contextual action petals appear at the lower right for using a Gift, borrowing Resonance, exploring, and planting memories.
+On a phone, drag the golden joystick at the lower left to move. Contextual action petals appear at the lower right for using a Gift, borrowing another Gift, exploring, and planting memories.
 
-The first guided memory introduces these controls gradually. There is no timer: the lights suggest a destination, but you can wander at your own pace. After finishing the first reaction and planting its Memory Seed, the full journal and character tools become available.
+The first guided story is **The Road Home**. You uncover a rain-covered sign, restore it, learn why it mattered to your companion, bring its Waypost home, and decide who kept a light burning for them. The game introduces one action at a time and has no timer, so you can wander as long as you like.
 
-The northwest enclosure is your sanctuary. Colored diamonds are Resonance Shrines: approach one and press `E` to borrow its Gift. Some anomalies need your own Gift and a borrowed Gift in sequence.
+The northwest enclosure is your sanctuary. Colored diamonds lend temporary Gifts; approach one and press `E`. Some objects need your own Gift and a borrowed Gift in sequence.
 
 ## Create a character with AI
 
@@ -47,4 +47,4 @@ npm run build
 
 ## Prototype limits
 
-This build is single-player with keyboard and phone touch controls. It has no accounts, cloud saves, multiplayer, chat, payments, combat, trading, live AI calls, generated media, uploaded content, or procedural quests. It tests progressive onboarding, character import, balanced semantic traits, compound world reactions, collection, sanctuary expression, and persistence only.
+This build is single-player with keyboard and phone touch controls. It has no accounts, cloud saves, multiplayer, chat, payments, combat, trading, live AI calls, generated media, uploaded content, or procedural quests. It tests the full authored first-memory loop, player-shaped meaning, character import, sanctuary expression, and persistence.

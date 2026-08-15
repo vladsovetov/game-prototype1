@@ -48,7 +48,7 @@ test('uses the contextual touch action during the first discovery', async ({ pag
   const action = page.getByTestId('touch-primary-action');
   await expect(action).toContainText(/Use /);
   await action.click();
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Follow the');
+  await expect(page.getByTestId('tutorial-objective')).toContainText('Find Mend');
 });
 
 test('keeps the first thumb in control when a second pointer touches the joystick', async ({ page }) => {

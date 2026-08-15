@@ -15,7 +15,7 @@ test('starts with a random creature and one clear action', async ({ page }) => {
 
 test('reveals movement only after waking', async ({ page }) => {
   await page.getByRole('button', { name: 'Wake up' }).click();
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Move toward the light');
+  await expect(page.getByTestId('tutorial-objective')).toContainText('Find the rain-covered sign');
   await expect(page.getByText('WASD')).toBeVisible();
   await expect(page.getByTestId('journal-button')).toHaveCount(0);
 });
@@ -67,7 +67,7 @@ test('introduces the E key when the player reaches a Resonance Shrine', async ({
   });
   await page.reload();
 
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Borrow its Resonance');
+  await expect(page.getByTestId('tutorial-objective')).toContainText('Borrow Mend');
   await expect(page.getByTestId('tutorial-objective')).toContainText('E');
 });
 

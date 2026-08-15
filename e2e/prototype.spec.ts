@@ -25,7 +25,7 @@ test('completes the guided first memory and opens the free meadow', async ({ pag
   }, SAVE_KEY);
   await page.reload();
   await page.keyboard.press('f');
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Follow the');
+  await expect(page.getByTestId('tutorial-objective')).toContainText('Find Mend');
 
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
@@ -37,7 +37,7 @@ test('completes the guided first memory and opens the free meadow', async ({ pag
   }, SAVE_KEY);
   await page.reload();
   await page.keyboard.press('e');
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Return and use it');
+  await expect(page.getByTestId('tutorial-objective')).toContainText('Return and restore the sign');
 
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
@@ -49,9 +49,13 @@ test('completes the guided first memory and opens the free meadow', async ({ pag
   }, SAVE_KEY);
   await page.reload();
   await page.keyboard.press('f');
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Plant the memory');
+  await expect(page.getByRole('heading', { name: 'Memory recovered' })).toBeVisible();
+  await page.getByRole('button', { name: 'Bring it home' }).click();
+  await expect(page.getByTestId('tutorial-objective')).toContainText('Plant the Waypost');
   await page.keyboard.press('e');
 
+  await expect(page.getByRole('heading', { name: 'Who kept the light burning?' })).toBeVisible();
+  await page.getByRole('button', { name: 'A patient friend' }).click();
   await expect(page.getByRole('heading', { name: 'Make them yours' })).toBeVisible();
   await page.getByRole('button', { name: 'Keep exploring' }).click();
   await expect(page.getByTestId('journal-button')).toBeVisible();

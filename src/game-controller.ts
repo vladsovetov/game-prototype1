@@ -1,7 +1,7 @@
 import { activateGift, activateShrine, inspectNearest, movePlayer, nearestTarget, plantSeed, removePlanting } from './domain/simulation';
 import { advanceTutorial, tutorialObjective, tutorialTarget } from './domain/tutorial';
 import { memoryProgress, ROAD_HOME } from './domain/memory';
-import { memoryChapter } from './domain/memory-arc';
+import { hasReachedEnding, memoryChapter, sanctuaryProgress } from './domain/memory-arc';
 import type { Appearance, CatalogEntry, Character, GameState, InteractionResult, QuirkId } from './domain/types';
 import { SEED_NAMES, distance } from './domain/world';
 import type { createSaveStore } from './persistence/save-store';
@@ -25,7 +25,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   let touchKnob: HTMLElement | undefined;
 
   const isTutorial = () => !!state.tutorial && state.tutorial.step !== 'done';
-  const hasBlockingChapter = () => !!state.pendingChapter;
+  const hasBlockingStory = () => !!state.pendingChapter || hasReachedEnding(state);
   const isTouchLayout = () => matchMedia('(max-width: 720px), (pointer: coarse)').matches;
 
   function resetTouch() {
@@ -76,7 +76,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   }
 
   function updateHud() {
-    if (hasBlockingChapter()) {
+    if (hasBlockingStory()) {
       hud.replaceChildren();
       resetTouch();
       return;
@@ -104,7 +104,8 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     hud.innerHTML = `<div class="hud-top"><button class="hud-card identity" data-testid="character-button" aria-label="Your companion"><span class="identity-mark">✦</span><span><strong data-testid="player-name"></strong><small></small><em class="memory-count"></em></span></button><div class="hud-actions"><button data-testid="journal-button" aria-label="Field journal"><span>J</span><small>Journal</small></button><button data-testid="help-button" aria-label="Help"><span>?</span><small>Help</small></button></div></div><div class="prompt"><span class="key">F</span> Gift <i></i><span class="key">E</span> Explore <span class="hud-meta"></span></div>`;
     (hud.querySelector('[data-testid=player-name]') as HTMLElement).textContent = state.character.name;
     (hud.querySelector('.identity small') as HTMLElement).textContent = state.borrowedGift ? `carrying ${state.borrowedGift}` : state.character.gift.name;
-    (hud.querySelector('.memory-count') as HTMLElement).textContent = state.rewarded.length ? `${state.rewarded.length} ${state.rewarded.length === 1 ? 'memory' : 'memories'} recovered` : '';
+    const progress = sanctuaryProgress(state);
+    (hud.querySelector('.memory-count') as HTMLElement).textContent = state.endingSeen ? 'Story complete' : `${progress.planted} / ${progress.required} memories planted`;
     (hud.querySelector('.hud-meta') as HTMLElement).textContent = state.seeds.length ? `${state.seeds.length} seed${state.seeds.length === 1 ? '' : 's'}` : '';
     hud.querySelector('[data-testid=character-button]')?.addEventListener('click', () => panels.showCharacter(state.character));
     hud.querySelector('[data-testid=journal-button]')?.addEventListener('click', () => panels.showJournal(state));
@@ -203,6 +204,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     state = { ...state, pendingChapter: undefined };
     panels.clear();
     saveAndRefresh();
+    showPendingEnding();
   }
 
   function showPendingMemoryChapter() {
@@ -213,6 +215,17 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       return;
     }
     panels.showMemoryChapter(chapter, state.rewarded.length, finishMemoryChapter);
+  }
+
+  function finishEnding() {
+    state = { ...state, endingSeen: true };
+    panels.clear();
+    saveAndRefresh();
+    toast('The sanctuary remembers. The meadow remains yours to explore.');
+  }
+
+  function showPendingEnding() {
+    if (hasReachedEnding(state)) panels.showEnding(state.character, finishEnding);
   }
 
   function useGift() {
@@ -276,6 +289,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
           if (isRoadHomeRoute) panels.showMemoryChoice(state.character, rememberMemory);
           else panels.showPersonalize(state.character);
         }
+        if (result.changed && !isTutorial()) showPendingEnding();
         return;
       }
     }
@@ -284,7 +298,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   function keydown(event: KeyboardEvent) {
     if ((event.target as HTMLElement).matches('textarea,input,select')) return;
-    if (hasBlockingChapter()) return;
+    if (hasBlockingStory()) return;
     const key = event.key.toLowerCase();
     keys.add(key);
     if (key === 'f' && (!isTutorial() || state.tutorial?.step === 'gift' || state.tutorial?.step === 'combine')) useGift();
@@ -313,7 +327,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     dx += touchVector.x;
     dy += touchVector.y;
     const step = state.tutorial?.step;
-    if (step === 'wake' || step === 'clue' || step === 'recovered' || step === 'remember' || step === 'personalize' || hasBlockingChapter()) {
+    if (step === 'wake' || step === 'clue' || step === 'recovered' || step === 'remember' || step === 'personalize' || hasBlockingStory()) {
       dx = 0;
       dy = 0;
     }
@@ -345,6 +359,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     state = { ...state, character };
     saveAndRefresh();
     if (state.pendingChapter) showPendingMemoryChapter();
+    else if (hasReachedEnding(state)) showPendingEnding();
     else if (state.tutorial?.step === 'clue' || state.tutorial?.step === 'recovered') showCurrentStoryStep();
     else if (state.tutorial?.step === 'remember') panels.showMemoryChoice(character, rememberMemory);
     else if (state.tutorial?.step === 'personalize') panels.showPersonalize(character);
@@ -399,6 +414,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   updateHud();
   store.save(state);
   if (state.pendingChapter) showPendingMemoryChapter();
+  else if (hasReachedEnding(state)) showPendingEnding();
   else if (state.tutorial?.step === 'wake') panels.showWake(state.character, wake, state.tutorial.targetAnomalyId === 'sign');
   else if (state.tutorial?.step === 'clue' || state.tutorial?.step === 'recovered') showCurrentStoryStep();
   else if (state.tutorial?.step === 'remember') panels.showMemoryChoice(state.character, rememberMemory);

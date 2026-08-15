@@ -1,7 +1,7 @@
 import { AI_CONTEXT_PACKET, validateCharacterCard } from '../domain/character';
 import { BODIES, MARKS, MATERIALS, PALETTES, QUIRKS } from '../domain/catalog';
 import { ROAD_HOME } from '../domain/memory';
-import { memoryChapter, type MemoryChapter } from '../domain/memory-arc';
+import { LANTERN_HOUSE_ENDING, memoryChapter, type MemoryChapter } from '../domain/memory-arc';
 import { SEED_NAMES } from '../domain/world';
 import type { Appearance, Character, GameState, QuirkId } from '../domain/types';
 
@@ -67,6 +67,18 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     (section.querySelector('h2') as HTMLElement).textContent = chapter.title;
     (section.querySelector('.chapter-keepsake') as HTMLElement).textContent = chapter.keepsake;
     (section.querySelector('p') as HTMLElement).textContent = chapter.story;
+    section.querySelector('button')?.addEventListener('click', onContinue);
+    root.append(section);
+  }
+
+  function showEnding(character: Character, onContinue: () => void) {
+    clear();
+    const section = document.createElement('section');
+    section.className = 'story-card ending-card';
+    section.innerHTML = `<div class="ending-lantern" aria-hidden="true">✦</div><span class="eyebrow">Six memories planted · You remember now</span><h2></h2><p class="ending-name"></p><p class="ending-story"></p><button class="button primary">Carry the light forward</button>`;
+    (section.querySelector('h2') as HTMLElement).textContent = LANTERN_HOUSE_ENDING.title;
+    (section.querySelector('.ending-name') as HTMLElement).textContent = `${character.name}, this is what the sanctuary was trying to tell you.`;
+    (section.querySelector('.ending-story') as HTMLElement).textContent = LANTERN_HOUSE_ENDING.story;
     section.querySelector('button')?.addEventListener('click', onContinue);
     root.append(section);
   }
@@ -288,6 +300,19 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
       }
       c.append(memory);
     }
+    if (state.endingSeen) {
+      const ending = document.createElement('article');
+      ending.className = 'journal-memory journal-ending';
+      const eyebrow = document.createElement('span');
+      eyebrow.className = 'eyebrow';
+      eyebrow.textContent = 'Story complete';
+      const title = document.createElement('h3');
+      title.textContent = LANTERN_HOUSE_ENDING.title;
+      const story = document.createElement('p');
+      story.textContent = LANTERN_HOUSE_ENDING.story;
+      ending.append(eyebrow, title, story);
+      c.append(ending);
+    }
     const list = document.createElement('div');
     list.className = 'journal-list';
     if (!state.discoveries.length) {
@@ -325,5 +350,5 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     });
   }
 
-  return { clear, showWake, showMemoryBeat, showMemoryChapter, showMemoryChoice, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp };
+  return { clear, showWake, showMemoryBeat, showMemoryChapter, showEnding, showMemoryChoice, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp };
 }

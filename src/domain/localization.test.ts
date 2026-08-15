@@ -14,7 +14,7 @@ describe('Ukrainian save migration', () => {
 
     const localized = localizeState(state);
 
-    expect(localized.character.gift.name).toBe('Виявлення');
+    expect(localized.character.gift.name).toBe('Ручний ліхтар');
     expect(localized.character.description.toLocaleLowerCase('uk-UA')).toContain('порцелянова лисиця');
     expect(localized.storyArc?.premise).toMatch(/[А-ЯІЇЄҐа-яіїєґ]/);
     expect(localized.storyArc?.premise).not.toContain('English');

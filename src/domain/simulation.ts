@@ -1,11 +1,14 @@
 import type { Character, GameState, GiftId, InteractionResult, Point } from './types';
 import { GIFTS } from './catalog';
+import { ANOMALY_GEAR, gearForDirection, unlockWearable } from './equipment';
+import { createRunDirection } from './run-direction';
 import { distance, SEED_NAMES, worldFor } from './world';
 
 const clone = (state: GameState): GameState => structuredClone(state);
 export function createInitialState(character: Character, worldSeed?: number): GameState {
   const world = worldFor({ worldSeed });
-  return { version:1, character, player:{x:620,y:420}, ...(worldSeed===undefined?{}:{worldSeed}), anomalies:Object.fromEntries(world.anomalies.map((anomaly)=>[anomaly.id,0])), discoveries:[], seeds:[], plantings:{}, rewarded:[], effects:{rootedUntil:0,fragileUntil:0,fadingUntil:0,awakeProps:[]}, lastUpdated:Date.now() };
+  const gear = gearForDirection(createRunDirection(worldSeed ?? 0));
+  return { version:1, character, player:{x:620,y:420}, ...(worldSeed===undefined?{}:{worldSeed}), anomalies:Object.fromEntries(world.anomalies.map((anomaly)=>[anomaly.id,0])), discoveries:[], seeds:[], plantings:{}, rewarded:[], ...gear, effects:{rootedUntil:0,fragileUntil:0,fadingUntil:0,awakeProps:[]}, lastUpdated:Date.now() };
 }
 export function movePlayer(state:GameState,delta:Point,elapsedMs:number):GameState {
   if(state.effects.rootedUntil>elapsedMs)return state;
@@ -23,11 +26,15 @@ export function activateGift(state:GameState,now=Date.now()):InteractionResult {
   const anomaly=target.value,stage=state.anomalies[anomaly.id]??0,transition=anomaly.transitions[stage];
   if(!transition)return result(state,`${anomaly.states[stage]} уже розповів усе, що знав.`);
   const gifts:GiftId[]=[state.character.gift.id,...(state.borrowedGift?[state.borrowedGift]:[])];
-  if(!gifts.includes(transition.gift))return result(state,`${anomaly.states[stage]} потребує Дару «${GIFTS[transition.gift].name}», щоб змінитися знову.`);
+  if(!gifts.includes(transition.gift))return result(state,`${anomaly.states[stage]} потребує інструмента «${GIFTS[transition.gift].name}».`);
   const next=clone(state);
   next.anomalies[anomaly.id]=stage+1;
   next.discoveries.push(`${anomaly.states[stage]} → ${transition.to}`);
-  if(transition.seed&&!next.rewarded.includes(anomaly.id)){next.rewarded.push(anomaly.id);next.seeds.push(transition.seed)}
+  if(transition.seed&&!next.rewarded.includes(anomaly.id)){
+    next.rewarded.push(anomaly.id);next.seeds.push(transition.seed);
+    const gear=ANOMALY_GEAR[anomaly.id];
+    if(gear)Object.assign(next,unlockWearable(next,gear));
+  }
   if(next.character.burden.id==='rooted')next.effects.rootedUntil=now+850;
   if(next.character.burden.id==='fragile')next.effects.fragileUntil=now+3500;
   if(next.character.burden.id==='fading')next.effects.fadingUntil=now+4500;
@@ -38,9 +45,9 @@ export function activateGift(state:GameState,now=Date.now()):InteractionResult {
 
 export function activateShrine(state:GameState):InteractionResult {
   const shrine=worldFor(state).shrines.map(value=>({...value,distance:distance(state.player,value.position)})).sort((a,b)=>a.distance-b.distance)[0];
-  if(!shrine||shrine.distance>145)return result(state,'Підійдіть ближче до святині Дару.');
+  if(!shrine||shrine.distance>145)return result(state,'Підійдіть ближче до польового столу з інструментом.');
   const next=clone(state); next.borrowedGift=shrine.gift;
-  return result(next,`Тепер ви можете застосувати Дар «${GIFTS[shrine.gift].name}».`,true,'info');
+  return result(next,`Ви взяли інструмент «${GIFTS[shrine.gift].name}».`,true,'info');
 }
 
 export function inspectNearest(state:GameState):InteractionResult {
@@ -48,10 +55,10 @@ export function inspectNearest(state:GameState):InteractionResult {
   if(!target||target.distance>160)return result(state,'Поруч лише вітер і паперова трава.');
   if(target.type==='anomaly'){
     const stage=state.anomalies[target.value.id]??0;
-    const curious=state.character.quirk.id==='curious'?' Ви відчуваєте: він чекає на правильний Дар.':'';
+    const curious=state.character.quirk.id==='curious'?' Ви помічаєте сліди потрібного інструмента.':'';
     return result(state,`${target.value.states[stage]}.${curious}`);
   }
-  if(target.type==='shrine')return result(state,`Місце, що може позичити Дар «${GIFTS[target.value.gift].name}».`);
+  if(target.type==='shrine')return result(state,`Польовий стіл: тут можна взяти «${GIFTS[target.value.gift].name}».`);
   const planted=state.plantings[target.value.id];
   return result(state,planted?`Тут посаджено спогад: ${SEED_NAMES[planted]??planted}.`:'Порожнє місце у Притулку.');
 }

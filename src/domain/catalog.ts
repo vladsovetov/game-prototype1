@@ -1,17 +1,17 @@
 import type { BodyId, BurdenId, CatalogEntry, GiftId, MarkId, MaterialId, PaletteId, QuirkId } from './types';
 
 export const GIFTS: Record<GiftId, CatalogEntry<GiftId>> = {
-  reveal: { id: 'reveal', name: 'Виявлення', description: 'Показує те, що світ приховав.' },
-  grow: { id: 'grow', name: 'Зростання', description: 'Пробуджує живі форми в речах, що чекали.' },
-  echo: { id: 'echo', name: 'Відлуння', description: 'Дарує пам’яті й звукам друге життя.' },
-  mend: { id: 'mend', name: 'Відновлення', description: 'Лагодить зруйновані візерунки й тихі місця.' },
+  reveal: { id: 'reveal', name: 'Ручний ліхтар', description: 'Освітлює стерті написи, темні комори й дорожні мітки.' },
+  grow: { id: 'grow', name: 'Садовий секатор', description: 'Розчищає зарості та повертає форму занедбаним рослинам.' },
+  echo: { id: 'echo', name: 'Камертон', description: 'Перевіряє дзвони, резонатори й приховані порожнини за звуком.' },
+  mend: { id: 'mend', name: 'Ремонтний набір', description: 'Містить мотузку, ключі, латки й усе для простого польового ремонту.' },
 };
 
 export const BURDENS: Record<BurdenId, CatalogEntry<BurdenId>> = {
-  fragile: { id: 'fragile', name: 'Крихкість', description: 'Після використання Дару ненадовго з’являється видима тріщина.' },
-  loud: { id: 'loud', name: 'Гучність', description: 'Використання Дару будить довколишні сонні речі.' },
-  rooted: { id: 'rooted', name: 'Укорінення', description: 'Потрібна коротка зупинка, поки Дар набирає сили.' },
-  fading: { id: 'fading', name: 'Згасання', description: 'Тіло стає прозорим, доки не повернеться до світла.' },
+  fragile: { id: 'fragile', name: 'Обережні руки', description: 'Після роботи потрібна коротка пауза, щоб перевірити крихкі деталі.' },
+  loud: { id: 'loud', name: 'Гучна робота', description: 'Звук інструмента привертає увагу всього навколо.' },
+  rooted: { id: 'rooted', name: 'Повільний майстер', description: 'Потрібна коротка зупинка, щоб скласти інструмент після роботи.' },
+  fading: { id: 'fading', name: 'Слабкий ліхтар', description: 'Після роботи світло на мить стає тьмянішим.' },
 };
 
 export const QUIRKS: Record<QuirkId, CatalogEntry<QuirkId>> = {

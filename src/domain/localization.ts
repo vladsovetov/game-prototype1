@@ -2,6 +2,8 @@ import { BURDENS, GIFTS, QUIRKS } from './catalog';
 import { createWovenStory } from './story';
 import type { GameState } from './types';
 import { generatedDescription } from './character';
+import { gearForDirection } from './equipment';
+import { createRunDirection } from './run-direction';
 import type { BodyId, MaterialId } from './types';
 
 const LEGACY_SUBJECTS: Record<string, string> = {
@@ -55,6 +57,7 @@ export function localizeState(state: GameState): GameState {
     quirk: QUIRKS[state.character.quirk.id],
   };
   const seed = state.worldSeed ?? state.storyArc?.seed ?? 0;
+  const gear = state.wardrobe && state.equipped ? { wardrobe: state.wardrobe, equipped: state.equipped } : gearForDirection(state.storyArc?.direction ?? createRunDirection(seed));
   const memoryDetails = state.memoryDetails ? Object.fromEntries(Object.entries(state.memoryDetails).map(([key,value])=>[key,LEGACY_MEMORY_DETAILS[value]??value])) : state.memoryDetails;
-  return { ...state, character, memoryDetails, discoveries:state.discoveries.map((item)=>LEGACY_DISCOVERIES[item]??item), storyArc:storyIsEnglish(state)?createWovenStory(character,seed):state.storyArc };
+  return { ...state, ...gear, character, memoryDetails, discoveries:state.discoveries.map((item)=>LEGACY_DISCOVERIES[item]??item), storyArc:storyIsEnglish(state)?createWovenStory(character,seed):state.storyArc };
 }

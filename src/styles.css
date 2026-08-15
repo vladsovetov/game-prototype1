@@ -166,6 +166,16 @@ textarea { min-height: 180px; resize: vertical; font: 13px/1.55 ui-monospace, SF
 .palette-dusk { background: linear-gradient(145deg, #75658f, #ad8aa5); }
 .passport h3 { margin: 6px 0 8px; font: 500 32px/1 "Iowan Old Style", Georgia, serif; }
 .passport-edit { margin-top: 18px; }
+.field-kit { margin-top: 20px; padding-top: 16px; border-top: 1px dashed #315e5442; }
+.field-kit h4 { margin: 0 0 4px; font: 600 19px/1.2 "Iowan Old Style", Georgia, serif; }
+.field-kit > p { margin: 0 0 11px; color: var(--ink-soft); font-size: 11px; line-height: 1.4; }
+.equipment-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.equipment-item { min-height: 96px; padding: 11px; border: 1px solid #315e5435; border-radius: 13px 4px; color: var(--ink); background: #f7f0dc; text-align: left; }
+.equipment-item span { color: #708b83; font: 800 8px/1 ui-monospace, monospace; letter-spacing: .1em; }
+.equipment-item strong, .equipment-item small { display: block; }
+.equipment-item strong { margin: 7px 0 4px; font: 600 14px/1.1 "Iowan Old Style", Georgia, serif; }
+.equipment-item small { color: var(--ink-soft); font-size: 9px; line-height: 1.35; }
+.equipment-item.equipped { border-color: #a87532a8; background: #f4d4867d; box-shadow: inset 0 0 0 2px #fff7d8; }
 .trait-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 18px; }
 .trait { padding: 11px; border-top: 3px solid #66a6a0; background: #eef5ea; }
 .trait:nth-child(2) { border-color: var(--coral); }
@@ -245,7 +255,7 @@ textarea { min-height: 180px; resize: vertical; font: 13px/1.55 ui-monospace, SF
   .personalize-choice { min-height: 94px; }
   .personalize-choice b { margin-top: 10px; }
   .passport { grid-template-columns: 1fr; }
-  .trait-grid, .appearance-grid { grid-template-columns: 1fr; }
+  .trait-grid, .appearance-grid, .equipment-grid { grid-template-columns: 1fr; }
   .tale-folio { grid-template-columns: 68px 1fr; gap: 13px; padding: 14px; }
   .run-seal { width: 62px; height: 62px; }
   .tale-folio h3 { font-size: 24px; }

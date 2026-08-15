@@ -11,6 +11,8 @@ import type { createCanvasRenderer } from './ui/canvas-renderer';
 import type { createPanels } from './ui/panels';
 import type { createLocalStoryWriter, WriterStatus } from './story/local-story-writer';
 import { GIFTS } from './domain/catalog';
+import { equipWearable } from './domain/equipment';
+import type { WearableId } from './domain/types';
 
 type Renderer = ReturnType<typeof createCanvasRenderer>;
 type Panels = ReturnType<typeof createPanels>;
@@ -122,13 +124,13 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       return;
     }
 
-    hud.innerHTML = `<div class="hud-top"><button class="hud-card identity" data-testid="character-button" aria-label="Ваш супутник"><span class="identity-mark">✦</span><span><strong data-testid="player-name"></strong><small></small><em class="memory-count"></em></span></button><div class="hud-actions"><button data-testid="journal-button" aria-label="Польовий щоденник"><span>J</span><small>Щоденник</small></button><button data-testid="help-button" aria-label="Довідка"><span>?</span><small>Довідка</small></button></div></div><div class="prompt"><span class="key">F</span> Дар <i></i><span class="key">E</span> Дослідити <span class="hud-meta"></span></div>`;
+    hud.innerHTML = `<div class="hud-top"><button class="hud-card identity" data-testid="character-button" aria-label="Ваш супутник"><span class="identity-mark">✦</span><span><strong data-testid="player-name"></strong><small></small><em class="memory-count"></em></span></button><div class="hud-actions"><button data-testid="journal-button" aria-label="Польовий щоденник"><span>J</span><small>Щоденник</small></button><button data-testid="help-button" aria-label="Довідка"><span>?</span><small>Довідка</small></button></div></div><div class="prompt"><span class="key">F</span> Інструмент <i></i><span class="key">E</span> Дослідити <span class="hud-meta"></span></div>`;
     (hud.querySelector('[data-testid=player-name]') as HTMLElement).textContent = state.character.name;
     (hud.querySelector('.identity small') as HTMLElement).textContent = state.borrowedGift ? `позичено: ${GIFTS[state.borrowedGift].name}` : state.character.gift.name;
     const progress = sanctuaryProgress(state);
     (hud.querySelector('.memory-count') as HTMLElement).textContent = state.endingSeen ? 'Історію завершено' : `${progress.planted} / ${progress.required} спогадів посаджено`;
     (hud.querySelector('.hud-meta') as HTMLElement).textContent = state.seeds.length ? `Спогадів у таці: ${state.seeds.length}` : '';
-    hud.querySelector('[data-testid=character-button]')?.addEventListener('click', () => panels.showCharacter(state.character));
+    hud.querySelector('[data-testid=character-button]')?.addEventListener('click', () => panels.showCharacter(state));
     hud.querySelector('[data-testid=journal-button]')?.addEventListener('click', () => panels.showJournal(state));
     hud.querySelector('[data-testid=help-button]')?.addEventListener('click', panels.showHelp);
     if (isTouchLayout()) renderTouchControls(false);
@@ -167,15 +169,15 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
     const step = state.tutorial?.step;
     if (!isTutorial()) {
-      const gift = addAction('Дар', 'Застосувати Дар', '✦', useGift, true);
+      const gift = addAction('Інструмент', 'Застосувати інструмент', '✦', useGift, true);
       gift.dataset.testid = 'touch-primary-action';
       addAction('Дослідити', 'Дослідити поруч', '◌', interact);
     } else if (step === 'gift') {
-      const button = addAction(`Дар «${state.character.gift.name}»`, `Застосувати Дар «${state.character.gift.name}»`, '✦', useGift, true);
+      const button = addAction(state.character.gift.name, `Застосувати «${state.character.gift.name}»`, '✦', useGift, true);
       button.dataset.testid = 'touch-primary-action';
     } else if (step === 'combine') {
       const borrowed = state.tutorial?.borrowedGift ?? state.character.gift.id;
-      const label = `Дар «${GIFTS[borrowed].name}»`;
+      const label = GIFTS[borrowed].name;
       const button = addAction(label, label, '✦', useGift, true);
       button.dataset.testid = 'touch-primary-action';
     } else if (step === 'plant') {
@@ -183,7 +185,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       button.dataset.testid = 'touch-primary-action';
     } else if (step === 'resonate' && atResonance) {
       const borrowed = state.tutorial?.borrowedGift ?? 'mend';
-      const label = `Позичити «${GIFTS[borrowed].name}»`;
+      const label = `Взяти «${GIFTS[borrowed].name}»`;
       const button = addAction(label, label, '◇', interact, true);
       button.dataset.testid = 'touch-primary-action';
     }
@@ -330,7 +332,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     if (key === 'f' && (!isTutorial() || state.tutorial?.step === 'gift' || state.tutorial?.step === 'combine')) useGift();
     if (key === 'e' && (!isTutorial() || state.tutorial?.step === 'resonate' || state.tutorial?.step === 'plant')) interact();
     if (!isTutorial() && key === 'j') panels.showJournal(state);
-    if (!isTutorial() && key === 'c') panels.showCharacter(state.character);
+    if (!isTutorial() && key === 'c') panels.showCharacter(state);
   }
 
   function keyup(event: KeyboardEvent) { keys.delete(gameKey(event)); }
@@ -405,6 +407,12 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     saveAndRefresh();
     panels.showPersonalize(state.character);
     toast('Новий вигляд набуває форми.');
+  }
+
+  function updateEquipment(id: WearableId) {
+    state = equipWearable(state, id);
+    saveAndRefresh();
+    panels.showCharacter(state);
   }
 
   function finishPersonalization() {
@@ -498,6 +506,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     replaceCharacter,
     updatePersonality,
     updateAppearance,
+    updateEquipment,
     finishPersonalization,
     beginNewTale,
     showWriterStatus,

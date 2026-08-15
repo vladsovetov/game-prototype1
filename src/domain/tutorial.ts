@@ -42,18 +42,18 @@ export function tutorialObjective(state: GameState): { title:string; action:stri
   const atResonance = step === 'resonate' && target && distance(state.player, target) <= 160;
   if (state.tutorial && state.tutorial.targetAnomalyId !== 'sign') {
     const legacy: Record<TutorialStep, {title:string;action:string;key?:string}> = {
-      wake:{title:`Це ${state.character.name}.`,action:'Прокинутися'}, move:{title:'Поруч щось світиться.',action:'Ідіть до світла',key:'WASD'}, gift:{title:`Світ помічає ${state.character.name}.`,action:`Застосуйте Дар «${gift}»`,key:'F'}, clue:{title:'Перша зміна завершена.',action:'Продовжити'},
-      resonate:atResonance?{title:'Це місце може позичити інший Дар.',action:`Позичити «${borrowed}»`,key:'E'}:{title:'Зміна ще не завершена.',action:`Ідіть за вогнями Дару «${borrowed}»`,key:'WASD'}, combine:{title:`У вас є Дар «${borrowed}».`,action:'Поверніться й застосуйте його',key:'F'}, recovered:{title:'Відкриття завершене.',action:'Продовжити'}, plant:{title:'Пам’ятка пішла за вами додому.',action:'Посадіть пам’ятку',key:'E'}, remember:{title:'Перше відкриття завершене.',action:'Продовжити'}, personalize:{title:`У ${state.character.name} є перше відкриття.`,action:'Зробіть персонажа своїм'}, done:{title:'Галявина відкрита.',action:'Ідіть за тим, що вас кличе'},
+      wake:{title:`Це ${state.character.name}.`,action:'Прокинутися'}, move:{title:'Поруч щось потребує уваги.',action:'Ідіть до робочої позначки',key:'WASD'}, gift:{title:'Огляньте несправність.',action:`Застосуйте «${gift}»`,key:'F'}, clue:{title:'Перший етап роботи завершено.',action:'Продовжити'},
+      resonate:atResonance?{title:'Польовий стіл з іншим інструментом.',action:`Взяти «${borrowed}»`,key:'E'}:{title:'Робота ще не завершена.',action:`Знайдіть польовий стіл: «${borrowed}»`,key:'WASD'}, combine:{title:`У вас є «${borrowed}».`,action:'Поверніться й завершіть ремонт',key:'F'}, recovered:{title:'Об’єкт відновлено.',action:'Продовжити'}, plant:{title:'Ви отримали важливу знахідку.',action:'Збережіть її в притулку',key:'E'}, remember:{title:'Перше відкриття завершене.',action:'Продовжити'}, personalize:{title:`У ${state.character.name} є перше відкриття.`,action:'Налаштуйте персонажа'}, done:{title:'Місцевість відкрита.',action:'Продовжуйте польову роботу'},
     };
     return legacy[step];
   }
   const copy: Record<TutorialStep, {title:string;action:string;key?:string}> = {
     wake:{title:`Це ${state.character.name}.`,action:'Прокинутися'},
     move:{title:'Загублений спогад зовсім поруч.',action:'Знайдіть залитий дощем дороговказ',key:'WASD'},
-    gift:{title:'Його слова стерті.',action:`Застосуйте Дар «${gift}», щоб побачити їх`,key:'F'},
+    gift:{title:'Його слова стерті.',action:`Посвітіть інструментом «${gift}»`,key:'F'},
     clue:{title:'Повернулася підказка.',action:'Завершіть спогад'},
-    resonate:atResonance?{title:'Це місце може позичити Дар відновлення.',action:'Позичити «Відновлення»',key:'E'}:{title:`Дороговказ називає «${storyFor(state).worldName}», але він зламаний.`,action:'Знайдіть Дар «Відновлення»',key:'WASD'},
-    combine:{title:'У вас є Дар «Відновлення».',action:'Поверніться й відновіть дороговказ',key:'F'},
+    resonate:atResonance?{title:'Це польовий стіл із ремонтним набором.',action:'Взяти ремонтний набір',key:'E'}:{title:`Покажчик називає «${storyFor(state).worldName}», але він зламаний.`,action:'Знайдіть польовий стіл із ремонтним набором',key:'WASD'},
+    combine:{title:'У вас є ремонтний набір.',action:'Поверніться й полагодьте покажчик',key:'F'},
     recovered:{title:'Спогад відновлено.',action:'Віднесіть його додому'}, plant:{title:'Відновлений дороговказ пішов за вами.',action:'Посадіть дороговказ',key:'E'}, remember:{title:'Спогад став цілим.',action:'Вирішіть, що він означає'}, personalize:{title:`У ${state.character.name} є перший спогад.`,action:'Зробіть персонажа своїм'}, done:{title:'Галявина відкрита.',action:'Ідіть за тим, що вас кличе'},
   };
   return copy[step];

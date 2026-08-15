@@ -1,10 +1,11 @@
 import { AI_CONTEXT_PACKET, validateCharacterCard } from '../domain/character';
 import { APPEARANCE_GROUP_NAMES, APPEARANCE_NAMES, BODIES, MARKS, MATERIALS, PALETTES, QUIRKS } from '../domain/catalog';
+import { WEARABLES } from '../domain/equipment';
 import { ROAD_HOME } from '../domain/memory';
 import { LANTERN_HOUSE_ENDING, memoryChapter, type MemoryChapter } from '../domain/memory-arc';
 import { storyFor } from '../domain/story';
 import { SEED_NAMES, worldFor } from '../domain/world';
-import type { Appearance, Character, GameState, QuirkId, StoryArc } from '../domain/types';
+import type { Appearance, Character, GameState, QuirkId, StoryArc, WearableId } from '../domain/types';
 import type { WriterStatus } from '../story/local-story-writer';
 
 export interface PanelActions {
@@ -15,6 +16,7 @@ export interface PanelActions {
   onAppearance(appearance: Appearance): void;
   onPersonalizationDone(): void;
   onLocalStory(): void;
+  onEquip(id: WearableId): void;
 }
 
 export function createPanels(root: HTMLElement, actions: PanelActions) {
@@ -45,7 +47,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     (section.querySelector('.first-memory strong') as HTMLElement).textContent = isRoadHome ? (story?.chapters.sign?.title ?? 'Дорога додому') : 'Перше відкриття';
     (section.querySelector('[data-summary]') as HTMLElement).textContent = isRoadHome
       ? (story?.premise ?? 'Поверніть дві підказки, щоб дізнатися, хто чекав попереду.')
-      : `Ідіть за одним вогником і подивіться, що відкриє Дар «${character.gift.name}».`;
+      : `Ідіть за одним вогником і випробуйте інструмент «${character.gift.name}».`;
     section.querySelector('button')?.addEventListener('click', onWake);
     root.append(section);
   }
@@ -256,7 +258,8 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     return d;
   }
 
-  function showCharacter(character: Character) {
+  function showCharacter(state: GameState) {
+    const character = state.character;
     currentCharacter = character;
     const c = shell('Ваш супутник');
     const pass = document.createElement('div');
@@ -271,12 +274,35 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     p.textContent = character.description;
     const grid = document.createElement('div');
     grid.className = 'trait-grid';
-    grid.append(trait('Дар', character.gift.name, character.gift.description), trait('Тягар', character.burden.name, character.burden.description), trait('Особливість', character.quirk.name, character.quirk.description));
+    grid.append(trait('Інструмент', character.gift.name, character.gift.description), trait('Стиль роботи', character.burden.name, character.burden.description), trait('Особливість', character.quirk.name, character.quirk.description));
     const edit = document.createElement('button');
     edit.className = 'text-button passport-edit';
     edit.textContent = 'Налаштувати персонажа →';
     edit.addEventListener('click', () => showPersonalize(character));
-    info.append(h, p, grid, edit);
+    const fieldKit = document.createElement('section');
+    fieldKit.className = 'field-kit';
+    const kitTitle = document.createElement('h4');
+    kitTitle.textContent = 'Польове спорядження';
+    const kitCopy = document.createElement('p');
+    kitCopy.textContent = 'Торкніться предмета, щоб одягнути або зняти його. Зміни видно на персонажі.';
+    const kitGrid = document.createElement('div');
+    kitGrid.className = 'equipment-grid';
+    for (const id of state.wardrobe) {
+      const item = WEARABLES[id];
+      const equipped = state.equipped[item.slot] === id;
+      const button = document.createElement('button');
+      button.className = `equipment-item${equipped ? ' equipped' : ''}`;
+      button.dataset.testid = `equipment-${id}`;
+      button.setAttribute('aria-pressed', String(equipped));
+      button.innerHTML = `<span></span><strong></strong><small></small>`;
+      button.querySelector('span')!.textContent = equipped ? 'ОДЯГНЕНО' : item.mark;
+      button.querySelector('strong')!.textContent = item.name;
+      button.querySelector('small')!.textContent = item.description;
+      button.addEventListener('click', () => actions.onEquip(id));
+      kitGrid.append(button);
+    }
+    fieldKit.append(kitTitle, kitCopy, kitGrid);
+    info.append(h, p, grid, fieldKit, edit);
     pass.append(preview, info);
     c.append(pass);
   }
@@ -336,7 +362,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     list.className = 'journal-list';
     if (!state.discoveries.length) {
       const p = document.createElement('p');
-      p.textContent = 'Перша сторінка чекає. Ідіть за сяйвом і спробуйте свій Дар.';
+      p.textContent = 'Перша сторінка чекає. Ідіть за сяйвом і спробуйте свій інструмент.';
       list.append(p);
     }
     for (const item of state.discoveries) {
@@ -363,7 +389,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
 
   function showHelp() {
     const c = shell('Як мандрувати', true);
-    c.innerHTML = `<div class="controls keyboard-help"><b>WASD / СТРІЛКИ</b><span>Рух</span><b>F</b><span>Застосувати поточний Дар біля дивного предмета</span><b>E</b><span>Дослідити, позичити Дар або посадити спогад</span><b>J</b><span>Відкрити польовий щоденник</span><b>C</b><span>Зустріти супутника</span></div><div class="touch-help"><div class="touch-help-mark">●</div><div><b>Тягніть золотий вогник</b><span>Рухайтеся в будь-якому напрямку. Відпустіть, щоб зупинитися.</span></div><div class="touch-help-mark">✦</div><div><b>Торкніться сяючої пелюстки</b><span>Застосуйте Дар або дослідіть те, що поруч.</span></div></div><p class="soft-copy help-note">Вогники лише підказують шлях — таймера немає. Мандруйте скільки захочете.</p><div class="new-tale-note"><span class="eyebrow">Інший початок</span><p>Супутник залишиться, але ця галявина, її історія та весь прогрес будуть замінені новою випадково створеною оповіддю.</p><button class="button danger">Почати іншу оповідь</button></div>`;
+    c.innerHTML = `<div class="controls keyboard-help"><b>WASD / СТРІЛКИ</b><span>Рух</span><b>F</b><span>Застосувати поточний інструмент біля зламаного об’єкта</span><b>E</b><span>Дослідити, взяти інструмент або зберегти знахідку</span><b>J</b><span>Відкрити польовий щоденник</span><b>C</b><span>Відкрити персонажа й спорядження</span></div><div class="touch-help"><div class="touch-help-mark">●</div><div><b>Тягніть золотий вогник</b><span>Рухайтеся в будь-якому напрямку. Відпустіть, щоб зупинитися.</span></div><div class="touch-help-mark">✦</div><div><b>Торкніться кнопки інструмента</b><span>Полагодьте або дослідіть те, що поруч.</span></div></div><p class="soft-copy help-note">Вогники лише підказують шлях — таймера немає. Мандруйте скільки захочете.</p><div class="new-tale-note"><span class="eyebrow">Інший початок</span><p>Супутник залишиться, але ця місцевість, її історія та весь прогрес будуть замінені новою випадково створеною оповіддю.</p><button class="button danger">Почати іншу оповідь</button></div>`;
     c.querySelector('.danger')?.addEventListener('click', () => {
       if (confirm('Почати іншу оповідь? Супутник залишиться, але ця галявина й увесь її прогрес будуть замінені.')) actions.onNewTale();
     });

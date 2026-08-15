@@ -3,7 +3,7 @@ import { QUIRKS } from './domain/catalog';
 import { generateCharacter } from './domain/character';
 import { prepareNewRun } from './domain/run';
 import { randomSeed } from './domain/random';
-import type { Appearance, Character, QuirkId } from './domain/types';
+import type { Appearance, Character, QuirkId, WearableId } from './domain/types';
 import { createGameController } from './game-controller';
 import { createSaveStore } from './persistence/save-store';
 import { createCanvasRenderer } from './ui/canvas-renderer';
@@ -29,6 +29,7 @@ const panels = createPanels(modal, {
   onAppearance: (appearance: Appearance) => controller?.updateAppearance(appearance),
   onPersonalizationDone: () => controller?.finishPersonalization(),
   onLocalStory: () => controller?.startLocalStory(),
+  onEquip: (id: WearableId) => controller?.updateEquipment(id),
 });
 
 const loaded = store.load();

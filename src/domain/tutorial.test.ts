@@ -38,7 +38,7 @@ describe('progressive tutorial', () => {
     state = advanceTutorial(state, 'gift-used');
     expect(state.tutorial?.step).toBe('clue');
     state = advanceTutorial(state, 'clue-read');
-    expect(tutorialObjective(state).action).toContain('Знайдіть Дар «Відновлення»');
+    expect(tutorialObjective(state).action).toContain('ремонтним набором');
     state = advanceTutorial(state, 'resonance-borrowed');
     expect(tutorialObjective(state).action).toContain('Поверніться');
     state = advanceTutorial(state, 'chain-completed');
@@ -76,9 +76,9 @@ describe('progressive tutorial', () => {
     state.tutorial = { ...state.tutorial!, step: 'move', targetAnomalyId, borrowedGift };
 
     expect(memoryProgress(state).title).toBe('ПЕРШИЙ СПОГАД');
-    expect(tutorialObjective(state).action).toBe('Ідіть до світла');
+    expect(tutorialObjective(state).action).toBe('Ідіть до робочої позначки');
     state.tutorial.step = 'gift';
-    expect(tutorialObjective(state).action).toBe(`Застосуйте Дар «${giftName}»`);
+    expect(tutorialObjective(state).action).toBe(`Застосуйте «${giftName}»`);
   });
 
   it('points to the relevant world object for each step', () => {

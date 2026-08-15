@@ -1,8 +1,8 @@
 import './styles.css';
 import { QUIRKS } from './domain/catalog';
 import { generateCharacter } from './domain/character';
-import { createInitialState } from './domain/simulation';
-import { prepareTutorial } from './domain/tutorial';
+import { prepareNewRun } from './domain/run';
+import { randomSeed } from './domain/random';
 import type { Appearance, Character, QuirkId } from './domain/types';
 import { createGameController } from './game-controller';
 import { createSaveStore } from './persistence/save-store';
@@ -31,9 +31,10 @@ const loaded = store.load();
 if (loaded.kind === 'newer-version') {
   panels.showNewerSave(loaded.version);
 } else {
+  const seed = randomSeed() || 1;
   const state = loaded.kind === 'loaded'
     ? loaded.state
-    : prepareTutorial(createInitialState(generateCharacter(Date.now())));
+    : prepareNewRun(generateCharacter(seed), seed);
   if (loaded.kind === 'corrupt') {
     setTimeout(() => alert('Your old local save could not be read, so a fresh meadow was opened.'), 50);
   }

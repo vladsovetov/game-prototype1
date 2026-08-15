@@ -2,8 +2,9 @@ import { AI_CONTEXT_PACKET, validateCharacterCard } from '../domain/character';
 import { BODIES, MARKS, MATERIALS, PALETTES, QUIRKS } from '../domain/catalog';
 import { ROAD_HOME } from '../domain/memory';
 import { LANTERN_HOUSE_ENDING, memoryChapter, type MemoryChapter } from '../domain/memory-arc';
+import { storyFor } from '../domain/story';
 import { SEED_NAMES } from '../domain/world';
-import type { Appearance, Character, GameState, QuirkId } from '../domain/types';
+import type { Appearance, Character, GameState, QuirkId, StoryArc } from '../domain/types';
 
 export interface PanelActions {
   onImport(character: Character): void;
@@ -28,7 +29,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     return section.querySelector<HTMLElement>('[data-slot=content]')!;
   };
 
-  function showWake(character: Character, onWake: () => void, isRoadHome = true) {
+  function showWake(character: Character, onWake: () => void, isRoadHome = true, story?: StoryArc) {
     currentCharacter = character;
     clear();
     const section = document.createElement('section');
@@ -38,19 +39,20 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     (section.querySelector('.wake-purpose') as HTMLElement).textContent = isRoadHome
       ? `Help ${character.name} recover a lost memory—and discover who they were before this meadow.`
       : `Help ${character.name} make a first discovery in this strange meadow.`;
-    (section.querySelector('.first-memory strong') as HTMLElement).textContent = isRoadHome ? 'The Road Home' : 'A First Discovery';
+    (section.querySelector('.first-memory strong') as HTMLElement).textContent = isRoadHome ? (story?.chapters.sign?.title ?? 'The Road Home') : 'A First Discovery';
     (section.querySelector('[data-summary]') as HTMLElement).textContent = isRoadHome
-      ? 'Recover two clues to learn who was waiting for them.'
+      ? (story?.premise ?? 'Recover two clues to learn who was waiting for them.')
       : `Follow one glow and see what ${character.gift.name} reveals.`;
     section.querySelector('button')?.addEventListener('click', onWake);
     root.append(section);
   }
 
-  function showMemoryBeat(title: string, copy: string, action: string, onContinue: () => void) {
+  function showMemoryBeat(title: string, copy: string, action: string, onContinue: () => void, chapterTitle = 'The Road Home') {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card memory-beat';
-    section.innerHTML = `<span class="eyebrow">The Road Home</span><h2></h2><p class="soft-copy"></p><button class="button primary"></button>`;
+    section.innerHTML = `<span class="eyebrow"></span><h2></h2><p class="soft-copy"></p><button class="button primary"></button>`;
+    (section.querySelector('.eyebrow') as HTMLElement).textContent = chapterTitle;
     (section.querySelector('h2') as HTMLElement).textContent = title;
     (section.querySelector('p') as HTMLElement).textContent = copy;
     (section.querySelector('button') as HTMLElement).textContent = action;
@@ -71,24 +73,24 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     root.append(section);
   }
 
-  function showEnding(character: Character, onContinue: () => void) {
+  function showEnding(character: Character, ending: StoryArc['ending'] = LANTERN_HOUSE_ENDING, onContinue: () => void) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card ending-card';
     section.innerHTML = `<div class="ending-lantern" aria-hidden="true">✦</div><span class="eyebrow">Six memories planted · You remember now</span><h2></h2><p class="ending-name"></p><p class="ending-story"></p><button class="button primary">Carry the light forward</button>`;
-    (section.querySelector('h2') as HTMLElement).textContent = LANTERN_HOUSE_ENDING.title;
+    (section.querySelector('h2') as HTMLElement).textContent = ending.title;
     (section.querySelector('.ending-name') as HTMLElement).textContent = `${character.name}, this is what the sanctuary was trying to tell you.`;
-    (section.querySelector('.ending-story') as HTMLElement).textContent = LANTERN_HOUSE_ENDING.story;
+    (section.querySelector('.ending-story') as HTMLElement).textContent = ending.story;
     section.querySelector('button')?.addEventListener('click', onContinue);
     root.append(section);
   }
 
-  function showMemoryChoice(character: Character, onChoose: (answer: string) => void) {
+  function showMemoryChoice(character: Character, onChoose: (answer: string) => void, story?: StoryArc) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card memory-choice-card';
     section.innerHTML = `<span class="eyebrow">One truth is still unwritten</span><h2></h2><p class="soft-copy">Planting the Waypost made this memory visible in your sanctuary. The memory cannot answer this last part. Your answer becomes part of who <b data-name></b> is.</p><div class="memory-choices"></div><button class="text-button" data-custom>Write my own answer →</button>`;
-    (section.querySelector('h2') as HTMLElement).textContent = ROAD_HOME.question;
+    (section.querySelector('h2') as HTMLElement).textContent = story?.question ?? ROAD_HOME.question;
     (section.querySelector('[data-name]') as HTMLElement).textContent = character.name;
     const choices = ['A family they chose', 'A patient friend', 'They kept it burning for themself'];
     const list = section.querySelector<HTMLElement>('.memory-choices')!;
@@ -99,15 +101,17 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
       button.addEventListener('click', () => onChoose(choice));
       list.append(button);
     }
-    section.querySelector('[data-custom]')?.addEventListener('click', () => showCustomMemory(character, onChoose));
+    section.querySelector('[data-custom]')?.addEventListener('click', () => showCustomMemory(character, onChoose, story));
     root.append(section);
   }
 
-  function showCustomMemory(character: Character, onChoose: (answer: string) => void) {
+  function showCustomMemory(character: Character, onChoose: (answer: string) => void, story?: StoryArc) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card memory-choice-card';
-    section.innerHTML = `<span class="eyebrow">The Road Home</span><h2>Who kept the light burning?</h2><p class="soft-copy">Write one short answer. It will be remembered in <b data-name></b>'s story.</p><label class="field-label">Your answer<input name="memory" maxlength="100" autocomplete="off" placeholder="Someone who..."></label><div class="choice-row"><button class="button primary" data-save disabled>Keep this memory</button><button class="button ghost-light" data-back>Back</button></div>`;
+    section.innerHTML = `<span class="eyebrow"></span><h2></h2><p class="soft-copy">Write one short answer. It will be remembered in <b data-name></b>'s story.</p><label class="field-label">Your answer<input name="memory" maxlength="100" autocomplete="off" placeholder="Someone who..."></label><div class="choice-row"><button class="button primary" data-save disabled>Keep this memory</button><button class="button ghost-light" data-back>Back</button></div>`;
+    (section.querySelector('.eyebrow') as HTMLElement).textContent = story?.chapters.sign?.title ?? 'The Road Home';
+    (section.querySelector('h2') as HTMLElement).textContent = story?.question ?? ROAD_HOME.question;
     (section.querySelector('[data-name]') as HTMLElement).textContent = character.name;
     const input = section.querySelector<HTMLInputElement>('[name=memory]')!;
     const save = section.querySelector<HTMLButtonElement>('[data-save]')!;
@@ -116,7 +120,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
       const answer = input.value.trim().slice(0, 100);
       if (answer) onChoose(answer);
     });
-    section.querySelector('[data-back]')?.addEventListener('click', () => showMemoryChoice(character, onChoose));
+    section.querySelector('[data-back]')?.addEventListener('click', () => showMemoryChoice(character, onChoose, story));
     root.append(section);
     input.focus();
   }
@@ -275,12 +279,13 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
 
   function showJournal(state: GameState) {
     const c = shell('Field journal');
+    const arc = storyFor(state);
     const summary = document.createElement('p');
     summary.className = 'soft-copy';
     summary.textContent = `${state.discoveries.length} reactions remembered · ${state.seeds.length} seeds waiting · ${Object.keys(state.plantings).length} planted`;
     c.append(summary);
     for (const id of state.rewarded) {
-      const chapter = memoryChapter(id);
+      const chapter = arc.chapters[id] ?? memoryChapter(id);
       if (!chapter) continue;
       const memory = document.createElement('article');
       memory.className = 'journal-memory';
@@ -307,9 +312,9 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
       eyebrow.className = 'eyebrow';
       eyebrow.textContent = 'Story complete';
       const title = document.createElement('h3');
-      title.textContent = LANTERN_HOUSE_ENDING.title;
+      title.textContent = arc.ending.title;
       const story = document.createElement('p');
-      story.textContent = LANTERN_HOUSE_ENDING.story;
+      story.textContent = arc.ending.story;
       ending.append(eyebrow, title, story);
       c.append(ending);
     }

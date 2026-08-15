@@ -26,7 +26,7 @@ const FOUND_BY_STEP: Record<TutorialStep, number> = {
 
 export function memoryProgress(state: GameState) {
   return {
-    title: state.tutorial?.targetAnomalyId === 'sign' ? ROAD_HOME.title : 'FIRST MEMORY',
+    title: state.tutorial?.targetAnomalyId === 'sign' ? (state.storyArc?.chapters.sign?.title.toUpperCase() ?? ROAD_HOME.title) : 'FIRST MEMORY',
     found: FOUND_BY_STEP[state.tutorial?.step ?? 'done'],
     total: 2,
   };

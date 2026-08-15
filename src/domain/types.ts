@@ -9,7 +9,9 @@ export interface CatalogEntry<I extends string>{id:I;name:string;description:str
 export interface Appearance{body:BodyId;material:MaterialId;palette:PaletteId;mark:MarkId}
 export interface Character{version:1;name:string;description:string;appearance:Appearance;gift:CatalogEntry<GiftId>;burden:CatalogEntry<BurdenId>;quirk:CatalogEntry<QuirkId>}
 export interface Point{x:number;y:number}
+export interface StoryChapter{id:string;title:string;keepsake:string;story:string}
+export interface StoryArc{seed:number;source:'woven'|'local-model';worldName:string;runMark:string;premise:string;question:string;firstClue:string;recovered:string;chapters:Record<string,StoryChapter>;ending:{title:string;story:string}}
 export type TutorialStep='wake'|'move'|'gift'|'clue'|'resonate'|'combine'|'recovered'|'plant'|'remember'|'personalize'|'done';
 export interface TutorialState{step:TutorialStep;targetAnomalyId:string;borrowedGift:GiftId;start:Point}
-export interface GameState{version:1;character:Character;player:Point;worldSeed?:number;anomalies:Record<string,number>;discoveries:string[];seeds:string[];plantings:Record<string,string>;rewarded:string[];borrowedGift?:GiftId;tutorial?:TutorialState;memoryDetails?:Record<string,string>;pendingChapter?:string;endingSeen?:boolean;effects:{rootedUntil:number;fragileUntil:number;fadingUntil:number;awakeProps:string[]};lastUpdated:number}
+export interface GameState{version:1;character:Character;player:Point;worldSeed?:number;storyArc?:StoryArc;anomalies:Record<string,number>;discoveries:string[];seeds:string[];plantings:Record<string,string>;rewarded:string[];borrowedGift?:GiftId;tutorial?:TutorialState;memoryDetails?:Record<string,string>;pendingChapter?:string;endingSeen?:boolean;effects:{rootedUntil:number;fragileUntil:number;fadingUntil:number;awakeProps:string[]};lastUpdated:number}
 export type InteractionResult={state:GameState;message:string;changed:boolean;kind?:'discovery'|'seed'|'info'};

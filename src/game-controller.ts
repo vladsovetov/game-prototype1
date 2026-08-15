@@ -2,6 +2,7 @@ import { activateGift, activateShrine, inspectNearest, movePlayer, nearestTarget
 import { advanceTutorial, tutorialObjective, tutorialTarget } from './domain/tutorial';
 import { memoryProgress, ROAD_HOME } from './domain/memory';
 import { hasReachedEnding, memoryChapter, sanctuaryProgress } from './domain/memory-arc';
+import { storyFor } from './domain/story';
 import type { Appearance, CatalogEntry, Character, GameState, InteractionResult, QuirkId } from './domain/types';
 import { SEED_NAMES, distance } from './domain/world';
 import type { createSaveStore } from './persistence/save-store';
@@ -198,10 +199,11 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   }
 
   function showCurrentStoryStep() {
+    const story = storyFor(state);
     if (state.tutorial?.step === 'clue') {
-      panels.showMemoryBeat('A clue returned', ROAD_HOME.firstClue(state.character.name), 'Finish the memory', finishClue);
+      panels.showMemoryBeat('A clue returned', story.firstClue, 'Finish the memory', finishClue, story.chapters.sign?.title);
     } else if (state.tutorial?.step === 'recovered') {
-      panels.showMemoryBeat('Memory recovered', ROAD_HOME.recovered(state.character.name), 'Bring it home', finishRecoveredMemory);
+      panels.showMemoryBeat('Memory recovered', story.recovered, 'Bring it home', finishRecoveredMemory, story.chapters.sign?.title);
     }
   }
 
@@ -214,7 +216,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   function showPendingMemoryChapter() {
     if (!state.pendingChapter) return;
-    const chapter = memoryChapter(state.pendingChapter);
+    const chapter = storyFor(state).chapters[state.pendingChapter] ?? memoryChapter(state.pendingChapter);
     if (!chapter) {
       finishMemoryChapter();
       return;
@@ -233,7 +235,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   function showPendingEnding() {
     if (!hasReachedEnding(state)) return;
     clearToast();
-    panels.showEnding(state.character, finishEnding);
+    panels.showEnding(state.character, storyFor(state).ending, finishEnding);
   }
 
   function useGift() {
@@ -294,7 +296,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
         }
         apply(result);
         if (result.changed && before === 'plant') {
-          if (isRoadHomeRoute) panels.showMemoryChoice(state.character, rememberMemory);
+          if (isRoadHomeRoute) panels.showMemoryChoice(state.character, rememberMemory, storyFor(state));
           else panels.showPersonalize(state.character);
         }
         if (result.changed && !isTutorial()) showPendingEnding();
@@ -369,7 +371,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     if (state.pendingChapter) showPendingMemoryChapter();
     else if (hasReachedEnding(state)) showPendingEnding();
     else if (state.tutorial?.step === 'clue' || state.tutorial?.step === 'recovered') showCurrentStoryStep();
-    else if (state.tutorial?.step === 'remember') panels.showMemoryChoice(character, rememberMemory);
+    else if (state.tutorial?.step === 'remember') panels.showMemoryChoice(character, rememberMemory, storyFor(state));
     else if (state.tutorial?.step === 'personalize') panels.showPersonalize(character);
     else panels.clear();
     toast(`${character.name} steps into this memory.`);
@@ -423,9 +425,9 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   store.save(state);
   if (state.pendingChapter) showPendingMemoryChapter();
   else if (hasReachedEnding(state)) showPendingEnding();
-  else if (state.tutorial?.step === 'wake') panels.showWake(state.character, wake, state.tutorial.targetAnomalyId === 'sign');
+  else if (state.tutorial?.step === 'wake') panels.showWake(state.character, wake, state.tutorial.targetAnomalyId === 'sign', storyFor(state));
   else if (state.tutorial?.step === 'clue' || state.tutorial?.step === 'recovered') showCurrentStoryStep();
-  else if (state.tutorial?.step === 'remember') panels.showMemoryChoice(state.character, rememberMemory);
+  else if (state.tutorial?.step === 'remember') panels.showMemoryChoice(state.character, rememberMemory, storyFor(state));
   else if (state.tutorial?.step === 'personalize') panels.showPersonalize(state.character);
   else panels.clear();
   frameId = requestAnimationFrame(frame);

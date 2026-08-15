@@ -78,6 +78,7 @@ test('lets the player decide what the memory means and keeps it in the journal',
   await page.getByRole('button', { name: 'A family they chose' }).click();
   await expect(page.getByRole('heading', { name: 'Make them yours' })).toBeVisible();
   await page.getByRole('button', { name: 'Keep exploring' }).click();
+  await expect(page.getByText('1 memory recovered')).toBeVisible();
   await page.getByTestId('journal-button').click();
 
   await expect(page.getByRole('heading', { name: 'Field journal' })).toBeVisible();

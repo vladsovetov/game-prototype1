@@ -55,7 +55,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card memory-choice-card';
-    section.innerHTML = `<span class="eyebrow">One truth is still unwritten</span><h2></h2><p class="soft-copy">The memory cannot answer this part. Your answer becomes part of who <b data-name></b> is.</p><div class="memory-choices"></div><button class="text-button" data-custom>Write my own answer →</button>`;
+    section.innerHTML = `<span class="eyebrow">One truth is still unwritten</span><h2></h2><p class="soft-copy">Planting the Waypost made this memory visible in your sanctuary. The memory cannot answer this last part. Your answer becomes part of who <b data-name></b> is.</p><div class="memory-choices"></div><button class="text-button" data-custom>Write my own answer →</button>`;
     (section.querySelector('h2') as HTMLElement).textContent = ROAD_HOME.question;
     (section.querySelector('[data-name]') as HTMLElement).textContent = character.name;
     const choices = ['A family they chose', 'A patient friend', 'They kept it burning for themself'];

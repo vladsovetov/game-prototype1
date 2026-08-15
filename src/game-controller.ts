@@ -94,9 +94,10 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       return;
     }
 
-    hud.innerHTML = `<div class="hud-top"><button class="hud-card identity" data-testid="character-button" aria-label="Your companion"><span class="identity-mark">✦</span><span><strong data-testid="player-name"></strong><small></small></span></button><div class="hud-actions"><button data-testid="journal-button" aria-label="Field journal"><span>J</span><small>Journal</small></button><button data-testid="help-button" aria-label="Help"><span>?</span><small>Help</small></button></div></div><div class="prompt"><span class="key">F</span> Gift <i></i><span class="key">E</span> Explore <span class="hud-meta"></span></div>`;
+    hud.innerHTML = `<div class="hud-top"><button class="hud-card identity" data-testid="character-button" aria-label="Your companion"><span class="identity-mark">✦</span><span><strong data-testid="player-name"></strong><small></small><em class="memory-count"></em></span></button><div class="hud-actions"><button data-testid="journal-button" aria-label="Field journal"><span>J</span><small>Journal</small></button><button data-testid="help-button" aria-label="Help"><span>?</span><small>Help</small></button></div></div><div class="prompt"><span class="key">F</span> Gift <i></i><span class="key">E</span> Explore <span class="hud-meta"></span></div>`;
     (hud.querySelector('[data-testid=player-name]') as HTMLElement).textContent = state.character.name;
     (hud.querySelector('.identity small') as HTMLElement).textContent = state.borrowedGift ? `carrying ${state.borrowedGift}` : state.character.gift.name;
+    (hud.querySelector('.memory-count') as HTMLElement).textContent = state.rewarded.length ? `${state.rewarded.length} ${state.rewarded.length === 1 ? 'memory' : 'memories'} recovered` : '';
     (hud.querySelector('.hud-meta') as HTMLElement).textContent = state.seeds.length ? `${state.seeds.length} seed${state.seeds.length === 1 ? '' : 's'}` : '';
     hud.querySelector('[data-testid=character-button]')?.addEventListener('click', () => panels.showCharacter(state.character));
     hud.querySelector('[data-testid=journal-button]')?.addEventListener('click', () => panels.showJournal(state));

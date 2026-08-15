@@ -156,6 +156,7 @@ textarea { min-height: 180px; resize: vertical; font: 13px/1.55 ui-monospace, SF
 .identity-mark { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; color: #7b5828; background: var(--gold); }
 .identity strong { display: block; font: 600 17px "Iowan Old Style", Georgia, serif; }
 .identity small { color: var(--ink-soft); text-transform: capitalize; }
+.memory-count { display: block; margin-top: 2px; color: #8a642e; font-size: 9px; font-style: normal; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
 .hud-actions { display: flex; gap: 7px; pointer-events: auto; }
 .hud-actions button { min-width: 58px; height: 50px; border: 1px solid #ffffffa0; border-radius: 14px 4px 14px 4px; color: var(--ink); background: rgba(255, 249, 233, .9); box-shadow: 0 8px 24px var(--shadow); }
 .hud-actions span { display: block; font: 750 13px ui-monospace, monospace; }

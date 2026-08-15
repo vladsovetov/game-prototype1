@@ -4,7 +4,7 @@ import { memoryProgress, ROAD_HOME } from './domain/memory';
 import { hasReachedEnding, memoryChapter, sanctuaryProgress } from './domain/memory-arc';
 import { storyFor } from './domain/story';
 import { prepareNewRun } from './domain/run';
-import type { Appearance, CatalogEntry, Character, GameState, InteractionResult, QuirkId } from './domain/types';
+import type { Appearance, CatalogEntry, Character, ContractId, GameState, GiftId, InteractionResult, QuirkId, RefugeProjectId } from './domain/types';
 import { SEED_NAMES, distance } from './domain/world';
 import type { createSaveStore } from './persistence/save-store';
 import type { createCanvasRenderer } from './ui/canvas-renderer';
@@ -15,6 +15,8 @@ import { equipWearable } from './domain/equipment';
 import { gearForDirection } from './domain/equipment';
 import type { WearableId } from './domain/types';
 import { movementPose } from './ui/canvas-renderer';
+import { applyWorkAction, buildRefugeProject, chooseOptionalLead, completeExpedition, expeditionMetaFor, expeditionTarget, startExpedition } from './domain/expedition';
+import { randomSeed } from './domain/random';
 
 type Renderer = ReturnType<typeof createCanvasRenderer>;
 type Panels = ReturnType<typeof createPanels>;
@@ -23,7 +25,7 @@ type LocalWriter = ReturnType<typeof createLocalStoryWriter>;
 
 const PHYSICAL_GAME_KEYS: Readonly<Record<string, string>> = {
   KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd',
-  KeyF: 'f', KeyE: 'e', KeyJ: 'j', KeyC: 'c',
+  KeyF: 'f', KeyE: 'e', KeyJ: 'j', KeyC: 'c', KeyK: 'k',
 };
 const MOVEMENT_KEYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright']);
 
@@ -127,14 +129,29 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       return;
     }
 
-    hud.innerHTML = `<div class="hud-top"><button class="hud-card identity" data-testid="character-button" aria-label="Ваш супутник"><span class="identity-mark">✦</span><span><strong data-testid="player-name"></strong><small></small><em class="memory-count"></em></span></button><div class="hud-actions"><button data-testid="journal-button" aria-label="Польовий щоденник"><span>J</span><small>Щоденник</small></button><button data-testid="help-button" aria-label="Довідка"><span>?</span><small>Довідка</small></button></div></div><div class="prompt"><span class="key">F</span> Інструмент <i></i><span class="key">E</span> Дослідити <span class="hud-meta"></span></div>`;
+    const run=state.expedition;
+    hud.innerHTML = `<div class="hud-top"><button class="hud-card identity" data-testid="character-button" aria-label="Ваш супутник"><span class="identity-mark">✦</span><span><strong data-testid="player-name"></strong><small></small><em class="memory-count"></em></span></button><div class="hud-actions"><button data-testid="contracts-button" aria-label="Дошка експедицій"><span>K</span><small>Експедиції</small></button><button data-testid="journal-button" aria-label="Польовий щоденник"><span>J</span><small>Щоденник</small></button><button data-testid="help-button" aria-label="Довідка"><span>?</span><small>Довідка</small></button></div></div><div class="expedition-objective" data-expedition-objective></div><div class="prompt"><span class="key">F</span> <span data-primary-label>Інструмент</span> <i></i><span class="key">E</span> <span data-secondary-label>Дослідити</span> <span class="hud-meta"></span></div>`;
     (hud.querySelector('[data-testid=player-name]') as HTMLElement).textContent = state.character.name;
     (hud.querySelector('.identity small') as HTMLElement).textContent = state.borrowedGift ? `позичено: ${GIFTS[state.borrowedGift].name}` : state.character.gift.name;
     const progress = sanctuaryProgress(state);
     (hud.querySelector('.memory-count') as HTMLElement).textContent = state.endingSeen ? 'Історію завершено' : `${progress.planted} / ${progress.required} спогадів посаджено`;
     (hud.querySelector('.hud-meta') as HTMLElement).textContent = state.seeds.length ? `Спогадів у таці: ${state.seeds.length}` : '';
+    const meta=expeditionMetaFor(state);
+    if(run){
+      const requiredDone=Math.min(run.completed.length,run.requiredTotal);const objective=hud.querySelector<HTMLElement>('[data-expedition-objective]')!;
+      objective.innerHTML=`<span class="eyebrow">ЕКСПЕДИЦІЯ · ${requiredDone}/${run.requiredTotal}</span><strong></strong><small></small><div class="pressure-meter"><i></i></div>`;
+      objective.querySelector('strong')!.textContent=run.status==='returning'?'Поверніться до воріт Притулку':run.status==='decision'?'Вирішіть, чи йти далі':`Прямуйте до наступної робочої точки`;
+      objective.querySelector('small')!.textContent=`У наплічнику: ${run.supplies} припасів · ${run.insight} знань · погода ${run.pressure}`;
+      (objective.querySelector('.pressure-meter i') as HTMLElement).style.width=`${Math.min(100,run.pressure*12)}%`;
+      (hud.querySelector('[data-primary-label]') as HTMLElement).textContent=run.status==='active'?'Виконати роботу':'Інструмент';
+      (hud.querySelector('[data-secondary-label]') as HTMLElement).textContent=run.status==='returning'?'Завершити експедицію':'Дослідити';
+    }else{
+      hud.querySelector('[data-expedition-objective]')?.remove();
+      (hud.querySelector('.hud-meta') as HTMLElement).textContent=`${meta.supplies} припасів · ${meta.insight} знань`;
+    }
     hud.querySelector('[data-testid=character-button]')?.addEventListener('click', () => panels.showCharacter(state));
     hud.querySelector('[data-testid=journal-button]')?.addEventListener('click', () => panels.showJournal(state));
+    hud.querySelector('[data-testid=contracts-button]')?.addEventListener('click', () => panels.showContractBoard(state));
     hud.querySelector('[data-testid=help-button]')?.addEventListener('click', panels.showHelp);
     if (isTouchLayout()) renderTouchControls(false);
   }
@@ -172,7 +189,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
     const step = state.tutorial?.step;
     if (!isTutorial()) {
-      const gift = addAction('Інструмент', 'Застосувати інструмент', '✦', useGift, true);
+      const gift = addAction(state.expedition?.status==='active'?'Робота':'Інструмент', 'Застосувати інструмент', '✦', useGift, true);
       gift.dataset.testid = 'touch-primary-action';
       addAction('Дослідити', 'Дослідити поруч', '◌', interact);
     } else if (step === 'gift') {
@@ -259,6 +276,10 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   }
 
   function useGift() {
+    if(!isTutorial()&&state.expedition?.status==='active'){
+      if(!expeditionTarget(state)||distance(state.player,expeditionTarget(state)!)>165){toast('Ідіть за золотими вогниками до робочої точки.');return}
+      panels.showWorkChoices(state,performExpeditionWork);return;
+    }
     const before = state.tutorial?.step;
     const targetId = state.tutorial?.targetAnomalyId;
     const nearby = nearestTarget(state);
@@ -284,7 +305,20 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     showPendingMemoryChapter();
   }
 
+  function performExpeditionWork(tool:GiftId){
+    const worked=applyWorkAction(state,tool);state=worked.state;panels.clear();saveAndRefresh();toast(worked.message);
+    if(worked.ok&&state.expedition?.status==='decision')panels.showExpeditionDecision(state,decideExpedition);
+  }
+
+  function decideExpedition(accept:boolean){
+    const decision=chooseOptionalLead(state,accept);state=decision.state;panels.clear();saveAndRefresh();toast(decision.message);
+  }
+
   function interact() {
+    if(!isTutorial()&&state.expedition?.status==='returning'){
+      const target=expeditionTarget(state);
+      if(target&&distance(state.player,target)<=185){const completed=completeExpedition(state);state=completed.state;saveAndRefresh();toast(completed.message);if(completed.report)panels.showExpeditionDebrief(completed.report,panels.clear);return}
+    }
     const target = nearestTarget(state);
     if (!target || target.distance > 160) {
       apply(inspectNearest(state));
@@ -336,6 +370,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     if (key === 'e' && (!isTutorial() || state.tutorial?.step === 'resonate' || state.tutorial?.step === 'plant')) interact();
     if (!isTutorial() && key === 'j') panels.showJournal(state);
     if (!isTutorial() && key === 'c') panels.showCharacter(state);
+    if (!isTutorial() && key === 'k') panels.showContractBoard(state);
   }
 
   function keyup(event: KeyboardEvent) { keys.delete(gameKey(event)); }
@@ -423,7 +458,16 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     state = advanceTutorial(state, 'personalization-dismissed');
     panels.clear();
     saveAndRefresh();
-    toast('Уся галявина відкрита. Таймера немає.');
+    toast('Уся галявина відкрита. Натисніть K, щоб обрати першу експедицію.');
+  }
+
+  function startContract(contractId:ContractId,loadout:[GiftId,GiftId]){
+    const started=startExpedition(state,contractId,loadout,randomSeed()||1);state=started.state;
+    if(started.ok)panels.clear();saveAndRefresh();toast(started.message);
+  }
+
+  function buildProject(projectId:RefugeProjectId){
+    const built=buildRefugeProject(state,projectId);state=built.state;saveAndRefresh();toast(built.message);panels.showContractBoard(state);
   }
 
   function rememberMemory(answer: string) {
@@ -514,6 +558,8 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     updatePersonality,
     updateAppearance,
     updateEquipment,
+    startContract,
+    buildProject,
     finishPersonalization,
     beginNewTale,
     showWriterStatus,

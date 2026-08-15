@@ -59,5 +59,6 @@ export function localizeState(state: GameState): GameState {
   const seed = state.worldSeed ?? state.storyArc?.seed ?? 0;
   const gear = state.wardrobe && state.equipped ? { wardrobe: state.wardrobe, equipped: state.equipped } : gearForDirection(state.storyArc?.direction ?? createRunDirection(seed));
   const memoryDetails = state.memoryDetails ? Object.fromEntries(Object.entries(state.memoryDetails).map(([key,value])=>[key,LEGACY_MEMORY_DETAILS[value]??value])) : state.memoryDetails;
-  return { ...state, ...gear, character, memoryDetails, discoveries:state.discoveries.map((item)=>LEGACY_DISCOVERIES[item]??item), storyArc:storyIsEnglish(state)?createWovenStory(character,seed):state.storyArc };
+  const expeditionMeta=state.expeditionMeta??{completedContracts:0,supplies:0,insight:0,rareFinds:[],builtProjects:[],reports:[]};
+  return { ...state, ...gear, character, memoryDetails, expeditionMeta, discoveries:state.discoveries.map((item)=>LEGACY_DISCOVERIES[item]??item), storyArc:storyIsEnglish(state)?createWovenStory(character,seed):state.storyArc };
 }

@@ -7,6 +7,9 @@ import { storyFor } from '../domain/story';
 import { SEED_NAMES, worldFor } from '../domain/world';
 import type { Appearance, Character, GameState, QuirkId, StoryArc, WearableId } from '../domain/types';
 import type { WriterStatus } from '../story/local-story-writer';
+import { CONTRACTS, REFUGE_PROJECTS, availableWorkActions, expeditionMetaFor, expeditionRegionName } from '../domain/expedition';
+import { GIFTS } from '../domain/catalog';
+import type { ContractId, ExpeditionReport, GiftId, RefugeProjectId } from '../domain/types';
 
 export interface PanelActions {
   onImport(character: Character): void;
@@ -17,6 +20,8 @@ export interface PanelActions {
   onPersonalizationDone(): void;
   onLocalStory(): void;
   onEquip(id: WearableId): void;
+  onStartExpedition(id: ContractId, loadout: [GiftId, GiftId]): void;
+  onBuildProject(id: RefugeProjectId): void;
 }
 
 export function createPanels(root: HTMLElement, actions: PanelActions) {
@@ -339,6 +344,20 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     summary.className = 'soft-copy';
     summary.textContent = `Відгуків збережено: ${state.discoveries.length} · Зернин чекає: ${state.seeds.length} · Посаджено: ${Object.keys(state.plantings).length}`;
     c.append(summary);
+    const expeditionMeta=expeditionMetaFor(state);
+    if(expeditionMeta.reports.length){
+      const reports=document.createElement('section');
+      reports.className='expedition-reports';
+      const title=document.createElement('h3'); title.textContent='Звіти експедицій'; reports.append(title);
+      for(const report of expeditionMeta.reports.slice(0,5)){
+        const article=document.createElement('article'); article.className='expedition-report';
+        const heading=document.createElement('strong'); heading.textContent=report.title;
+        const copy=document.createElement('p'); copy.textContent=report.summary;
+        const loot=document.createElement('small'); loot.textContent=`${report.securedSupplies} припасів · ${report.securedInsight} знань${report.rareFinds.length?` · ${report.rareFinds.join(', ')}`:''}`;
+        article.append(heading,copy,loot); reports.append(article);
+      }
+      c.append(reports);
+    }
     for (const id of state.rewarded) {
       const chapter = arc.chapters[id] ?? memoryChapter(id);
       if (!chapter) continue;
@@ -402,6 +421,65 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     }
   }
 
+  function showContractBoard(state:GameState){
+    const c=shell('Дошка експедицій');
+    const meta=expeditionMetaFor(state);
+    c.innerHTML=`<div class="contract-intro"><div><span class="eyebrow">ПОВТОРЮВАНІ МАРШРУТИ · ${expeditionRegionName(state)}</span><p>Оберіть контракт і рівно два інструменти. Різні інструменти дають інші способи виконання та іншу здобич.</p></div><div class="resource-strip"><span><b>${meta.supplies}</b> припасів</span><span><b>${meta.insight}</b> знань</span><span><b>${meta.rareFinds.length}</b> рідкісних</span></div></div><div class="loadout-title"><strong>Ваш польовий набір</strong><small>обрано <b data-loadout-count>0</b> / 2</small></div><div class="loadout-grid"></div><div class="contract-grid"></div><section class="refuge-projects"><div class="section-heading"><div><span class="eyebrow">ПРИТУЛОК ЗМІНЮЄТЬСЯ</span><h3>Проєкти майстерні</h3></div><small>Лише вигляд і колекція — жодної сили</small></div><div class="project-grid"></div></section>`;
+    const selected:GiftId[]=[];
+    const tools=c.querySelector<HTMLElement>('.loadout-grid')!;
+    const count=c.querySelector<HTMLElement>('[data-loadout-count]')!;
+    const contracts=c.querySelector<HTMLElement>('.contract-grid')!;
+    const refresh=()=>{
+      count.textContent=String(selected.length);
+      tools.querySelectorAll<HTMLButtonElement>('[data-tool]').forEach((button)=>button.classList.toggle('selected',selected.includes(button.dataset.tool as GiftId)));
+      contracts.querySelectorAll<HTMLButtonElement>('[data-start]').forEach((button)=>button.disabled=selected.length!==2||!!state.expedition);
+    };
+    for(const tool of Object.values(GIFTS)){
+      const button=document.createElement('button');button.className='loadout-tool';button.dataset.tool=tool.id;
+      button.innerHTML=`<span aria-hidden="true">${tool.id==='reveal'?'◐':tool.id==='grow'?'✂':tool.id==='echo'?'♬':'⌁'}</span><strong></strong><small></small>`;
+      button.querySelector('strong')!.textContent=tool.name;button.querySelector('small')!.textContent=tool.description;
+      button.addEventListener('click',()=>{const index=selected.indexOf(tool.id);if(index>=0)selected.splice(index,1);else if(selected.length<2)selected.push(tool.id);else{selected.shift();selected.push(tool.id)}refresh()});tools.append(button);
+    }
+    for(const contract of Object.values(CONTRACTS)){
+      const article=document.createElement('article');article.className='contract-card';
+      article.innerHTML=`<div class="contract-mark">${contract.id==='water-route'?'≈':contract.id==='signal-line'?'⌁':'△'}</div><span class="eyebrow">3 РОБОТИ · ВИБІР РИЗИКУ</span><h3></h3><p></p><div class="contract-reward">Нагорода: припаси, знання, шанс рідкісної знахідки</div><button class="button primary" data-start>Вирушити <span>→</span></button>`;
+      article.querySelector('h3')!.textContent=contract.name;article.querySelector('p')!.textContent=contract.brief;
+      article.querySelector('button')!.addEventListener('click',()=>actions.onStartExpedition(contract.id,[selected[0]!,selected[1]!]));contracts.append(article);
+    }
+    const projects=c.querySelector<HTMLElement>('.project-grid')!;
+    for(const project of Object.values(REFUGE_PROJECTS)){
+      const built=meta.builtProjects.includes(project.id);const affordable=meta.supplies>=project.cost.supplies&&meta.insight>=project.cost.insight&&meta.rareFinds.length>=project.cost.rare;
+      const card=document.createElement('article');card.className=`project-card${built?' built':''}`;
+      card.innerHTML=`<span class="project-icon">${project.id==='workshop'?'⚒':project.id==='archive'?'▤':'⌂'}</span><div><strong></strong><p></p><small></small></div><button class="button ghost-light"></button>`;
+      card.querySelector('strong')!.textContent=project.name;card.querySelector('p')!.textContent=project.description;
+      card.querySelector('small')!.textContent=`${project.cost.supplies} припасів · ${project.cost.insight} знань · ${project.cost.rare} рідкісних`;
+      const button=card.querySelector('button')!;button.textContent=built?'Збудовано':affordable?'Збудувати':'Ще бракує';button.disabled=built||!affordable;button.addEventListener('click',()=>actions.onBuildProject(project.id));projects.append(card);
+    }
+    refresh();
+  }
+
+  function showWorkChoices(state:GameState,onChoose:(tool:GiftId)=>void){
+    const actionsAvailable=availableWorkActions(state);const c=shell('Як виконати роботу?',true);
+    c.innerHTML=`<p class="soft-copy">Обидва способи працюють. Вибір змінює здобич, знання й тиск погоди.</p><div class="work-choice-grid"></div>`;
+    const grid=c.querySelector<HTMLElement>('.work-choice-grid')!;
+    for(const action of actionsAvailable){const button=document.createElement('button');button.className='work-choice';button.innerHTML=`<span class="work-tool"></span><strong></strong><p></p><small></small>`;button.querySelector('.work-tool')!.textContent=GIFTS[action.tool].name;button.querySelector('strong')!.textContent=action.title;button.querySelector('p')!.textContent=action.outcome;button.querySelector('small')!.textContent=`+${action.supplies} припасів · +${action.insight} знань · погода +${action.pressure}`;button.addEventListener('click',()=>onChoose(action.tool));grid.append(button)}
+  }
+
+  function showExpeditionDecision(state:GameState,onChoose:(accept:boolean)=>void){
+    const run=state.expedition!;clear();const section=document.createElement('section');section.className='story-card expedition-decision';
+    section.innerHTML=`<span class="eyebrow">ОБОВ’ЯЗКОВУ РОБОТУ ЗАВЕРШЕНО</span><h2>Повертатися чи піти за слабким сигналом?</h2><p>Зараз здобич у безпеці. Дальня точка гарантує рідкісну знахідку, але погода стане сильнішою й може забрати частину припасів.</p><div class="decision-stakes"><span><b>${run.supplies}</b> припасів у наплічнику</span><span><b>${run.pressure}</b> тиск погоди</span></div><div class="choice-row"><button class="button primary" data-push>Піти далі за знахідкою →</button><button class="button ghost-light" data-return>Повернутися зараз</button></div>`;
+    section.querySelector('[data-push]')!.addEventListener('click',()=>onChoose(true));section.querySelector('[data-return]')!.addEventListener('click',()=>onChoose(false));root.append(section);
+  }
+
+  function showExpeditionDebrief(report:ExpeditionReport,onContinue:()=>void){
+    clear();const section=document.createElement('section');section.className='story-card expedition-debrief';
+    section.innerHTML=`<span class="eyebrow">ЗВІТ ЗБЕРЕЖЕНО У ЩОДЕННИКУ</span><h2></h2><p class="debrief-story"></p><div class="debrief-loot"><span><b></b> припасів</span><span><b></b> знань</span><span><b></b> рідкісних</span></div><small class="weather-result"></small><button class="button primary">Повернутися до Притулку</button>`;
+    section.querySelector('h2')!.textContent=report.title;section.querySelector('.debrief-story')!.textContent=report.summary;
+    const values=section.querySelectorAll<HTMLElement>('.debrief-loot b');values[0]!.textContent=String(report.securedSupplies);values[1]!.textContent=String(report.securedInsight);values[2]!.textContent=String(report.rareFinds.length);
+    section.querySelector('.weather-result')!.textContent=report.pressure>3?`Через погоду частина незакріплених припасів лишилася в полі. Прогрес не втрачено.`:'Погода дозволила принести всю здобич.';
+    section.querySelector('button')!.addEventListener('click',onContinue);root.append(section);
+  }
+
   function showHelp() {
     const c = shell('Як мандрувати', true);
     c.innerHTML = `<div class="controls keyboard-help"><b>WASD / СТРІЛКИ</b><span>Рух</span><b>F</b><span>Застосувати поточний інструмент біля зламаного об’єкта</span><b>E</b><span>Дослідити, взяти інструмент або зберегти знахідку</span><b>J</b><span>Відкрити польовий щоденник</span><b>C</b><span>Відкрити персонажа й спорядження</span></div><div class="touch-help"><div class="touch-help-mark">●</div><div><b>Тягніть золотий вогник</b><span>Рухайтеся в будь-якому напрямку. Відпустіть, щоб зупинитися.</span></div><div class="touch-help-mark">✦</div><div><b>Торкніться кнопки інструмента</b><span>Полагодьте або дослідіть те, що поруч.</span></div></div><p class="soft-copy help-note">Вогники лише підказують шлях — таймера немає. Мандруйте скільки захочете.</p><div class="new-tale-note"><span class="eyebrow">Інший початок</span><p>Супутник залишиться, але ця місцевість, її історія та весь прогрес будуть замінені новою випадково створеною оповіддю.</p><button class="button danger">Почати іншу оповідь</button></div>`;
@@ -447,5 +525,5 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     root.append(section);
   }
 
-  return { clear, showWake, showMemoryBeat, showMemoryChapter, showEnding, showMemoryChoice, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp, showStoryLoom };
+  return { clear, showWake, showMemoryBeat, showMemoryChapter, showEnding, showMemoryChoice, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp, showStoryLoom, showContractBoard, showWorkChoices, showExpeditionDecision, showExpeditionDebrief };
 }

@@ -8,7 +8,7 @@ const clone = (state: GameState): GameState => structuredClone(state);
 export function createInitialState(character: Character, worldSeed?: number): GameState {
   const world = worldFor({ worldSeed });
   const gear = gearForDirection(createRunDirection(worldSeed ?? 0));
-  return { version:1, character, player:{x:620,y:420}, ...(worldSeed===undefined?{}:{worldSeed}), anomalies:Object.fromEntries(world.anomalies.map((anomaly)=>[anomaly.id,0])), discoveries:[], seeds:[], plantings:{}, rewarded:[], ...gear, effects:{rootedUntil:0,fragileUntil:0,fadingUntil:0,awakeProps:[]}, lastUpdated:Date.now() };
+  return { version:1, character, player:{x:620,y:420}, ...(worldSeed===undefined?{}:{worldSeed}), anomalies:Object.fromEntries(world.anomalies.map((anomaly)=>[anomaly.id,0])), discoveries:[], seeds:[], plantings:{}, rewarded:[], ...gear, expeditionMeta:{completedContracts:0,supplies:0,insight:0,rareFinds:[],builtProjects:[],reports:[]}, effects:{rootedUntil:0,fragileUntil:0,fadingUntil:0,awakeProps:[]}, lastUpdated:Date.now() };
 }
 export function movePlayer(state:GameState,delta:Point,elapsedMs:number):GameState {
   if(state.effects.rootedUntil>elapsedMs)return state;

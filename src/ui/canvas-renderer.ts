@@ -2,6 +2,7 @@ import { GIFTS, PALETTE_COLORS } from '../domain/catalog';
 import { tutorialTarget } from '../domain/tutorial';
 import type { Facing, GameState, Point } from '../domain/types';
 import { SEED_NAMES, WORLD, worldFor, type WorldLayout } from '../domain/world';
+import { expeditionMetaFor, expeditionTarget } from '../domain/expedition';
 
 export function cameraFor(player: Point, width: number, height: number) {
   return {
@@ -179,6 +180,16 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
       }
       ctx.restore();
     }
+    const projects=stateForRender?expeditionMetaFor(stateForRender).builtProjects:[];
+    if(projects.includes('workshop')){
+      ctx.save();ctx.translate(690,225);ctx.fillStyle='#765940';ctx.fillRect(-65,-28,130,56);ctx.fillStyle='#ead3a0';ctx.fillRect(-55,-38,110,15);ctx.strokeStyle='#4f4136';ctx.lineWidth=7;for(const x of [-48,48]){ctx.beginPath();ctx.moveTo(x,26);ctx.lineTo(x,55);ctx.stroke()}ctx.fillStyle='#f2bd58';ctx.beginPath();ctx.arc(0,-58,12,0,Math.PI*2);ctx.fill();ctx.restore();
+    }
+    if(projects.includes('archive')){
+      ctx.save();ctx.translate(690,405);ctx.fillStyle='#f2e4bc';ctx.strokeStyle='#526b61';ctx.lineWidth=5;ctx.fillRect(-52,-48,104,96);ctx.strokeRect(-52,-48,104,96);ctx.fillStyle='#cb765e';for(const y of [-28,-5,18])ctx.fillRect(-37,y,74,9);ctx.restore();
+    }
+    if(projects.includes('guest-canopy')){
+      ctx.save();ctx.translate(675,575);ctx.strokeStyle='#5d5141';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(-55,35);ctx.lineTo(-45,-45);ctx.moveTo(55,35);ctx.lineTo(45,-45);ctx.stroke();ctx.fillStyle='#d7896f';ctx.beginPath();ctx.moveTo(-72,-37);ctx.quadraticCurveTo(0,-78,72,-37);ctx.lineTo(56,-5);ctx.quadraticCurveTo(0,-34,-56,-5);ctx.closePath();ctx.fill();ctx.restore();
+    }
   }
 
   function drawShrines(state: GameState, now: number, world: WorldLayout) {
@@ -249,7 +260,7 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
   }
 
   function drawTrail(state: GameState, now: number) {
-    const target = tutorialTarget(state);
+    const target = tutorialTarget(state) ?? expeditionTarget(state);
     if (!target) return;
     const dx = target.x - state.player.x;
     const dy = target.y - state.player.y;
@@ -336,6 +347,7 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
     drawTrail(state, now);
     ctx.restore();
     canvas.dataset.facing=pose.facing;canvas.dataset.walking=String(pose.walking);canvas.dataset.equipment=Object.values(state.equipped).sort().join(',');
+    canvas.dataset.refugeProjects=expeditionMetaFor(state).builtProjects.join(',');
     drawAvatar(state, now, pose);
   }
 

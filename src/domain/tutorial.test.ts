@@ -10,6 +10,7 @@ import {
 import { ANOMALIES, SHRINES } from './world';
 import { nearestTarget } from './simulation';
 import { memoryProgress } from './memory';
+import { prepareNewRun } from './run';
 
 describe('progressive tutorial', () => {
   it.each(['echo', 'reveal', 'mend', 'grow'] as const)(
@@ -101,5 +102,12 @@ describe('progressive tutorial', () => {
     const nearest = nearestTarget(state);
     expect(nearest?.type).toBe('plot');
     expect(nearest?.value.id).toBe('plot-1');
+  });
+
+  it('names the generated refuge while guiding the second clue', () => {
+    const state = prepareNewRun(generateCharacter(9), 1234);
+    state.tutorial!.step = 'resonate';
+
+    expect(tutorialObjective(state).title).toContain(state.storyArc!.worldName);
   });
 });

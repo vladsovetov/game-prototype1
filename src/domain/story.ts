@@ -74,7 +74,7 @@ export function createWovenStory(character: Character, seed: number) {
 }
 
 const LEGACY_ARC: StoryArc = {
-  seed: 0, source: 'woven', worldName: 'Lantern Meadow', runMark: 'LEGACY',
+  seed: 0, source: 'woven', worldName: 'Lantern House', runMark: 'LEGACY',
   premise: 'A forgotten road crosses this meadow. Its scattered memories lead toward Lantern House and the truth of its missing keeper.',
   question: 'Who kept the light burning?',
   firstClue: '', recovered: '', chapters: MEMORY_CHAPTERS,

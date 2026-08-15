@@ -14,7 +14,7 @@ export type StoryWorkerRequest = {
   jobId: string;
   character: { name: string; description: string; gift: string; burden: string; quirk: string };
   seed: number;
-};
+} | { type: 'cancel'; jobId: string };
 
 export type StoryWorkerMessage =
   | { type: 'progress'; jobId: string; stage: 'download' | 'read' | 'weave'; progress?: number }

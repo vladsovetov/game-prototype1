@@ -56,4 +56,18 @@ describe('local story writer', () => {
 
     expect(stories).toEqual([100]);
   });
+
+  it('replays current progress when an active writer is reopened', () => {
+    const worker = new FakeWorker();
+    const statuses: WriterStatus[] = [];
+    const writer = createLocalStoryWriter({ workerFactory: () => worker, onStatus: (status) => statuses.push(status), onStory: () => {} });
+    const jobId = writer.start(generateCharacter(4), 99);
+    worker.emit({ type: 'progress', jobId, stage: 'download', progress: .6 });
+    const before = statuses.length;
+
+    writer.start(generateCharacter(4), 99);
+
+    expect(statuses).toHaveLength(before + 1);
+    expect(statuses.at(-1)).toMatchObject({ phase: 'download', progress: .6 });
+  });
 });

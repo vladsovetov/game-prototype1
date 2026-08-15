@@ -9,6 +9,8 @@ export function seededRandom(seed: number) {
   };
 }
 
-export function randomSeed(source: () => number = Math.random) {
-  return Math.floor(source() * 4294967296) >>> 0;
+export function randomSeed(source?: () => number) {
+  if (source) return Math.floor(source() * 4294967296) >>> 0;
+  if (globalThis.crypto?.getRandomValues) return globalThis.crypto.getRandomValues(new Uint32Array(1))[0]!;
+  return Math.floor(Math.random() * 4294967296) >>> 0;
 }

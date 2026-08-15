@@ -24,37 +24,45 @@ export function createLocalStoryWriter(options: WriterOptions) {
   const worker = options.workerFactory();
   let active: { jobId: string; character: Character; seed: number } | undefined;
   let sequence = 0;
+  let currentStatus: WriterStatus = { phase: 'idle', progress: 0 };
+  const updateStatus = (status: WriterStatus) => {
+    currentStatus = status;
+    options.onStatus(status);
+  };
 
   worker.onmessage = (event) => {
     const message = event.data;
     if (!active || message.jobId !== active.jobId) return;
     if (message.type === 'progress') {
-      options.onStatus({ phase: message.stage, progress: Math.max(0, Math.min(1, message.progress ?? 0)) });
+      updateStatus({ phase: message.stage, progress: Math.max(0, Math.min(1, message.progress ?? 0)) });
       return;
     }
     if (message.type === 'error') {
       active = undefined;
-      options.onStatus({ phase: 'error', progress: 0, message: message.message || 'The local writer could not finish.' });
+      updateStatus({ phase: 'error', progress: 0, message: message.message || 'The local writer could not finish.' });
       return;
     }
     const parsed = parseStoryIngredients(message.raw);
     if (!parsed.ok) {
       active = undefined;
-      options.onStatus({ phase: 'error', progress: 0, message: parsed.reason });
+      updateStatus({ phase: 'error', progress: 0, message: parsed.reason });
       return;
     }
     const story = composeStory(active.character, active.seed, parsed.value, 'local-model');
     active = undefined;
     options.onStory(story);
-    options.onStatus({ phase: 'complete', progress: 1, story });
+    updateStatus({ phase: 'complete', progress: 1, story });
   };
 
   return {
     start(character: Character, seed: number) {
-      if (active) return active.jobId;
+      if (active) {
+        options.onStatus(currentStatus);
+        return active.jobId;
+      }
       const jobId = `${seed >>> 0}-${++sequence}`;
       active = { jobId, character, seed: seed >>> 0 };
-      options.onStatus({ phase: 'download', progress: 0 });
+      updateStatus({ phase: 'download', progress: 0 });
       worker.postMessage({
         type: 'generate', jobId, seed: seed >>> 0,
         character: { name: character.name, description: character.description, gift: character.gift.name, burden: character.burden.name, quirk: character.quirk.name },
@@ -62,8 +70,9 @@ export function createLocalStoryWriter(options: WriterOptions) {
       return jobId;
     },
     cancel() {
+      if (active) worker.postMessage({ type: 'cancel', jobId: active.jobId });
       active = undefined;
-      options.onStatus({ phase: 'idle', progress: 0 });
+      updateStatus({ phase: 'idle', progress: 0 });
     },
     destroy() {
       active = undefined;

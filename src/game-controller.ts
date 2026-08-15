@@ -412,7 +412,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     state = advanceTutorial(state, 'memory-shaped');
     saveAndRefresh();
     panels.showPersonalize(state.character);
-    toast('That truth is now part of The Road Home.');
+    toast(`That truth is now part of ${storyFor(state).chapters.sign?.title ?? 'this memory'}.`);
   }
 
   function beginNewTale() {

@@ -1,6 +1,7 @@
 import type { GameState, Point, TutorialStep } from './types';
 import { GIFTS } from './catalog';
 import { distance, worldFor } from './world';
+import { storyFor } from './story';
 
 type TutorialEvent =
   | 'wake'
@@ -97,7 +98,7 @@ export function tutorialObjective(state: GameState): { title: string; action: st
     clue: { title: 'A clue returned.', action: 'Finish the memory' },
     resonate: atResonance
       ? { title: 'This place can lend a restoring Gift.', action: 'Borrow Mend', key: 'E' }
-      : { title: 'The sign says “Lantern House,” but it is broken.', action: `Find ${borrowed[0]!.toUpperCase()}${borrowed.slice(1)}`, key: 'WASD' },
+      : { title: `The sign names “${storyFor(state).worldName},” but it is broken.`, action: `Find ${borrowed[0]!.toUpperCase()}${borrowed.slice(1)}`, key: 'WASD' },
     combine: { title: 'You are carrying Mend.', action: 'Return and restore the sign', key: 'F' },
     recovered: { title: 'The memory is recovered.', action: 'Bring it home' },
     plant: { title: 'The restored Waypost came home with you.', action: 'Plant the Waypost', key: 'E' },

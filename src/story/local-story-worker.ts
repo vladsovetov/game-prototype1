@@ -5,7 +5,8 @@ import type { StoryWorkerMessage, StoryWorkerRequest } from './local-story-proto
 
 const MODEL = 'onnx-community/SmolLM2-135M-Instruct-ONNX';
 type Generator = Awaited<ReturnType<typeof pipeline<'text-generation'>>>;
-let generator: Generator | undefined;
+let generatorPromise: Promise<Generator> | undefined;
+let latestJobId: string | undefined;
 
 function send(message: StoryWorkerMessage) {
   self.postMessage(message);
@@ -20,14 +21,17 @@ function progressValue(event: unknown) {
 }
 
 async function load(jobId: string) {
-  if (generator) return generator;
+  if (generatorPromise) return generatorPromise;
   const options: Parameters<typeof pipeline<'text-generation'>>[2] = {
     dtype: 'q4',
     progress_callback: (event: unknown) => send({ type: 'progress', jobId, stage: 'download', progress: progressValue(event) }),
   };
   if ('gpu' in navigator) options.device = 'webgpu';
-  generator = await pipeline('text-generation', MODEL, options);
-  return generator;
+  generatorPromise = pipeline('text-generation', MODEL, options).catch((error) => {
+    generatorPromise = undefined;
+    throw error;
+  });
+  return generatorPromise;
 }
 
 function generatedText(output: Awaited<ReturnType<Generator>>) {
@@ -43,10 +47,15 @@ function generatedText(output: Awaited<ReturnType<Generator>>) {
 }
 
 self.onmessage = async (event: MessageEvent<StoryWorkerRequest>) => {
-  if (event.data.type !== 'generate') return;
+  if (event.data.type === 'cancel') {
+    if (latestJobId === event.data.jobId) latestJobId = undefined;
+    return;
+  }
   const { jobId, character, seed } = event.data;
+  latestJobId = jobId;
   try {
     const localGenerator = await load(jobId);
+    if (latestJobId !== jobId) return;
     send({ type: 'progress', jobId, stage: 'read', progress: 1 });
     const prompt = [
       { role: 'system', content: 'You write compact, gentle fantasy story ingredients. Return JSON only. Never add powers, rules, HTML, markdown, or extra keys.' },
@@ -54,9 +63,11 @@ self.onmessage = async (event: MessageEvent<StoryWorkerRequest>) => {
     ];
     send({ type: 'progress', jobId, stage: 'weave', progress: .1 });
     const output = await localGenerator(prompt, { max_new_tokens: 180, do_sample: true, temperature: .8, top_p: .9 });
+    if (latestJobId !== jobId) return;
     send({ type: 'progress', jobId, stage: 'weave', progress: 1 });
     send({ type: 'complete', jobId, raw: generatedText(output) });
   } catch (error) {
+    if (latestJobId !== jobId) return;
     send({ type: 'error', jobId, message: error instanceof Error ? error.message : 'The local writer could not finish.' });
   }
 };

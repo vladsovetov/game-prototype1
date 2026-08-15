@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { generateCharacter } from './character';
 import { prepareNewRun } from './run';
-import { createWovenStory, storyFor } from './story';
+import { composeStory, createWovenStory, storyFor, wovenIngredients } from './story';
 import { createInitialState } from './simulation';
+import { createRunDirection } from './run-direction';
 
 describe('procedural story', () => {
   it('recreates one complete story from a character and seed', () => {
@@ -24,6 +25,22 @@ describe('procedural story', () => {
     expect(second.chapters.sign!.story).not.toBe(first.chapters.sign!.story);
     expect(allCopy).toContain(character.name);
     expect(allCopy).toContain(character.gift.name);
+  });
+
+  it('uses genuinely different openings, questions, chapters, and endings for each story frame', () => {
+    const character = generateCharacter(42);
+    const ingredients = wovenIngredients(1234);
+    const stationDirection = { ...createRunDirection(1), frame: 'station' as const };
+    const surveyDirection = { ...createRunDirection(1), frame: 'surveyor' as const };
+    const station = composeStory(character, 1234, ingredients, 'woven', stationDirection);
+    const survey = composeStory(character, 1234, ingredients, 'woven', surveyDirection);
+
+    expect(station.direction?.frame).toBe('station');
+    expect(survey.direction?.frame).toBe('surveyor');
+    expect(survey.premise).not.toBe(station.premise);
+    expect(survey.question).not.toBe(station.question);
+    expect(survey.chapters.sign?.story).not.toBe(station.chapters.sign?.story);
+    expect(survey.ending.story).not.toBe(station.ending.story);
   });
 
   it('starts a new run with persisted world and story identity', () => {

@@ -1,5 +1,6 @@
 import { seededRandom } from './random';
-import type { Character, GameState, StoryArc, StoryChapter } from './types';
+import { createRunDirection, REGION_NAMES, WEATHER_NAMES } from './run-direction';
+import type { Character, GameState, RunDirection, StoryArc, StoryChapter, StoryFrameId } from './types';
 import { LANTERN_HOUSE_ENDING, MEMORY_CHAPTERS } from './memory-arc';
 
 export interface StoryIngredients { place: string; role: string; disaster: string; vow: string; motif: string; truth: string }
@@ -30,35 +31,78 @@ export function modelDirectedIngredients(direction: string, seed: number): Story
 function chapter(id: string, title: string, keepsake: string, story: string): StoryChapter { return { id, title, keepsake, story }; }
 function firstUpper(value: string) { return value[0]?.toLocaleUpperCase('uk-UA') + value.slice(1); }
 
-export function composeStory(character: Character, seed: number, ingredients: StoryIngredients, source: StoryArc['source']): StoryArc {
+interface FrameCopy {
+  mission: string;
+  question: string;
+  thread: string;
+  sign: string;
+  ending: string;
+}
+
+function frameCopy(frame: StoryFrameId, name: string, place: string): FrameCopy {
+  if (frame === 'harvest') return {
+    mission: `${name} має підготувати занедбаний сад до першого за багато років спільного врожаю`,
+    question: `Для кого в місці «${place}» залишили накритим довгий стіл?`,
+    thread: 'Кожна відновлена річ повертає частину рецепта, списку гостей і забутого свята врожаю.',
+    sign: 'Під шаром моху проступає список садових ділянок і стрілка до старої комори.',
+    ending: 'Сад знову збирає за одним столом тих, хто роками жив по різні боки долини.',
+  };
+  if (frame === 'surveyor') return {
+    mission: `${name} вирушає слідами картографа, який не повернувся з останнього вимірювання долини`,
+    question: `Чому картограф зник за день до того, як мав відкрити безпечний шлях?`,
+    thread: 'Кожна полагоджена позначка додає до польової карти координату й коротку нотатку зниклого картографа.',
+    sign: 'Дорожній знак виявляється геодезичною міткою; на звороті вирізано першу координату.',
+    ending: 'Завершена карта показує: картограф залишив маршрут не для слави, а щоб вивести мешканців з небезпеки.',
+  };
+  if (frame === 'water-route') return {
+    mission: `${name} мусить відновити старий водний шлях до поселень, де висохли криниці`,
+    question: `Хто перекрив воду — і від якої небезпеки це мало врятувати долину?`,
+    thread: 'Кожен механізм повертає воду на нову ділянку каналу й відкриває фрагмент запису доглядача шлюзів.',
+    sign: 'Напрямні дошки складаються у схему каналів із позначеним аварійним шлюзом.',
+    ending: 'Вода повертається не старим руслом: зібрані записи дозволяють прокласти безпечніший шлях до кожної оселі.',
+  };
+  return {
+    mission: `${name} має знову відкрити віддалену дорожню станцію до приходу негоди`,
+    question: `Хто залишив ключ від місця «${place}» і чому так і не повернувся по нього?`,
+    thread: 'Кожна відновлена річ повертає частину розкладу, ім’я мандрівника й одну сторінку станційного журналу.',
+    sign: 'На дороговказі проступає старий розклад і стрілка до службового входу станції.',
+    ending: 'Станція засвічує вікна саме тоді, коли на дорозі з’являються перші мандрівники перед бурею.',
+  };
+}
+
+export function composeStory(character: Character, seed: number, ingredients: StoryIngredients, source: StoryArc['source'], suppliedDirection?: RunDirection): StoryArc {
   const name = character.name, place = ingredients.place, motif = ingredients.motif, role = ingredients.role;
+  const direction = suppliedDirection ?? createRunDirection(seed);
+  const frame = frameCopy(direction.frame, name, place);
+  const setting = `${REGION_NAMES[direction.region]}, де панує ${WEATHER_NAMES[direction.weather]}`;
   return {
     seed: seed >>> 0,
     source,
+    direction,
     worldName: place,
     runMark: (seed >>> 0).toString(16).toUpperCase().padStart(8, '0').slice(-6),
-    premise: `${name} прокидається на галявині, що пам’ятає образ «${motif}». Колись місце «${place}» було важливою частиною життя, а роль ${name} там — ${role}. Потім ${ingredients.disaster}, і минуле розсипалося на живі пам’ятки.`,
-    question: `Хто допомагав ${name} берегти цю обітницю?`,
-    firstClue: `Стерті літери повертаються: «${place}». ${name} відчуває обриси давньої обіцянки: ${ingredients.vow}`,
-    recovered: `${name} згадує час, коли ${ingredients.disaster}. Слід, сповнений образу «${motif}», вів до місця «${place}», де хтось досі чекав.`,
+    premise: `${name} прокидається серед місцевості «${setting}». ${frame.mission}. Колись тут працював ${role} і користувався інструментом «${character.gift.name}», але потім ${ingredients.disaster}. ${frame.thread}`,
+    question: frame.question,
+    firstClue: `${frame.sign} Назва повертається: «${place}». Поруч записано обітницю: ${ingredients.vow}`,
+    recovered: `${name} згадує, як ${ingredients.disaster}. Образ «${motif}» був не маренням, а умовним знаком на робочих записах. ${frame.thread}`,
     chapters: {
-      sign: chapter('sign', 'Дорога, що пам’ятала', 'Пригаданий дороговказ', `Відновлений дороговказ указує на місце «${place}». У руках ${name} літери сяють образом «${motif}»: перший доказ, що загублена дорога була справжньою.`),
-      stone: chapter('stone', 'Пісня під каменем', 'Співоче дерево', `Дар «${character.gift.name}» колись пробудив для ${name} стару пісню під підлогою місця «${place}». Мандрівники вивчили її чотири ноти й співали, доки лихо — ${ingredients.disaster} — не стало далеким.`),
-      pool: chapter('pool', 'Вода перед питаннями', 'Шепітливий ставок', `На кожному світанку завдяки турботі ${name} дорожній пил змивали з плащів гостей ще до запитання про їхні імена. Вода й досі шепоче обітницю: «${ingredients.vow}»`),
-      root: chapter('root', 'Незамкнена кімната', 'Маленькі потаємні двері', `За живим корінням чекає вузька кімната з ковдрами й хлібом. Двері в місці «${place}» ніколи не замикали: прихисток мав належати кожному, хто його знайшов.`),
-      bell: chapter('bell', 'Застереження під дощем', 'Дощовий дзвін', `Завдяки ${name} дзвін рухався крізь темряву, поки ${ingredients.disaster}. Кожен удар означав: місце «${place}» досі стоїть, а наступний крок безпечний.`),
-      moth: chapter('moth', 'Листи отримують крила', 'Паперова зграя', `Сотні складених записок вилетіли зі стін місця «${place}» на паперових крилах. Кожна несла загубленим обіцянку ${name}: «${ingredients.vow}» Деякі поверталися з іменами.`),
-      moon: chapter('moon', 'Ім’я для ранку', 'Названий місяць', `Дитина біля вікна не могла заснути. Порожній місяць отримав від ${name} назву на честь образу «${motif}». Вигадане ім’я пережило бурю й стало словом для хоробрості.`),
-      garden: chapter('garden', 'Сад, що відповів', 'Сад ліхтарів', `Коли лампи згасли, теплі квіти, посаджені ${name} край дороги, зберегли відблиск образу «${motif}» — досить, щоб показати одному мандрівникові наступний крок.`),
+      sign: chapter('sign', 'Перша позначка', 'Відновлений покажчик', `${frame.sign} Для ${name} це перший доказ, що завдання в місці «${place}» реальне, а не уламок сну.`),
+      stone: chapter('stone', 'Сигнал під каменем', 'Налаштований резонатор', `Кам’яний резонатор відтворює робочий сигнал із чотирьох нот. ${frame.thread} На його корпусі видряпано образ «${motif}».`),
+      pool: chapter('pool', 'Запущена помпа', 'Відремонтована помпа', `Після ремонту ручна помпа знову подає чисту воду. У журнал потрапляє фраза: «${ingredients.vow}» — і новий фрагмент маршруту.`),
+      root: chapter('root', 'Комора під корінням', 'Відкрита комора', `За розчищеним корінням ${name} знаходить суху комору з мотузками, ковдрами й хлібом. На дверях — практичні записи, потрібні для завдання.`),
+      bell: chapter('bell', 'Сигнал негоди', 'Налаштований дзвін', `Полагоджений сигнальний дзвін попереджає долину, поки насувається лихо — ${ingredients.disaster}. Його ритм збігається з позначками на карті.`),
+      moth: chapter('moth', 'Польові записки', 'Пачка доставлених листів', `Захищені від вологи записки містять імена, дати й короткі свідчення. Разом вони пояснюють, хто чекав у місці «${place}».`),
+      moon: chapter('moon', 'Нічна мітка', 'Запалена сигнальна лампа', `Сигнальна лампа отримує позначку «${motif}» і стає видимою здалеку. Її світло відкриває приховану частину робочої схеми.`),
+      garden: chapter('garden', 'Ділянка повертається до життя', 'Доглянута ділянка', `Обрізані й підв’язані рослини відкривають кам’яну табличку. На ній — остання частина обітниці та шлях до місця «${place}».`),
     },
     ending: {
       title: firstUpper(role),
-      story: `Метою ${name} не було повернення до місця «${place}». Воно було створене для всіх, хто ще в дорозі. Коли ${ingredients.disaster}, спогади стали світлом, що вело інших крізь темряву. ${firstUpper(ingredients.truth)}. Ця галявина виросла з того, що було віддано, а кожна повернена пам’ятка береже давню обітницю: ${ingredients.vow}`,
+      story: `${frame.ending} ${name} розуміє: метою було не просто повернути пам’ять, а завершити конкретну роботу, яку перервало лихо — ${ingredients.disaster}. ${firstUpper(ingredients.truth)}. Усі зібрані записи ведуть до місця «${place}», а образ «${motif}» стає його новим знаком. Давня обітниця лишається правилом для наступних мандрівників: ${ingredients.vow}`,
     },
   };
 }
 
-export function createWovenStory(character: Character, seed: number) { return composeStory(character, seed, wovenIngredients(seed), 'woven'); }
+export function createWovenStory(character: Character, seed: number, direction = createRunDirection(seed)) { return composeStory(character, seed, wovenIngredients(seed), 'woven', direction); }
 
 const LEGACY_ARC: StoryArc = {
   seed: 0, source: 'woven', worldName: 'Дім Ліхтарів', runMark: 'ДАВНЯ',

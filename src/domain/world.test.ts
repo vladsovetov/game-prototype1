@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { randomSeed } from './random';
 import { createWorld } from './world';
+import { createRunDirection } from './run-direction';
 
 describe('seeded meadow', () => {
   it('recreates the same layout from the same seed', () => {
@@ -14,6 +15,20 @@ describe('seeded meadow', () => {
     expect(second.theme.name).not.toBe(first.theme.name);
     expect(second.anomalies.map(({ id, position }) => ({ id, position })))
       .not.toEqual(first.anomalies.map(({ id, position }) => ({ id, position })));
+  });
+
+  it('builds structurally different scenery and routes for each region', () => {
+    const orchard = createWorld(222, { ...createRunDirection(222), region: 'orchard' });
+    const marsh = createWorld(222, { ...createRunDirection(222), region: 'marsh' });
+    const highland = createWorld(222, { ...createRunDirection(222), region: 'highland' });
+    const coast = createWorld(222, { ...createRunDirection(222), region: 'coast' });
+
+    expect(orchard.scenery.map((item) => item.kind)).toEqual(expect.arrayContaining(['fruit-tree', 'fence', 'shed']));
+    expect(marsh.scenery.map((item) => item.kind)).toEqual(expect.arrayContaining(['water', 'reeds', 'boardwalk']));
+    expect(highland.scenery.map((item) => item.kind)).toEqual(expect.arrayContaining(['pine', 'boulder', 'weather-station']));
+    expect(coast.scenery.map((item) => item.kind)).toEqual(expect.arrayContaining(['shore', 'dock', 'boat']));
+    expect(marsh.routes).not.toEqual(orchard.routes);
+    expect(highland.anomalies.map((item) => item.position)).not.toEqual(coast.anomalies.map((item) => item.position));
   });
 
   it('keeps generated discoveries separated from each other and the sanctuary', () => {

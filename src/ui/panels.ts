@@ -1,6 +1,7 @@
 import { AI_CONTEXT_PACKET, validateCharacterCard } from '../domain/character';
 import { BODIES, MARKS, MATERIALS, PALETTES, QUIRKS } from '../domain/catalog';
 import { ROAD_HOME } from '../domain/memory';
+import { memoryChapter, type MemoryChapter } from '../domain/memory-arc';
 import { SEED_NAMES } from '../domain/world';
 import type { Appearance, Character, GameState, QuirkId } from '../domain/types';
 
@@ -53,6 +54,19 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     (section.querySelector('h2') as HTMLElement).textContent = title;
     (section.querySelector('p') as HTMLElement).textContent = copy;
     (section.querySelector('button') as HTMLElement).textContent = action;
+    section.querySelector('button')?.addEventListener('click', onContinue);
+    root.append(section);
+  }
+
+  function showMemoryChapter(chapter: MemoryChapter, recovered: number, onContinue: () => void) {
+    clear();
+    const section = document.createElement('section');
+    section.className = 'story-card memory-chapter-card';
+    section.innerHTML = `<div class="chapter-number"><span>Memory</span><strong></strong></div><span class="eyebrow">Another page returns</span><h2></h2><div class="chapter-keepsake"></div><p class="soft-copy"></p><button class="button primary">Keep this memory</button>`;
+    (section.querySelector('.chapter-number strong') as HTMLElement).textContent = String(recovered).padStart(2, '0');
+    (section.querySelector('h2') as HTMLElement).textContent = chapter.title;
+    (section.querySelector('.chapter-keepsake') as HTMLElement).textContent = chapter.keepsake;
+    (section.querySelector('p') as HTMLElement).textContent = chapter.story;
     section.querySelector('button')?.addEventListener('click', onContinue);
     root.append(section);
   }
@@ -253,18 +267,20 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     summary.className = 'soft-copy';
     summary.textContent = `${state.discoveries.length} reactions remembered · ${state.seeds.length} seeds waiting · ${Object.keys(state.plantings).length} planted`;
     c.append(summary);
-    if (state.rewarded.includes('sign') || state.memoryDetails?.[ROAD_HOME.id]) {
+    for (const id of state.rewarded) {
+      const chapter = memoryChapter(id);
+      if (!chapter) continue;
       const memory = document.createElement('article');
       memory.className = 'journal-memory';
       const eyebrow = document.createElement('span');
       eyebrow.className = 'eyebrow';
       eyebrow.textContent = 'Recovered memory';
       const title = document.createElement('h3');
-      title.textContent = 'The Road Home';
+      title.textContent = chapter.title;
       const story = document.createElement('p');
-      story.textContent = `A sign for Lantern House led ${state.character.name} through a storm toward a light somebody kept burning.`;
+      story.textContent = chapter.story;
       memory.append(eyebrow, title, story);
-      const meaning = state.memoryDetails?.[ROAD_HOME.id];
+      const meaning = id === 'sign' ? state.memoryDetails?.[ROAD_HOME.id] : undefined;
       if (meaning) {
         const answer = document.createElement('blockquote');
         answer.textContent = meaning;
@@ -309,5 +325,5 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     });
   }
 
-  return { clear, showWake, showMemoryBeat, showMemoryChoice, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp };
+  return { clear, showWake, showMemoryBeat, showMemoryChapter, showMemoryChoice, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp };
 }

@@ -1,6 +1,7 @@
 import { activateGift, activateShrine, inspectNearest, movePlayer, nearestTarget, plantSeed, removePlanting } from './domain/simulation';
 import { advanceTutorial, tutorialObjective, tutorialTarget } from './domain/tutorial';
 import { memoryProgress, ROAD_HOME } from './domain/memory';
+import { memoryChapter } from './domain/memory-arc';
 import type { Appearance, CatalogEntry, Character, GameState, InteractionResult, QuirkId } from './domain/types';
 import { SEED_NAMES, distance } from './domain/world';
 import type { createSaveStore } from './persistence/save-store';
@@ -24,6 +25,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   let touchKnob: HTMLElement | undefined;
 
   const isTutorial = () => !!state.tutorial && state.tutorial.step !== 'done';
+  const hasBlockingChapter = () => !!state.pendingChapter;
   const isTouchLayout = () => matchMedia('(max-width: 720px), (pointer: coarse)').matches;
 
   function resetTouch() {
@@ -74,6 +76,11 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   }
 
   function updateHud() {
+    if (hasBlockingChapter()) {
+      hud.replaceChildren();
+      resetTouch();
+      return;
+    }
     if (isTutorial()) {
       if (state.tutorial?.step === 'wake' || state.tutorial?.step === 'clue' || state.tutorial?.step === 'recovered' || state.tutorial?.step === 'remember' || state.tutorial?.step === 'personalize') {
         hud.replaceChildren();
@@ -192,9 +199,28 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     }
   }
 
+  function finishMemoryChapter() {
+    state = { ...state, pendingChapter: undefined };
+    panels.clear();
+    saveAndRefresh();
+  }
+
+  function showPendingMemoryChapter() {
+    if (!state.pendingChapter) return;
+    const chapter = memoryChapter(state.pendingChapter);
+    if (!chapter) {
+      finishMemoryChapter();
+      return;
+    }
+    panels.showMemoryChapter(chapter, state.rewarded.length, finishMemoryChapter);
+  }
+
   function useGift() {
     const before = state.tutorial?.step;
     const targetId = state.tutorial?.targetAnomalyId;
+    const nearby = nearestTarget(state);
+    const recoveredId = nearby?.type === 'anomaly' ? nearby.value.id : undefined;
+    const wasRewarded = recoveredId ? state.rewarded.includes(recoveredId) : false;
     const targetStage = targetId ? state.anomalies[targetId] ?? 0 : undefined;
     const result = activateGift(state, performance.now());
     const nextTargetStage = targetId ? result.state.anomalies[targetId] ?? 0 : undefined;
@@ -207,8 +233,12 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       result.state = advanceTutorial(result.state, 'chain-completed');
       if (!isRoadHomeRoute) result.state = advanceTutorial(result.state, 'memory-read');
     }
+    if (!isTutorial() && result.changed && result.kind === 'seed' && recoveredId && !wasRewarded) {
+      result.state = { ...result.state, pendingChapter: recoveredId };
+    }
     apply(result);
     showCurrentStoryStep();
+    showPendingMemoryChapter();
   }
 
   function interact() {
@@ -254,6 +284,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   function keydown(event: KeyboardEvent) {
     if ((event.target as HTMLElement).matches('textarea,input,select')) return;
+    if (hasBlockingChapter()) return;
     const key = event.key.toLowerCase();
     keys.add(key);
     if (key === 'f' && (!isTutorial() || state.tutorial?.step === 'gift' || state.tutorial?.step === 'combine')) useGift();
@@ -282,7 +313,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     dx += touchVector.x;
     dy += touchVector.y;
     const step = state.tutorial?.step;
-    if (step === 'wake' || step === 'clue' || step === 'recovered' || step === 'remember' || step === 'personalize') {
+    if (step === 'wake' || step === 'clue' || step === 'recovered' || step === 'remember' || step === 'personalize' || hasBlockingChapter()) {
       dx = 0;
       dy = 0;
     }
@@ -313,7 +344,8 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   function replaceCharacter(character: Character) {
     state = { ...state, character };
     saveAndRefresh();
-    if (state.tutorial?.step === 'clue' || state.tutorial?.step === 'recovered') showCurrentStoryStep();
+    if (state.pendingChapter) showPendingMemoryChapter();
+    else if (state.tutorial?.step === 'clue' || state.tutorial?.step === 'recovered') showCurrentStoryStep();
     else if (state.tutorial?.step === 'remember') panels.showMemoryChoice(character, rememberMemory);
     else if (state.tutorial?.step === 'personalize') panels.showPersonalize(character);
     else panels.clear();
@@ -366,7 +398,8 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   addEventListener('resize', resize);
   updateHud();
   store.save(state);
-  if (state.tutorial?.step === 'wake') panels.showWake(state.character, wake, state.tutorial.targetAnomalyId === 'sign');
+  if (state.pendingChapter) showPendingMemoryChapter();
+  else if (state.tutorial?.step === 'wake') panels.showWake(state.character, wake, state.tutorial.targetAnomalyId === 'sign');
   else if (state.tutorial?.step === 'clue' || state.tutorial?.step === 'recovered') showCurrentStoryStep();
   else if (state.tutorial?.step === 'remember') panels.showMemoryChoice(state.character, rememberMemory);
   else if (state.tutorial?.step === 'personalize') panels.showPersonalize(state.character);

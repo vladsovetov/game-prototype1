@@ -1,5 +1,6 @@
 import { activateGift, activateShrine, inspectNearest, movePlayer, nearestTarget, plantSeed, removePlanting } from './domain/simulation';
 import { advanceTutorial, tutorialObjective, tutorialTarget } from './domain/tutorial';
+import { memoryProgress, ROAD_HOME } from './domain/memory';
 import type { Appearance, CatalogEntry, Character, GameState, InteractionResult, QuirkId } from './domain/types';
 import { SEED_NAMES, distance } from './domain/world';
 import type { createSaveStore } from './persistence/save-store';
@@ -74,13 +75,16 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   function updateHud() {
     if (isTutorial()) {
-      if (state.tutorial?.step === 'wake' || state.tutorial?.step === 'personalize') {
+      if (state.tutorial?.step === 'wake' || state.tutorial?.step === 'remember' || state.tutorial?.step === 'personalize') {
         hud.replaceChildren();
         resetTouch();
         return;
       }
       const objective = tutorialObjective(state);
-      hud.innerHTML = `<div class="tutorial-hud" data-testid="tutorial-objective"><span class="eyebrow">A first memory</span><strong></strong><div class="objective-action"><span class="objective-key"></span><span class="objective-copy"></span></div></div>`;
+      const progress = memoryProgress(state);
+      hud.innerHTML = `<div class="tutorial-hud" data-testid="tutorial-objective"><div class="memory-progress"><span class="eyebrow"></span><small></small></div><strong></strong><div class="objective-action"><span class="objective-key"></span><span class="objective-copy"></span></div></div>`;
+      (hud.querySelector('.memory-progress .eyebrow') as HTMLElement).textContent = progress.title;
+      (hud.querySelector('.memory-progress small') as HTMLElement).textContent = `${progress.found} / ${progress.total} CLUES`;
       (hud.querySelector('.tutorial-hud strong') as HTMLElement).textContent = objective.title;
       (hud.querySelector('.objective-copy') as HTMLElement).textContent = objective.action;
       const key = hud.querySelector<HTMLElement>('.objective-key')!;
@@ -173,7 +177,14 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     const nextTargetStage = targetId ? result.state.anomalies[targetId] ?? 0 : undefined;
     if (result.changed && before === 'gift' && targetStage === 0 && nextTargetStage === 1) result.state = advanceTutorial(result.state, 'gift-used');
     if (result.changed && before === 'combine' && targetStage === 1 && nextTargetStage === 2 && result.kind === 'seed') result.state = advanceTutorial(result.state, 'chain-completed');
+    const foundFirstClue = result.changed && before === 'gift' && targetStage === 0 && nextTargetStage === 1;
+    const completedMemory = result.changed && before === 'combine' && targetStage === 1 && nextTargetStage === 2 && result.kind === 'seed';
     apply(result);
+    if (foundFirstClue) {
+      panels.showMemoryBeat('A clue returned', ROAD_HOME.firstClue(state.character.name), 'Finish the memory', panels.clear);
+    } else if (completedMemory) {
+      panels.showMemoryBeat('Memory recovered', ROAD_HOME.recovered(state.character.name), 'Bring it home', panels.clear);
+    }
   }
 
   function interact() {

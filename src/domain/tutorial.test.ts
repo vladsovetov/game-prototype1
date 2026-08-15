@@ -31,11 +31,11 @@ describe('progressive tutorial', () => {
     let state = prepareTutorial(createInitialState(generateCharacter(4)));
     expect(tutorialObjective(state).action).toBe('Wake up');
     state = advanceTutorial(state, 'wake');
-    expect(tutorialObjective(state).action).toContain('Move');
+    expect(tutorialObjective(state).action).toContain('Find the rain-covered sign');
     state = advanceTutorial(state, 'moved');
     expect(tutorialObjective(state).action).toContain(state.character.gift.name);
     state = advanceTutorial(state, 'gift-used');
-    expect(tutorialObjective(state).action).toContain('Follow');
+    expect(tutorialObjective(state).action).toContain('Find Mend');
     state = advanceTutorial(state, 'resonance-borrowed');
     expect(tutorialObjective(state).action).toContain('Return');
     state = advanceTutorial(state, 'chain-completed');

@@ -31,10 +31,22 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card wake-card';
-    section.innerHTML = `<span class="eyebrow">A small beginning</span><h1 data-testid="tutorial-character-name"></h1><p></p><button class="button primary">Wake up <span aria-hidden="true">→</span></button>`;
+    section.innerHTML = `<span class="eyebrow">Your companion</span><h1 data-testid="tutorial-character-name"></h1><p class="wake-purpose"></p><div class="first-memory"><small>FIRST MEMORY</small><strong>The Road Home</strong><span>Recover two clues to learn who was waiting for them.</span></div><button class="button primary">Wake up <span aria-hidden="true">→</span></button>`;
     (section.querySelector('h1') as HTMLElement).textContent = character.name;
-    (section.querySelector('p') as HTMLElement).textContent = character.description;
+    (section.querySelector('.wake-purpose') as HTMLElement).textContent = `Help ${character.name} recover a lost memory—and discover who they were before this meadow.`;
     section.querySelector('button')?.addEventListener('click', onWake);
+    root.append(section);
+  }
+
+  function showMemoryBeat(title: string, copy: string, action: string, onContinue: () => void) {
+    clear();
+    const section = document.createElement('section');
+    section.className = 'story-card memory-beat';
+    section.innerHTML = `<span class="eyebrow">The Road Home</span><h2></h2><p class="soft-copy"></p><button class="button primary"></button>`;
+    (section.querySelector('h2') as HTMLElement).textContent = title;
+    (section.querySelector('p') as HTMLElement).textContent = copy;
+    (section.querySelector('button') as HTMLElement).textContent = action;
+    section.querySelector('button')?.addEventListener('click', onContinue);
     root.append(section);
   }
 
@@ -233,5 +245,5 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     });
   }
 
-  return { clear, showWake, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp };
+  return { clear, showWake, showMemoryBeat, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp };
 }

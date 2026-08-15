@@ -69,13 +69,13 @@ export function tutorialObjective(state: GameState): { title: string; action: st
   const atResonance = step === 'resonate' && target && distance(state.player, target) <= 160;
   const copy: Record<TutorialStep, { title: string; action: string; key?: string }> = {
     wake: { title: `This is ${state.character.name}.`, action: 'Wake up' },
-    move: { title: 'Something is glowing nearby.', action: 'Move toward the light', key: 'WASD' },
-    gift: { title: `The world notices ${state.character.name}.`, action: `Use ${gift}`, key: 'F' },
+    move: { title: 'A lost memory is close.', action: 'Find the rain-covered sign', key: 'WASD' },
+    gift: { title: 'Its words have been erased.', action: `Use ${gift} to uncover them`, key: 'F' },
     resonate: atResonance
-      ? { title: 'The shrine is listening.', action: 'Borrow its Resonance', key: 'E' }
-      : { title: 'It changed—but the memory is unfinished.', action: `Follow the ${borrowed} lights`, key: 'WASD' },
-    combine: { title: `You are carrying ${borrowed}.`, action: 'Return and use it', key: 'F' },
-    plant: { title: 'A Memory Seed followed you home.', action: 'Plant the memory', key: 'E' },
+      ? { title: 'This place can lend a restoring Gift.', action: 'Borrow Mend', key: 'E' }
+      : { title: 'The sign says “Lantern House,” but it is broken.', action: `Find ${borrowed[0]!.toUpperCase()}${borrowed.slice(1)}`, key: 'WASD' },
+    combine: { title: 'You are carrying Mend.', action: 'Return and restore the sign', key: 'F' },
+    plant: { title: 'The restored Waypost came home with you.', action: 'Plant the Waypost', key: 'E' },
     remember: { title: 'The memory is whole.', action: 'Decide what it means' },
     personalize: { title: `${state.character.name} has a first memory.`, action: 'Make them yours' },
     done: { title: 'The meadow is open.', action: 'Follow whatever calls to you' },

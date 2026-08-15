@@ -47,4 +47,3 @@ The opening flow must not use the terms “anomaly,” “Memory Seed,” or une
 - The HUD always shows memory name and clue progress during onboarding.
 - Completing the flow records a meaningful story plus player choice in the journal.
 - Keyboard and touch controls both complete the same story without regression.
-

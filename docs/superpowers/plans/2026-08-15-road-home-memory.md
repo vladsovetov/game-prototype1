@@ -95,4 +95,3 @@
 - [ ] **Step 5: Run `npx playwright test`**, expecting all keyboard, touch, story, persistence, and responsive journeys to pass.
 - [ ] **Step 6: Run `git diff --check`** and inspect the final working tree.
 - [ ] **Step 7: Commit** with `docs: explain the Road Home game loop`.
-

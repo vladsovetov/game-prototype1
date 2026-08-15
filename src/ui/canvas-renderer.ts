@@ -1,6 +1,7 @@
 import { GIFTS, PALETTE_COLORS } from '../domain/catalog';
 import { t } from '../i18n/messages';
 import { anomalyNeedsHeldTool, fieldMarks, minimapFrame, navigationTarget, worldToMinimap } from '../domain/minimap';
+import { relicTintFor } from '../domain/relics';
 import type { BodyId, Facing, GameState, Point, WearableId } from '../domain/types';
 import { SEED_NAMES, WORLD, worldFor, type WorldLayout } from '../domain/world';
 import { expeditionMetaFor } from '../domain/expedition';
@@ -402,7 +403,9 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
     ctx.fill();
 
     const outline='#243f39';ctx.strokeStyle=outline;ctx.lineWidth=5;ctx.lineCap='round';ctx.lineJoin='round';
-    const drawPack=()=>{const packX=side?-side*16:0;ctx.fillStyle='#9b744d';ctx.strokeStyle=outline;ctx.lineWidth=4;ctx.beginPath();ctx.roundRect(packX-20,-25,40,43,9);ctx.fill();ctx.stroke();ctx.fillStyle='#d8af72';ctx.fillRect(packX-13,-18,26,5)};
+    const tint=(id:WearableId,fallback:string)=>relicTintFor(state,id,fallback);
+    const drawPack=()=>{const packX=side?-side*16:0;ctx.fillStyle=tint('canvas-pack','#9b744d');ctx.strokeStyle=outline;ctx.lineWidth=4;ctx.beginPath();ctx.roundRect(packX-20,-25,40,43,9);ctx.fill();ctx.stroke();ctx.fillStyle='#d8af72';ctx.fillRect(packX-13,-18,26,5)};
+    const drawCloak=()=>{ctx.fillStyle=tint('storm-cloak','#4d5f6a');ctx.strokeStyle=outline;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-16,-20);ctx.quadraticCurveTo(side?-side*28:0,8,side?-side*22: -20,28);ctx.lineTo(side?side*22:20,28);ctx.quadraticCurveTo(side?side*28:0,8,16,-20);ctx.closePath();ctx.fill();ctx.stroke()};
 
     // Species silhouettes are deliberately drawn behind the limbs and torso so
     // turning never replaces one creature with the generic body shape.
@@ -419,6 +422,7 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
     }else{
       ctx.strokeStyle=`${accent}aa`;ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,-12,31+Math.sin(now/260)*2,0,Math.PI*2);ctx.stroke();
     }
+    if(state.equipped.outer==='storm-cloak'&&!isBack)drawCloak();
     if(state.equipped.back==='canvas-pack'&&plan.packLayer==='background')drawPack();
 
     const legSwing=swing*.42;const leftFoot={x:-11+legSwing,y:32};const rightFoot={x:11-legSwing,y:32};
@@ -431,7 +435,18 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
     ctx.fillStyle=base;ctx.strokeStyle=outline;ctx.lineWidth=2;for(const hand of [leftHand,rightHand]){ctx.beginPath();ctx.arc(hand.x,hand.y,5,0,Math.PI*2);ctx.fill();ctx.stroke()}
 
     ctx.shadowColor='#1a3e3560';ctx.shadowBlur=12;ctx.shadowOffsetY=5;ctx.fillStyle=base;ctx.strokeStyle=outline;ctx.lineWidth=5;ctx.beginPath();ctx.roundRect(-18,-23,36,42,13);ctx.fill();ctx.stroke();ctx.shadowColor='transparent';
+    if(state.equipped.chest==='route-patches'){
+      ctx.fillStyle=tint('route-patches','#c47a3a');
+      for(const patch of [-8,2,8]){ctx.beginPath();ctx.roundRect(patch-5,-8,9,7,2);ctx.fill();ctx.strokeStyle=outline;ctx.lineWidth=2;ctx.stroke()}
+    }
+    if(state.equipped.outer==='storm-cloak'&&isBack)drawCloak();
     if(state.equipped.back==='canvas-pack'&&plan.packLayer==='foreground')drawPack();
+    if(state.equipped.hand==='signal-lantern'){
+      const lamp=rightHand;
+      ctx.fillStyle=tint('signal-lantern','#d8af72');ctx.strokeStyle=outline;ctx.lineWidth=2;
+      ctx.beginPath();ctx.roundRect(lamp.x-5,lamp.y-14,10,12,2);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#f3e4b6aa';ctx.beginPath();ctx.arc(lamp.x,lamp.y-8,7+Math.sin(now/240)*1.4,0,Math.PI*2);ctx.fill();
+    }
 
     const headX=side*4;ctx.fillStyle=base;ctx.strokeStyle=outline;ctx.lineWidth=5;ctx.beginPath();ctx.arc(headX,-40,22,0,Math.PI*2);ctx.fill();ctx.stroke();
     if(body==='fox'){
@@ -448,12 +463,21 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
     }
     if(isBack){const mark=backHeadMark();ctx.strokeStyle=accent;ctx.lineWidth=4;ctx.beginPath();ctx.arc(headX,-39,11,mark.start,mark.end);ctx.stroke()}
     else{ctx.fillStyle=accent;const eyeY=-43;if(side){ctx.beginPath();ctx.arc(headX+side*9,eyeY,4,0,Math.PI*2);ctx.fill()}else{ctx.beginPath();ctx.arc(headX-8,eyeY,3.5,0,Math.PI*2);ctx.arc(headX+8,eyeY,3.5,0,Math.PI*2);ctx.fill()}}
+    if(state.equipped.face==='wire-glasses'&&!isBack){
+      ctx.strokeStyle=tint('wire-glasses','#5f7a8a');ctx.lineWidth=2;
+      const eyeY=-43;
+      if(side){ctx.beginPath();ctx.arc(headX+side*9,eyeY,6,0,Math.PI*2);ctx.stroke()}
+      else{ctx.beginPath();ctx.arc(headX-8,eyeY,6,0,Math.PI*2);ctx.arc(headX+8,eyeY,6,0,Math.PI*2);ctx.moveTo(headX-2,eyeY);ctx.lineTo(headX+2,eyeY);ctx.stroke()}
+    }
 
     if(state.equipped.back==='canvas-pack'&&!isBack){ctx.strokeStyle='#6f523b';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-12,-18);ctx.quadraticCurveTo(-17,-1,-12,13);ctx.moveTo(12,-18);ctx.quadraticCurveTo(17,-1,12,13);ctx.stroke()}
     if(state.equipped.neck==='wool-scarf'){
       ctx.strokeStyle='#c76255';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(-15,-25);ctx.lineTo(15,-25);ctx.stroke();ctx.lineWidth=6;const tailStart=side?-side*12:(isBack?-6:12);const tailEnd=side?-side*27:(isBack?6:23);ctx.beginPath();ctx.moveTo(tailStart,-24);ctx.lineTo(tailEnd,-8);ctx.stroke();
     }
-    if(state.equipped.head==='rain-hat'){ctx.fillStyle='#d5a94e';ctx.beginPath();ctx.ellipse(headX,-60,29,7,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle=outline;ctx.lineWidth=3;ctx.stroke();ctx.beginPath();ctx.roundRect(headX-16,-77,32,19,8);ctx.fill();ctx.stroke()}
+    if(state.equipped.head==='field-hood'){
+      ctx.fillStyle=tint('field-hood','#6d7a55');ctx.strokeStyle=outline;ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(headX-20,-48);ctx.quadraticCurveTo(headX,-78,headX+20,-48);ctx.quadraticCurveTo(headX, -36, headX-20,-48);ctx.fill();ctx.stroke();
+    }else if(state.equipped.head==='rain-hat'){ctx.fillStyle='#d5a94e';ctx.beginPath();ctx.ellipse(headX,-60,29,7,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle=outline;ctx.lineWidth=3;ctx.stroke();ctx.beginPath();ctx.roundRect(headX-16,-77,32,19,8);ctx.fill();ctx.stroke()}
     ctx.strokeStyle = accent;
     ctx.lineWidth = 2;
     const mark = state.character.appearance.mark;

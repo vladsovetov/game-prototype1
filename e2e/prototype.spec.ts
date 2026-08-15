@@ -67,6 +67,8 @@ test('completes the guided first memory and opens the free meadow', async ({ pag
   await page.getByRole('button', { name: 'Терплячий друг' }).click();
   await expect(page.getByRole('heading', { name: 'Зробіть персонажа своїм' })).toBeVisible();
   await page.getByRole('button', { name: 'Досліджувати далі' }).click();
+  await expect(page.getByTestId('what-next')).toBeVisible();
+  await page.getByRole('button', { name: 'Залишитися на галявині' }).click();
   await expect(page.getByTestId('journal-button')).toBeVisible();
   await page.getByTestId('journal-button').click();
   await expect(page.getByRole('heading', { name: 'Польовий щоденник' })).toBeVisible();

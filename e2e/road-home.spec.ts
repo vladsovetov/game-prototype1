@@ -95,6 +95,8 @@ test('lets the player decide what the memory means and keeps it in the journal',
   await page.getByRole('button', { name: 'Обрана родина' }).click();
   await expect(page.getByRole('heading', { name: 'Зробіть персонажа своїм' })).toBeVisible();
   await page.getByRole('button', { name: 'Досліджувати далі' }).click();
+  await expect(page.getByTestId('what-next')).toBeVisible();
+  await page.getByRole('button', { name: 'Залишитися на галявині' }).click();
   await expect(page.getByText('1 / 6 спогадів посаджено')).toBeVisible();
   await page.getByTestId('journal-button').click();
 

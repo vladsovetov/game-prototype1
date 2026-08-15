@@ -17,6 +17,10 @@ import { gearForDirection } from './domain/equipment';
 import type { WearableId } from './domain/types';
 import { movementPose } from './ui/canvas-renderer';
 import { CONTRACTS, applyExpeditionNarrative, applyWorkAction, buildRefugeProject, chooseOptionalLead, completeExpedition, expeditionMetaFor, expeditionNarrativeFor, expeditionTarget, startExpedition } from './domain/expedition';
+import { canSpeakRadio, nextRadioRemark, radioDirectorNotes, replaceLastRadio, speakRadio } from './domain/radio';
+import { RELIC_COLORS, RELIC_FORMS, replaceLastRelic } from './domain/relics';
+import { seasonBeatName, seasonDirectorNotes, seasonProgress } from './domain/season';
+import type { RadioRemark, Relic } from './domain/types';
 import { randomSeed } from './domain/random';
 import { t } from './i18n/messages';
 
@@ -50,6 +54,14 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   let pose = movementPose(0, 0, 'down');
   let waypoint: Point | undefined;
   let waypointId: string | undefined;
+  let expeditionWalk = 0;
+  let lastRadioWalk = -999;
+  const radioRoot = document.createElement('aside');
+  radioRoot.className = 'radio-remark';
+  radioRoot.dataset.testid = 'radio-remark';
+  radioRoot.hidden = true;
+  radioRoot.setAttribute('aria-live', 'polite');
+  toastRoot.parentElement?.append(radioRoot);
 
   const isTutorial = () => !!state.tutorial && state.tutorial.step !== 'done';
   const hasBlockingStory = () => !!state.pendingChapter || hasReachedEnding(state);
@@ -107,6 +119,21 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     toastRoot.replaceChildren();
   }
 
+  function renderRadio(remark?: RadioRemark) {
+    if (!remark) {
+      radioRoot.hidden = true;
+      radioRoot.replaceChildren();
+      return;
+    }
+    radioRoot.hidden = false;
+    radioRoot.replaceChildren();
+    const label = document.createElement('small');
+    label.textContent = t('radioLabel');
+    const copy = document.createElement('p');
+    copy.textContent = remark.text;
+    radioRoot.append(label, copy);
+  }
+
   function updateHud() {
     if (hasBlockingStory()) {
       hud.replaceChildren();
@@ -148,7 +175,10 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     (hud.querySelector('[data-testid=player-name]') as HTMLElement).textContent = state.character.name;
     (hud.querySelector('.identity small') as HTMLElement).textContent = state.borrowedGift ? t('borrowed', { gift: GIFTS[state.borrowedGift].name }) : state.character.gift.name;
     const progress = sanctuaryProgress(state);
-    (hud.querySelector('.memory-count') as HTMLElement).textContent = state.endingSeen ? t('storyComplete') : t('memoriesPlanted', { planted: progress.planted, required: progress.required });
+    const season = seasonProgress(state.season);
+    const memoryPart = state.endingSeen ? t('companionRemembered') : t('memoriesPlanted', { planted: progress.planted, required: progress.required });
+    const seasonPart = !season.total ? '' : season.complete ? t('seasonClosedHud') : t('seasonHud', { done: season.resolved, total: season.total });
+    (hud.querySelector('.memory-count') as HTMLElement).textContent = seasonPart ? `${memoryPart} · ${seasonPart}` : memoryPart;
     (hud.querySelector('.hud-meta') as HTMLElement).textContent = state.seeds.length ? t('seedsInTray', { count: state.seeds.length }) : '';
     const meta=expeditionMetaFor(state);
     if(run){
@@ -311,13 +341,17 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     state = { ...state, endingSeen: true };
     panels.clear();
     saveAndRefresh();
-    toast(t('refugeRemembers'));
+    toast(t('afterEnding'));
   }
 
   function showPendingEnding() {
     if (!hasReachedEnding(state)) return;
     clearToast();
-    panels.showEnding(state.character, storyFor(state).ending, finishEnding);
+    const season = seasonProgress(state.season);
+    panels.showEnding(state.character, storyFor(state).ending, finishEnding, t('endingNext', {
+      total: season.total || 6,
+      remaining: Math.max(0, (season.total || 6) - season.resolved),
+    }));
   }
 
   function useGift() {
@@ -362,7 +396,22 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   function interact() {
     if(!isTutorial()&&state.expedition?.status==='returning'){
       const target=expeditionTarget(state);
-      if(target&&distance(state.player,target)<=185){const completed=completeExpedition(state);state=completed.state;saveAndRefresh();toast(completed.message);if(completed.report)panels.showExpeditionDebrief(completed.report,panels.clear);return}
+      if(target&&distance(state.player,target)<=185){
+        const completed=completeExpedition(state);state=completed.state;saveAndRefresh();
+        const relic=state.relics?.at(-1);
+        toast(relic?`${completed.message} ${t('relicFound',{name:relic.name})}`:completed.message);
+        if(relic)startRelicDirector(relic.eventId,relic.eventTitle??completed.report?.title??relic.name,state.worldSeed??Date.now());
+        if(completed.report){
+          const season=seasonProgress(state.season);
+          const note=season.complete?t('debriefSeasonDone'):t('debriefSeason',{done:season.resolved,total:season.total,next:season.nextBeat?seasonBeatName(season.nextBeat.id):''});
+          panels.showExpeditionDebrief(completed.report,()=>{
+            if(season.complete)panels.showSeasonClose(state,panels.clear);
+            else panels.clear();
+          },note);
+        }
+        renderRadio();
+        return;
+      }
     }
     const target = nearestTarget(state);
     if (!target || target.distance > 160) {
@@ -450,7 +499,10 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       const length = Math.hypot(dx, dy);
       const keyboardMoving = keys.has('w') || keys.has('arrowup') || keys.has('s') || keys.has('arrowdown') || keys.has('a') || keys.has('arrowleft') || keys.has('d') || keys.has('arrowright');
       const strength = keyboardMoving ? 1 : Math.min(1, length);
-      state = movePlayer(state, { x: dx / length * strength * dt * .24, y: dy / length * strength * dt * .24 }, now);
+      const moveX = dx / length * strength * dt * .24;
+      const moveY = dy / length * strength * dt * .24;
+      state = movePlayer(state, { x: moveX, y: moveY }, now);
+      if (state.expedition && !isTutorial()) maybeSpeakRadio(Math.hypot(moveX, moveY));
       if (state.tutorial?.step === 'move' && distance(state.player, state.tutorial.start) > 35) {
         state = advanceTutorial(state, 'moved');
         saveAndRefresh();
@@ -509,14 +561,19 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   function finishPersonalization() {
     state = advanceTutorial(state, 'personalization-dismissed');
-    panels.clear();
     saveAndRefresh();
-    toast(t('clearingOpen'));
+    panels.showWhatNext(state, () => panels.showContractBoard(state), () => {
+      panels.clear();
+      toast(t('clearingOpen'));
+    });
   }
 
   function startContract(contractId:ContractId,loadout:[GiftId,GiftId]){
     const started=startExpedition(state,contractId,loadout,randomSeed()||1);state=started.state;
     if(started.ok){
+      expeditionWalk = 0;
+      lastRadioWalk = -999;
+      renderRadio();
       panels.clear();
       startExpeditionDirector();
     }
@@ -526,7 +583,48 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   function startExpeditionDirector(){
     const run=state.expedition;if(!run||!writerPreference?.isEnabled())return;
     const meta=expeditionMetaFor(state);
-    localWriter?.startExpedition({expeditionId:run.id,seed:run.seed,character:state.character,contractName:CONTRACTS[run.contractId].name,siteIds:[...run.siteIds,run.optionalSiteId],recentMemories:meta.reports.flatMap((report)=>report.memory?[report.memory]:[]).slice(0,5),recentFingerprints:meta.reports.flatMap((report)=>report.narrativeFingerprint?[report.narrativeFingerprint]:[]).slice(0,10)});
+    const season=seasonDirectorNotes(state);
+    localWriter?.startExpedition({expeditionId:run.id,seed:run.seed,character:state.character,contractName:CONTRACTS[run.contractId].name,siteIds:[...run.siteIds,run.optionalSiteId],recentMemories:meta.reports.flatMap((report)=>report.memory?[report.memory]:[]).slice(0,5),recentFingerprints:meta.reports.flatMap((report)=>report.narrativeFingerprint?[report.narrativeFingerprint]:[]).slice(0,10),seasonBeat:season.seasonBeat,throughline:season.throughline,priorBeats:season.priorBeats});
+  }
+
+  function maybeSpeakRadio(distanceMoved: number) {
+    expeditionWalk += distanceMoved;
+    if (!canSpeakRadio(state, expeditionWalk, lastRadioWalk)) return;
+    const fallback = nextRadioRemark(state);
+    if (!fallback) return;
+    state = speakRadio(state, fallback);
+    lastRadioWalk = expeditionWalk;
+    renderRadio(fallback);
+    store.save(state);
+    if (writerPreference?.isEnabled() && localWriter?.isIdle()) {
+      const notes = radioDirectorNotes(state);
+      localWriter.startRadio({
+        expeditionId: fallback.expeditionId, seed: state.expedition!.seed, character: state.character,
+        voice: notes.voice, beat: notes.beat, lastDecision: notes.lastDecision, remembered: notes.remembered,
+      });
+    }
+  }
+
+  function applyRadioRemark(expeditionId: string, remark: Pick<RadioRemark, 'text' | 'mistaken'>) {
+    if (state.expedition?.id !== expeditionId) return;
+    const spoken: RadioRemark = { id: `radio-${expeditionId}-model`, expeditionId, text: remark.text, mistaken: remark.mistaken, source: 'local-model' };
+    state = replaceLastRadio(state, spoken);
+    renderRadio(state.radio?.spoken.at(-1));
+    store.save(state);
+  }
+
+  function applyRelicCard(eventId: string, relic: Relic) {
+    if (relic.eventId !== eventId) return;
+    state = replaceLastRelic(state, relic);
+    saveAndRefresh();
+  }
+
+  function startRelicDirector(eventId: string, eventTitle: string, seed: number) {
+    if (!writerPreference?.isEnabled() || !localWriter?.isIdle()) return;
+    localWriter.startRelic({
+      eventId, seed, character: state.character, eventTitle,
+      allowedForms: RELIC_FORMS.join('|'), allowedColors: RELIC_COLORS.join('|'),
+    });
   }
 
   function applyLocalExpedition(expeditionId:string,narrative:Parameters<typeof applyExpeditionNarrative>[2]){
@@ -558,6 +656,9 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     resetTouch();
     waypoint = undefined;
     waypointId = undefined;
+    expeditionWalk = 0;
+    lastRadioWalk = -999;
+    renderRadio();
     clearToast();
     state = prepareNewRun(state.character);
     panels.clear();
@@ -638,6 +739,8 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     showWriterStatus,
     applyLocalStory,
     applyLocalExpedition,
+    applyRadioRemark,
+    applyRelicCard,
     startLocalStory,
     autoLocalStory,
     destroy: () => {
@@ -650,6 +753,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       document.removeEventListener('visibilitychange', visibilityChanged);
       removeEventListener('resize', resize);
       cancelAnimationFrame(frameId);
+      radioRoot.remove();
       localWriter?.destroy();
     },
   };

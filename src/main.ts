@@ -64,6 +64,8 @@ if (loaded.kind === 'newer-version') {
     onStatus: (status) => controller?.showWriterStatus(status),
     onStory: (story) => controller?.applyLocalStory(story),
     onExpedition: (expeditionId,narrative) => controller?.applyLocalExpedition(expeditionId,narrative),
+    onRadio: (expeditionId, remark) => controller?.applyRadioRemark(expeditionId, remark),
+    onRelic: (eventId, relic) => controller?.applyRelicCard(eventId, relic),
   }, locale);
   controller = createGameController(state, renderer, panels, store, hud, toasts, localWriter, {
     enable: () => localStorage.setItem(WRITER_PREFERENCE, 'enabled'),

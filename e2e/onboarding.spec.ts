@@ -152,5 +152,7 @@ test('keeps personalization scrollable on a short phone viewport', async ({ page
   const card = page.locator('.personalize-card');
   expect(await card.evaluate((element) => element.clientHeight <= window.innerHeight - 30)).toBe(true);
   await page.getByRole('button', { name: 'Досліджувати далі' }).click();
+  await expect(page.getByTestId('what-next')).toBeVisible();
+  await page.getByRole('button', { name: 'Залишитися на галявині' }).click();
   await expect(page.getByTestId('journal-button')).toBeVisible();
 });

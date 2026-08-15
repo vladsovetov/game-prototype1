@@ -102,8 +102,8 @@ test('turns the sixth planted memory into a persistent story ending', async ({ p
   const after = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
   expect(after).toEqual(before);
 
-  await page.getByRole('button', { name: 'Нести світло далі' }).click();
-  await expect(page.getByText('Історію завершено')).toBeVisible();
+  await page.getByRole('button', { name: 'Повернутися на відкриту галявину' }).click();
+  await expect(page.getByText('Їхню історію повернуто')).toBeVisible();
   await page.getByTestId('journal-button').click();
   await expect(page.getByRole('heading', { name: 'Хранитель Дому Ліхтарів' })).toBeVisible();
 });

@@ -25,7 +25,7 @@ On a phone, drag the golden joystick at the lower left to move. Contextual actio
 
 The first guided memory teaches the recovery loop through a rain-covered sign. Its title, refuge, disaster, recurring motif, chapters, and conclusion are generated from the current companion and run seed. Story cards survive reloads and every recovered chapter remains readable in the field journal.
 
-The HUD tracks the central goal: plant six memories in the sanctuary. Filling all six circles reveals that run's conclusion, records it in the journal, and leaves the meadow open for continued exploration. There is no timer and the other two optional memories can still be recovered afterward.
+The first chapter recovers one memory and opens the clearing. That is not the end. Two things remain: plant six memories to learn who the companion was, and take a field season of five to eight expeditions. The memory ending closes their past, not the game. The season tells one hidden story, can change the Refuge, and then ends. After that you may still walk, take leftover contracts, or start another tale.
 
 The northwest enclosure is your sanctuary. Colored diamonds lend temporary Gifts; approach one and press `E`. Some objects need your own Gift and a borrowed Gift in sequence.
 
@@ -42,6 +42,8 @@ Every fresh run immediately gets a deterministic procedural story, so gameplay n
 The first opt-in downloads a quantized model of roughly 120–180 MB from Hugging Face and stores it in browser cache. The worker uses WebGPU only when a real GPU adapter answers, then retries a single-thread WebAssembly/CPU path if that fails. Phones without WebGPU therefore stay on CPU instead of dying on a GPU-only load. WebGPU—not WebGL—is the browser API used for general GPU computation. Model inference happens in a Web Worker; character/story prompts are not sent to a game server.
 
 The model returns short narrative ingredients only. The game validates and length-limits them, composes trusted prose, and inserts it as text. It cannot create mechanics, statistics, rewards, HTML, or executable code. If downloading or generation fails, the procedural story already in the journal remains unchanged and the game stays playable.
+
+Each new tale also hides a season of five to eight expeditions: a strange signal, evidence, a contradiction, a consequence, a source, and a lasting decision. Episodes stay procedural; the local director only links them. While you walk, a radio companion may speak two to four short remarks. It remembers earlier choices and may be wrong. It never changes tools, routes, or rules. Finished expeditions pack a unique object whose name and history are written for that event; the look is assembled only from trusted shapes (hood, pack, glasses, lantern, cloak, patches) with no strength bonus.
 
 The current Transformers.js package also installs Node-only `sharp` and `onnxruntime-node` branches that npm audit flags through transitive advisories. Those modules are not present in the Vite browser-worker bundle used by this prototype, but the upstream advisories should be revisited before a production release.
 

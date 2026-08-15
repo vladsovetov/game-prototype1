@@ -9,6 +9,7 @@ import { SEED_NAMES, worldFor } from '../domain/world';
 import type { Appearance, Character, GameState, QuirkId, StoryArc, WearableId } from '../domain/types';
 import type { WriterStatus } from '../story/local-story-writer';
 import { CONTRACTS, REFUGE_PROJECTS, availableWorkActions, expeditionMetaFor, expeditionNarrativeFor, expeditionRegionName } from '../domain/expedition';
+import { seasonBeatName, seasonProgress, seasonSourceRevealed, seasonThroughline } from '../domain/season';
 import { GIFTS } from '../domain/catalog';
 import type { ContractId, ExpeditionReport, GiftId, RefugeProjectId } from '../domain/types';
 
@@ -109,16 +110,51 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     root.append(section);
   }
 
-  function showEnding(character: Character, ending: StoryArc['ending'] = LANTERN_HOUSE_ENDING, onContinue: () => void) {
+  function showEnding(character: Character, ending: StoryArc['ending'] = LANTERN_HOUSE_ENDING, onContinue: () => void, nextHint = '') {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card ending-card';
-    section.innerHTML = `<div class="ending-lantern" aria-hidden="true">✦</div><span class="eyebrow"></span><h2></h2><p class="ending-name"></p><p class="ending-story"></p><button class="button primary"></button>`;
+    section.innerHTML = `<div class="ending-lantern" aria-hidden="true">✦</div><span class="eyebrow"></span><h2></h2><p class="ending-name"></p><p class="ending-story"></p><p class="soft-copy ending-next"></p><button class="button primary"></button>`;
     (section.querySelector('.eyebrow') as HTMLElement).textContent = t('sixPlanted');
     (section.querySelector('h2') as HTMLElement).textContent = ending.title;
     (section.querySelector('.ending-name') as HTMLElement).textContent = t('endingName', { name: character.name });
     (section.querySelector('button') as HTMLElement).textContent = t('carryLight');
     (section.querySelector('.ending-story') as HTMLElement).textContent = ending.story;
+    (section.querySelector('.ending-next') as HTMLElement).textContent = nextHint;
+    section.querySelector('button')?.addEventListener('click', onContinue);
+    root.append(section);
+  }
+
+  function showWhatNext(state: GameState, onBoard: () => void, onExplore: () => void) {
+    clear();
+    const section = document.createElement('section');
+    section.className = 'story-card what-next-card';
+    section.dataset.testid = 'what-next';
+    const progress = seasonProgress(state.season);
+    section.innerHTML = `<span class="eyebrow"></span><h2></h2><p class="soft-copy"></p><ol class="what-next-list"><li></li><li></li></ol><div class="choice-row"><button class="button primary" data-board></button><button class="button ghost-light" data-walk></button></div>`;
+    (section.querySelector('.eyebrow') as HTMLElement).textContent = t('firstMemoryMade');
+    (section.querySelector('h2') as HTMLElement).textContent = t('whatNextTitle');
+    (section.querySelector('.soft-copy') as HTMLElement).textContent = t('whatNextCopy');
+    const items = section.querySelectorAll('.what-next-list li');
+    items[0]!.textContent = t('whatNextMemories');
+    items[1]!.textContent = t('whatNextSeason', { total: progress.total || 6 });
+    (section.querySelector('[data-board]') as HTMLElement).textContent = t('openBoard');
+    (section.querySelector('[data-walk]') as HTMLElement).textContent = t('keepWalking');
+    section.querySelector('[data-board]')?.addEventListener('click', onBoard);
+    section.querySelector('[data-walk]')?.addEventListener('click', onExplore);
+    root.append(section);
+  }
+
+  function showSeasonClose(state: GameState, onContinue: () => void) {
+    clear();
+    const section = document.createElement('section');
+    section.className = 'story-card season-close-card';
+    section.dataset.testid = 'season-close';
+    section.innerHTML = `<span class="eyebrow"></span><h2></h2><p class="soft-copy"></p><button class="button primary"></button>`;
+    (section.querySelector('.eyebrow') as HTMLElement).textContent = t('seasonCloseEyebrow');
+    (section.querySelector('h2') as HTMLElement).textContent = state.season ? seasonThroughline(state.season) : t('seasonClosedHud');
+    (section.querySelector('.soft-copy') as HTMLElement).textContent = t('seasonCloseCopy');
+    (section.querySelector('button') as HTMLElement).textContent = t('keepWalking');
     section.querySelector('button')?.addEventListener('click', onContinue);
     root.append(section);
   }
@@ -375,6 +411,29 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
       kitGrid.append(button);
     }
     fieldKit.append(kitTitle, kitCopy, kitGrid);
+    if ((state.relics ?? []).length) {
+      const relics = document.createElement('section');
+      relics.className = 'field-kit relic-list';
+      relics.dataset.testid = 'relic-list';
+      const relicTitle = document.createElement('h4');
+      relicTitle.textContent = t('fieldRelics');
+      const relicCopy = document.createElement('p');
+      relicCopy.textContent = t('fieldRelicsCopy');
+      relics.append(relicTitle, relicCopy);
+      for (const relic of state.relics ?? []) {
+        const card = document.createElement('article');
+        card.className = 'relic-card';
+        const name = document.createElement('strong');
+        name.textContent = relic.name;
+        const story = document.createElement('p');
+        story.textContent = relic.story;
+        const meta = document.createElement('small');
+        meta.textContent = `${relic.material} · ${relic.condition} · ${relic.symbol}`;
+        card.append(name, story, meta);
+        relics.append(card);
+      }
+      fieldKit.append(relics);
+    }
     info.append(h, p, grid, fieldKit, edit);
     pass.append(preview, info);
     c.append(pass);
@@ -394,6 +453,32 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     (folio.querySelector('h3') as HTMLElement).textContent = world.theme.name;
     (folio.querySelector('p') as HTMLElement).textContent = arc.premise;
     c.append(folio);
+    if (state.season) {
+      const season = document.createElement('section');
+      season.className = 'season-thread';
+      season.dataset.testid = 'season-thread';
+      const eyebrow = document.createElement('span');
+      eyebrow.className = 'eyebrow';
+      eyebrow.textContent = t('seasonThread');
+      const heading = document.createElement('h3');
+      const progress = seasonProgress(state.season);
+      heading.textContent = seasonSourceRevealed(state.season) ? seasonThroughline(state.season) : t('seasonUnfolding');
+      const count = document.createElement('p');
+      count.className = 'soft-copy';
+      count.textContent = progress.complete ? t('seasonClosedNote') : t('seasonCount', { done: progress.resolved, total: progress.total });
+      season.append(eyebrow, heading, count);
+      for (const beat of state.season.beats) {
+        const row = document.createElement('p');
+        row.className = beat.resolved ? 'season-beat resolved' : 'season-beat';
+        row.textContent = beat.resolved
+          ? `${seasonBeatName(beat.id)}: ${beat.memory ?? ''}`.trim()
+          : beat.expeditionId === state.expedition?.id
+            ? `${seasonBeatName(beat.id)} · ${t('seasonCurrent')}`
+            : seasonBeatName(beat.id);
+        season.append(row);
+      }
+      c.append(season);
+    }
     const summary = document.createElement('p');
     summary.className = 'soft-copy';
     summary.textContent = t('journalSummary', { discoveries: state.discoveries.length, seeds: state.seeds.length, planted: Object.keys(state.plantings).length });
@@ -479,8 +564,15 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     const c=shell(t('expeditionBoard'));
     const meta=expeditionMetaFor(state);
     c.innerHTML=`<div class="contract-intro"><div><span class="eyebrow"></span><p></p></div><div class="resource-strip"><span><b>${meta.supplies}</b> ${t('supplies')}</span><span><b>${meta.insight}</b> ${t('insight')}</span><span><b>${meta.rareFinds.length}</b> ${t('rares')}</span></div></div><div class="loadout-title"><strong></strong><small><span data-selected></span> <b data-loadout-count>0</b> / 2</small></div><div class="loadout-grid"></div><div class="contract-grid"></div><section class="refuge-projects"><div class="section-heading"><div><span class="eyebrow"></span><h3></h3></div><small></small></div><div class="project-grid"></div></section>`;
-    (c.querySelector('.contract-intro .eyebrow') as HTMLElement).textContent = t('repeatingRoutes', { region: expeditionRegionName(state) });
-    (c.querySelector('.contract-intro p') as HTMLElement).textContent = t('contractIntro');
+    const season = seasonProgress(state.season);
+    (c.querySelector('.contract-intro .eyebrow') as HTMLElement).textContent = season.total
+      ? (season.complete ? t('seasonClosedEyebrow') : t('seasonProgressEyebrow', { done: season.resolved, total: season.total }))
+      : t('repeatingRoutes', { region: expeditionRegionName(state) });
+    (c.querySelector('.contract-intro p') as HTMLElement).textContent = season.total
+      ? (season.complete
+        ? t('seasonClosedIntro')
+        : t('seasonOpenIntro', { total: season.total, done: season.resolved, next: season.nextBeat ? seasonBeatName(season.nextBeat.id) : t('seasonClosedHud') }))
+      : t('contractIntro');
     (c.querySelector('.loadout-title strong') as HTMLElement).textContent = t('fieldKit');
     const selectedLabel = c.querySelector<HTMLElement>('.loadout-title small')!;
     (c.querySelector('.section-heading .eyebrow') as HTMLElement).textContent = t('refugeChanges');
@@ -503,7 +595,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     for(const contract of Object.values(CONTRACTS)){
       const article=document.createElement('article');article.className='contract-card';
       article.innerHTML=`<div class="contract-mark">${contract.id==='water-route'?'≈':contract.id==='signal-line'?'⌁':'△'}</div><span class="eyebrow"></span><h3></h3><p></p><div class="contract-reward"></div><button class="button primary" data-start></button>`;
-      article.querySelector('.eyebrow')!.textContent=t('threeJobs');
+      article.querySelector('.eyebrow')!.textContent=season.complete?t('optionalExtra'):t('threeJobs');
       article.querySelector('.contract-reward')!.textContent=t('contractReward');
       article.querySelector('button')!.textContent=t('setOut');
       article.querySelector('h3')!.textContent=contract.name;article.querySelector('p')!.textContent=contract.brief;
@@ -554,13 +646,14 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     if(decision){decision.querySelector('p')!.textContent=`${narrative.optionalLead} ${t('possibleFind',{find:narrative.rareFind})}`;decision.querySelector('.decision-warning')!.textContent=narrative.warning}
   }
 
-  function showExpeditionDebrief(report:ExpeditionReport,onContinue:()=>void){
+  function showExpeditionDebrief(report:ExpeditionReport,onContinue:()=>void,seasonNote=''){
     clear();const section=document.createElement('section');section.className='story-card expedition-debrief';
-    section.innerHTML=`<span class="eyebrow"></span><h2></h2><p class="debrief-story"></p><div class="debrief-loot"><span><b></b> ${t('supplies')}</span><span><b></b> ${t('insight')}</span><span><b></b> ${t('rares')}</span></div><small class="weather-result"></small><button class="button primary"></button>`;
+    section.innerHTML=`<span class="eyebrow"></span><h2></h2><p class="debrief-story"></p><div class="debrief-loot"><span><b></b> ${t('supplies')}</span><span><b></b> ${t('insight')}</span><span><b></b> ${t('rares')}</span></div><small class="weather-result"></small><p class="soft-copy debrief-season"></p><button class="button primary"></button>`;
     section.querySelector('.eyebrow')!.textContent=t('reportSaved');
     section.querySelector('h2')!.textContent=report.title;section.querySelector('.debrief-story')!.textContent=report.summary;
     const values=section.querySelectorAll<HTMLElement>('.debrief-loot b');values[0]!.textContent=String(report.securedSupplies);values[1]!.textContent=String(report.securedInsight);values[2]!.textContent=String(report.rareFinds.length);
     section.querySelector('.weather-result')!.textContent=report.pressure>3?t('debriefWeatherBad'):t('debriefWeatherGood');
+    (section.querySelector('.debrief-season') as HTMLElement).textContent=seasonNote;
     section.querySelector('button')!.textContent=t('returnRefuge');
     section.querySelector('button')!.addEventListener('click',onContinue);root.append(section);
   }
@@ -584,7 +677,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     map[0]!.textContent = t('helpMapTool');
     map[1]!.textContent = t('helpMapUse');
     map[2]!.textContent = t('helpMapTap');
-    (c.querySelector('.help-note') as HTMLElement).textContent = t('noTimer');
+    (c.querySelector('.help-note') as HTMLElement).textContent = `${t('helpStructure')} ${t('noTimer')} ${t('helpRadio')}`;
     (c.querySelector('.new-tale-note .eyebrow') as HTMLElement).textContent = t('anotherStart');
     (c.querySelector('.new-tale-note p') as HTMLElement).textContent = t('newTaleCopy');
     (c.querySelector('.danger') as HTMLElement).textContent = t('startOtherTale');
@@ -643,5 +736,5 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     root.append(section);
   }
 
-  return { clear, showWake, showMemoryBeat, showMemoryChapter, showEnding, showMemoryChoice, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp, showStoryLoom, showContractBoard, showWorkChoices, showExpeditionDecision, showExpeditionDebrief, refreshExpeditionNarrative };
+  return { clear, showWake, showMemoryBeat, showMemoryChapter, showEnding, showWhatNext, showSeasonClose, showMemoryChoice, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp, showStoryLoom, showContractBoard, showWorkChoices, showExpeditionDecision, showExpeditionDebrief, refreshExpeditionNarrative };
 }

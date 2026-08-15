@@ -12,6 +12,7 @@ import { createLocalStoryWriter } from './story/local-story-writer';
 import { createLocalePreference, setActiveLocale } from './i18n/locale';
 import { t } from './i18n/messages';
 import { createLanguageSwitcher } from './ui/language-switcher';
+import { createVersionMark } from './ui/version-mark';
 
 const localePreference = createLocalePreference(localStorage, navigator.languages?.length ? navigator.languages : [navigator.language]);
 const locale = localePreference.load();
@@ -28,7 +29,7 @@ canvas.setAttribute('aria-label', t('canvasLabel', { brand: t('brand') }));
 document.body.append(createLanguageSwitcher(locale, (nextLocale) => {
   localePreference.save(nextLocale);
   location.reload();
-}));
+}), createVersionMark());
 
 const store = createSaveStore(localStorage);
 const renderer = createCanvasRenderer(canvas);

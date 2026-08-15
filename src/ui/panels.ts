@@ -567,7 +567,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
 
   function showHelp() {
     const c = shell(t('howToTravel'), true);
-    c.innerHTML = `<div class="controls keyboard-help"><b></b><span></span><b>F</b><span></span><b>E</b><span></span><b>J</b><span></span><b>C</b><span></span></div><div class="touch-help"><div class="touch-help-mark">●</div><div><b></b><span></span></div><div class="touch-help-mark">✦</div><div><b></b><span></span></div></div><p class="soft-copy help-note"></p><div class="new-tale-note"><span class="eyebrow"></span><p></p><button class="button danger"></button></div>`;
+    c.innerHTML = `<div class="controls keyboard-help"><b></b><span></span><b>F</b><span></span><b>E</b><span></span><b>J</b><span></span><b>C</b><span></span></div><div class="touch-help"><div class="touch-help-mark">●</div><div><b></b><span></span></div><div class="touch-help-mark">✦</div><div><b></b><span></span></div></div><div class="help-map"><div class="help-map-row"><i class="legend-tool"></i><span></span></div><div class="help-map-row"><i class="legend-use"></i><span></span></div><p></p></div><p class="soft-copy help-note"></p><div class="new-tale-note"><span class="eyebrow"></span><p></p><button class="button danger"></button></div>`;
     const keys = c.querySelectorAll('.keyboard-help b, .keyboard-help span');
     keys[0]!.textContent = t('wasd');
     keys[1]!.textContent = t('helpMove');
@@ -580,6 +580,10 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     touch[1]!.textContent = t('dragGlowHint');
     touch[2]!.textContent = t('tapTool');
     touch[3]!.textContent = t('tapToolHint');
+    const map = c.querySelectorAll('.help-map span, .help-map p');
+    map[0]!.textContent = t('helpMapTool');
+    map[1]!.textContent = t('helpMapUse');
+    map[2]!.textContent = t('helpMapTap');
     (c.querySelector('.help-note') as HTMLElement).textContent = t('noTimer');
     (c.querySelector('.new-tale-note .eyebrow') as HTMLElement).textContent = t('anotherStart');
     (c.querySelector('.new-tale-note p') as HTMLElement).textContent = t('newTaleCopy');

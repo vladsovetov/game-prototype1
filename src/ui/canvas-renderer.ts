@@ -1,9 +1,9 @@
 import { GIFTS, PALETTE_COLORS } from '../domain/catalog';
 import { t } from '../i18n/messages';
-import { tutorialTarget } from '../domain/tutorial';
+import { anomalyNeedsHeldTool, fieldMarks, minimapFrame, navigationTarget, worldToMinimap } from '../domain/minimap';
 import type { BodyId, Facing, GameState, Point, WearableId } from '../domain/types';
 import { SEED_NAMES, WORLD, worldFor, type WorldLayout } from '../domain/world';
-import { expeditionMetaFor, expeditionTarget } from '../domain/expedition';
+import { expeditionMetaFor } from '../domain/expedition';
 
 export function cameraFor(player: Point, width: number, height: number) {
   return {
@@ -174,6 +174,7 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
       ctx.stroke();
       ctx.setLineDash([]);
       const seed = stateForRender?.plantings[plot.id];
+      if (!seed && stateForRender?.seeds.length) drawPlantBadge(26, -28);
       if (seed) {
         ctx.strokeStyle = '#426d55';
         ctx.lineWidth = 5;
@@ -202,19 +203,94 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
     }
   }
 
+  function drawTakeBadge(x: number, y: number) {
+    ctx.fillStyle = '#3d7d72';
+    ctx.beginPath();
+    ctx.arc(x, y, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#eef8f2';
+    ctx.beginPath();
+    ctx.roundRect(x - 3.2, y - 1, 7.2, 7.4, 2.2);
+    ctx.fill();
+    for (const offset of [-4.6, -1.5, 1.6, 4.6]) {
+      ctx.beginPath();
+      ctx.roundRect(x + offset - 1.15, y - 7.2, 2.3, 7.4, 1.1);
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.ellipse(x - 6.2, y + 2.2, 2.3, 3.4, -.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawPlantBadge(x: number, y: number) {
+    ctx.fillStyle = '#3d7d72';
+    ctx.beginPath();
+    ctx.arc(x, y, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#eef8f2';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x, y + 5);
+    ctx.quadraticCurveTo(x - 1, y, x, y - 4);
+    ctx.stroke();
+    ctx.fillStyle = '#eef8f2';
+    ctx.beginPath();
+    ctx.ellipse(x - 4.2, y - 1.5, 4.2, 2.4, -.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x + 4.2, y - 2.4, 4.2, 2.4, .65, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawToolBadge(x: number, y: number, ready: boolean) {
+    ctx.fillStyle = ready ? '#d66a32' : '#c56a3c';
+    ctx.beginPath();
+    ctx.roundRect(x - 11, y - 11, 22, 22, 5);
+    ctx.fill();
+    ctx.strokeStyle = '#fff6e4';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(x - 6, y + 6);
+    ctx.lineTo(x + 5, y - 5);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x + 5, y - 5, 3.2, -0.4, Math.PI * 1.2);
+    ctx.stroke();
+  }
+
+  function drawFixedBadge(x: number, y: number) {
+    ctx.fillStyle = '#4f8a6e';
+    ctx.beginPath();
+    ctx.roundRect(x - 11, y - 11, 22, 22, 5);
+    ctx.fill();
+    ctx.strokeStyle = '#eef8f2';
+    ctx.lineWidth = 2.6;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x - 5.5, y + .5);
+    ctx.lineTo(x - 1.2, y + 5);
+    ctx.lineTo(x + 6.2, y - 5);
+    ctx.stroke();
+  }
+
   function drawShrines(state: GameState, now: number, world: WorldLayout) {
     const colors = { reveal: '#f0a574', grow: '#76a96f', echo: '#9b82c1', mend: '#63aaa7' };
     for (const shrine of world.shrines) {
       const active = state.borrowedGift === shrine.gift;
-      const pulse = Math.sin(now / 420 + shrine.position.x) * 4;
+      const pulse = Math.sin(now / 520 + shrine.position.x) * 2;
       ctx.save();
       ctx.translate(shrine.position.x, shrine.position.y);
-      ctx.fillStyle = `${colors[shrine.gift]}2e`;
+      ctx.fillStyle = '#4f8f8633';
       ctx.beginPath();
-      ctx.arc(0, 0, 53 + pulse, 0, Math.PI * 2);
+      ctx.ellipse(0, 8, 46, 22, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowColor = colors[shrine.gift];
-      ctx.shadowBlur = active ? 28 : 13;
+      ctx.strokeStyle = active ? '#6a8f84' : '#3d7d72';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(0, 2, 54 + pulse, 36, 0, 0, Math.PI * 2);
+      ctx.stroke();
       ctx.strokeStyle='#654f3d';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(-27,10);ctx.lineTo(-23,39);ctx.moveTo(27,10);ctx.lineTo(23,39);ctx.stroke();
       ctx.fillStyle = active ? '#ffe89d' : '#9b7757';ctx.fillRect(-38,-4,76,19);
       ctx.fillStyle=colors[shrine.gift];
@@ -222,11 +298,12 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
       else if(shrine.gift==='grow'){ctx.lineWidth=6;ctx.strokeStyle=colors.grow;ctx.beginPath();ctx.moveTo(-15,-18);ctx.lineTo(15,2);ctx.moveTo(15,-18);ctx.lineTo(-15,2);ctx.stroke()}
       else if(shrine.gift==='echo'){ctx.lineWidth=4;ctx.strokeStyle=colors.echo;ctx.beginPath();ctx.moveTo(-10,-27);ctx.lineTo(-10,0);ctx.moveTo(10,-27);ctx.lineTo(10,0);ctx.moveTo(-10,-27);ctx.lineTo(10,-27);ctx.stroke()}
       else {ctx.fillRect(-17,-23,34,25);ctx.fillStyle='#fff7df';ctx.fillRect(-7,-16,14,4)}
+      if (!active) drawTakeBadge(30, -36);
       ctx.restore();
       ctx.fillStyle = '#31554f';
       ctx.font = '700 10px ui-monospace, SFMono-Regular, Menlo, monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(GIFTS[shrine.gift].name.toLocaleUpperCase('uk-UA'), shrine.position.x, shrine.position.y + 54);
+      ctx.fillText(GIFTS[shrine.gift].name.toLocaleUpperCase('uk-UA'), shrine.position.x, shrine.position.y + 68);
     }
   }
 
@@ -234,25 +311,30 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
     for (let index = 0; index < world.anomalies.length; index++) {
       const anomaly = world.anomalies[index]!;
       const stage = state.anomalies[anomaly.id] ?? 0;
-      const pulse = Math.sin(now / 520 + index * 1.7) * 3;
+      const ready = anomalyNeedsHeldTool(state, anomaly);
+      const finished = !anomaly.transitions[stage];
+      const pulse = finished ? 0 : Math.sin(now / 520 + index * 1.7) * (ready ? 5 : 3);
       ctx.save();
       ctx.translate(anomaly.position.x, anomaly.position.y);
-      ctx.shadowColor = anomaly.color;
-      ctx.shadowBlur = 20 + stage * 6;
-      ctx.fillStyle=`${anomaly.color}35`;ctx.beginPath();ctx.arc(0,0,43+stage*5+pulse,0,Math.PI*2);ctx.fill();
+      ctx.shadowColor = finished ? '#4f8a6e' : ready ? '#e08a3a' : anomaly.color;
+      ctx.shadowBlur = finished ? 8 : ready ? 28 : 16 + stage * 4;
+      ctx.fillStyle=finished?'#4f8a6e28':`${anomaly.color}35`;ctx.beginPath();ctx.arc(0,0,43+stage*5+pulse,0,Math.PI*2);ctx.fill();
       ctx.shadowBlur = 0;
-      ctx.strokeStyle = '#fff5dcce';
-      ctx.lineWidth = 2;
-      ctx.setLineDash(stage ? [] : [3, 7]);
+      ctx.strokeStyle = finished ? '#4f8a6e' : ready ? '#e39a4a' : '#c47a48';
+      ctx.lineWidth = ready && !finished ? 4 : 3;
+      ctx.setLineDash(finished || ready ? [] : [5, 6]);
+      const ring = 46 + stage * 4 + pulse;
       ctx.beginPath();
-      ctx.arc(0, 0, 48 + stage * 8 + pulse, 0, Math.PI * 2);
+      ctx.ellipse(0, -4, ring + 4, ring - 6, 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.setLineDash([]);
       drawFieldObject(anomaly.id, stage, anomaly.color);
+      if (finished) drawFixedBadge(32, -40);
+      else drawToolBadge(32, -40, ready);
       ctx.fillStyle = '#294d47';
       ctx.font = '700 13px Avenir, "Segoe UI", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(anomaly.states[stage] ?? anomaly.name, 0, 70 + stage * 6);
+      ctx.fillText(anomaly.states[stage] ?? anomaly.name, 0, ring + 28);
       ctx.restore();
     }
   }
@@ -269,8 +351,8 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
     else {ctx.strokeStyle='#48534d';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(0,29);ctx.lineTo(0,-45);ctx.moveTo(-18,-35);ctx.lineTo(18,-35);ctx.stroke();ctx.strokeStyle=color;ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,-35,12+stage*3,0,Math.PI*2);ctx.stroke()}
   }
 
-  function drawTrail(state: GameState, now: number) {
-    const target = tutorialTarget(state) ?? expeditionTarget(state);
+  function drawTrail(state: GameState, now: number, waypoint?: Point) {
+    const target = navigationTarget(state, waypoint);
     if (!target) return;
     const dx = target.x - state.player.x;
     const dy = target.y - state.player.y;
@@ -383,8 +465,104 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
     ctx.restore();
   }
 
+  function drawMinimap(state: GameState, waypoint?: Point) {
+    const touch = matchMedia('(max-width: 720px), (pointer: coarse)').matches;
+    const frame = minimapFrame(width, height, touch);
+    const world = worldFor(state);
+    const marks = fieldMarks(state);
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(frame.x, frame.y, frame.w, frame.h, [16, 5, 16, 5]);
+    ctx.fillStyle = 'rgba(255, 249, 233, 0.92)';
+    ctx.fill();
+    ctx.strokeStyle = '#ffffffa0';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.clip();
+    const wash = ctx.createLinearGradient(frame.x, frame.y, frame.x + frame.w, frame.y + frame.h);
+    wash.addColorStop(0, world.theme.ground[0]);
+    wash.addColorStop(1, world.theme.ground[2]);
+    ctx.globalAlpha = .55;
+    ctx.fillStyle = wash;
+    ctx.fillRect(frame.x, frame.y, frame.w, frame.h);
+    ctx.globalAlpha = 1;
+    const sanctuary = worldToMinimap({ x: world.sanctuary.x, y: world.sanctuary.y }, world, frame);
+    ctx.fillStyle = '#f4e5bfaa';
+    ctx.fillRect(sanctuary.x, sanctuary.y, world.sanctuary.w / world.width * frame.w, world.sanctuary.h / world.height * frame.h);
+    ctx.strokeStyle = '#fff2cf88';
+    ctx.lineWidth = 1.5;
+    for (const route of world.routes) {
+      ctx.beginPath();
+      route.forEach((point, index) => {
+        const mapped = worldToMinimap(point, world, frame);
+        if (index) ctx.lineTo(mapped.x, mapped.y);
+        else ctx.moveTo(mapped.x, mapped.y);
+      });
+      ctx.stroke();
+    }
+    const view = {
+      x: frame.x + (camera.x / world.width) * frame.w,
+      y: frame.y + (camera.y / world.height) * frame.h,
+      w: (width / world.width) * frame.w,
+      h: (height / world.height) * frame.h,
+    };
+    ctx.strokeStyle = '#173f3a99';
+    ctx.strokeRect(view.x, view.y, view.w, view.h);
+    const colors = { tool: '#d66a32', use: '#3d7d72', plot: '#7aa36a', fixed: '#4f8a6e' };
+    for (const mark of marks) {
+      const point = worldToMinimap(mark.position, world, frame);
+      ctx.fillStyle = mark.kind === 'tool' && mark.done ? colors.fixed : colors[mark.kind];
+      ctx.globalAlpha = mark.kind === 'tool' && mark.done ? 1 : mark.done ? .35 : 1;
+      ctx.beginPath();
+      if (mark.kind === 'tool') ctx.roundRect(point.x - 3.5, point.y - 3.5, 7, 7, 1.5);
+      else ctx.arc(point.x, point.y, mark.kind === 'use' ? 3.6 : 2.6, 0, Math.PI * 2);
+      ctx.fill();
+      if (mark.ready) {
+        ctx.strokeStyle = '#fff6d8';
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+    const you = worldToMinimap(state.player, world, frame);
+    ctx.fillStyle = '#f2bd58';
+    ctx.beginPath();
+    ctx.arc(you.x, you.y, 4.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff8de';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    if (waypoint) {
+      const aim = worldToMinimap(waypoint, world, frame);
+      ctx.strokeStyle = '#ffe58b';
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(you.x, you.y);
+      ctx.lineTo(aim.x, aim.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.fillStyle = '#173f3a';
+    ctx.font = '800 8px ui-monospace, SFMono-Regular, Menlo, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(t('minimap'), frame.x + 8, frame.y + 14);
+    ctx.fillStyle = '#d66a32';
+    ctx.fillRect(frame.x + 8, frame.y + frame.h - 11, 6, 6);
+    ctx.fillStyle = '#3d7d72';
+    ctx.beginPath();
+    ctx.arc(frame.x + 22, frame.y + frame.h - 8, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    canvas.dataset.minimap = `${Math.round(frame.x)},${Math.round(frame.y)},${frame.w},${frame.h}`;
+    canvas.dataset.minimapMarks = JSON.stringify(marks.map((mark) => {
+      const point = worldToMinimap(mark.position, world, frame);
+      return { id: mark.id, kind: mark.kind, x: Math.round(point.x), y: Math.round(point.y) };
+    }));
+    canvas.dataset.fieldKinds = 'tool,use,plot';
+  }
+
   let stateForRender: GameState | undefined;
-  function render(state: GameState, now: number, pose:MovementPose={facing:'down',walking:false}) {
+  function render(state: GameState, now: number, pose:MovementPose={facing:'down',walking:false}, waypoint?: Point) {
     stateForRender = state;
     camera = cameraFor(state.player, width, height);
     ctx.clearRect(0, 0, width, height);
@@ -397,11 +575,12 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
     drawSanctuary(world);
     drawShrines(state, now, world);
     drawAnomalies(state, now, world);
-    drawTrail(state, now);
+    drawTrail(state, now, waypoint);
     ctx.restore();
     canvas.dataset.facing=pose.facing;canvas.dataset.walking=String(pose.walking);canvas.dataset.equipment=Object.values(state.equipped).sort().join(',');
     canvas.dataset.refugeProjects=expeditionMetaFor(state).builtProjects.join(',');
     drawAvatar(state, now, pose);
+    drawMinimap(state, waypoint);
   }
 
   resize();

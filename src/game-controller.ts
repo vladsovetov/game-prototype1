@@ -4,8 +4,9 @@ import { memoryProgress, ROAD_HOME } from './domain/memory';
 import { hasReachedEnding, memoryChapter, sanctuaryProgress } from './domain/memory-arc';
 import { storyFor } from './domain/story';
 import { prepareNewRun } from './domain/run';
-import type { Appearance, CatalogEntry, Character, ContractId, GameState, GiftId, InteractionResult, QuirkId, RefugeProjectId } from './domain/types';
-import { SEED_NAMES, distance } from './domain/world';
+import type { Appearance, CatalogEntry, Character, ContractId, GameState, GiftId, InteractionResult, Point, QuirkId, RefugeProjectId } from './domain/types';
+import { fieldMarks, minimapFrame, pickMinimapMark } from './domain/minimap';
+import { SEED_NAMES, distance, worldFor } from './domain/world';
 import type { createSaveStore } from './persistence/save-store';
 import type { createCanvasRenderer } from './ui/canvas-renderer';
 import type { createPanels } from './ui/panels';
@@ -47,6 +48,8 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   let touchKnob: HTMLElement | undefined;
   let writerPanelVisible = false;
   let pose = movementPose(0, 0, 'down');
+  let waypoint: Point | undefined;
+  let waypointId: string | undefined;
 
   const isTutorial = () => !!state.tutorial && state.tutorial.step !== 'done';
   const hasBlockingStory = () => !!state.pendingChapter || hasReachedEnding(state);
@@ -127,6 +130,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       if (objective.key) key.textContent = isTouchLayout() ? (objective.key === 'WASD' ? t('drag') : t('touch')) : objective.key;
       else key.remove();
       if (isTouchLayout()) renderTouchControls(objective.key === 'E');
+      mountMinimap();
       return;
     }
 
@@ -167,6 +171,32 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     hud.querySelector('[data-testid=contracts-button]')?.addEventListener('click', () => panels.showContractBoard(state));
     hud.querySelector('[data-testid=help-button]')?.addEventListener('click', panels.showHelp);
     if (isTouchLayout()) renderTouchControls(false);
+    mountMinimap();
+  }
+
+  function mountMinimap() {
+    const frame = minimapFrame(innerWidth, innerHeight, isTouchLayout());
+    const button = document.createElement('button');
+    button.className = 'minimap-hit';
+    button.dataset.testid = 'minimap';
+    button.setAttribute('aria-label', t('minimapAria'));
+    button.style.left = `${frame.x}px`;
+    button.style.top = `${frame.y}px`;
+    button.style.width = `${frame.w}px`;
+    button.style.height = `${frame.h}px`;
+    button.addEventListener('click', (event) => {
+      const mark = pickMinimapMark({ x: event.clientX, y: event.clientY }, fieldMarks(state), worldFor(state), frame);
+      if (!mark || mark.id === waypointId) {
+        if (waypointId) toast(t('waypointCleared'));
+        waypoint = undefined;
+        waypointId = undefined;
+        return;
+      }
+      waypoint = mark.position;
+      waypointId = mark.id;
+      toast(t('waypointSet', { name: mark.label }));
+    });
+    hud.append(button);
   }
 
   function renderTouchControls(atResonance: boolean) {
@@ -436,8 +466,12 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
         }
       }
     }
+    if (waypoint && distance(state.player, waypoint) < 140) {
+      waypoint = undefined;
+      waypointId = undefined;
+    }
     pose = movementPose(dx, dy, pose.facing);
-    renderer.render(state, now, pose);
+    renderer.render(state, now, pose, waypoint);
     frameId = requestAnimationFrame(frame);
   }
 
@@ -522,6 +556,8 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     localWriter?.cancel();
     keys.clear();
     resetTouch();
+    waypoint = undefined;
+    waypointId = undefined;
     clearToast();
     state = prepareNewRun(state.character);
     panels.clear();

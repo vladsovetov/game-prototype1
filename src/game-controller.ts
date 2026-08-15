@@ -3,6 +3,7 @@ import { advanceTutorial, tutorialObjective, tutorialTarget } from './domain/tut
 import { memoryProgress, ROAD_HOME } from './domain/memory';
 import { hasReachedEnding, memoryChapter, sanctuaryProgress } from './domain/memory-arc';
 import { storyFor } from './domain/story';
+import { prepareNewRun } from './domain/run';
 import type { Appearance, CatalogEntry, Character, GameState, InteractionResult, QuirkId } from './domain/types';
 import { SEED_NAMES, distance } from './domain/world';
 import type { createSaveStore } from './persistence/save-store';
@@ -411,6 +412,16 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     toast('That truth is now part of The Road Home.');
   }
 
+  function beginNewTale() {
+    keys.clear();
+    resetTouch();
+    clearToast();
+    state = prepareNewRun(state.character);
+    panels.clear();
+    saveAndRefresh();
+    panels.showWake(state.character, wake, true, storyFor(state));
+  }
+
   addEventListener('keydown', keydown);
   addEventListener('keyup', keyup);
   addEventListener('pointermove', moveTouch, { passive: false });
@@ -438,6 +449,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     updatePersonality,
     updateAppearance,
     finishPersonalization,
+    beginNewTale,
     destroy: () => {
       removeEventListener('keydown', keydown);
       removeEventListener('keyup', keyup);

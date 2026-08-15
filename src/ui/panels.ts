@@ -3,12 +3,13 @@ import { BODIES, MARKS, MATERIALS, PALETTES, QUIRKS } from '../domain/catalog';
 import { ROAD_HOME } from '../domain/memory';
 import { LANTERN_HOUSE_ENDING, memoryChapter, type MemoryChapter } from '../domain/memory-arc';
 import { storyFor } from '../domain/story';
-import { SEED_NAMES } from '../domain/world';
+import { SEED_NAMES, worldFor } from '../domain/world';
 import type { Appearance, Character, GameState, QuirkId, StoryArc } from '../domain/types';
 
 export interface PanelActions {
   onImport(character: Character): void;
   onReset(): void;
+  onNewTale(): void;
   onPersonality(name: string, description: string, quirk: QuirkId): void;
   onAppearance(appearance: Appearance): void;
   onPersonalizationDone(): void;
@@ -280,6 +281,16 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
   function showJournal(state: GameState) {
     const c = shell('Field journal');
     const arc = storyFor(state);
+    const world = worldFor(state);
+    const folio = document.createElement('article');
+    folio.className = 'tale-folio';
+    folio.dataset.testid = 'tale-folio';
+    folio.innerHTML = `<div class="run-seal"><small>RUN</small><strong data-testid="tale-run-mark"></strong></div><div><span class="eyebrow"></span><h3></h3><p></p></div>`;
+    (folio.querySelector('[data-testid=tale-run-mark]') as HTMLElement).textContent = arc.runMark;
+    (folio.querySelector('.eyebrow') as HTMLElement).textContent = arc.source === 'local-model' ? 'Written on this device' : 'Woven from this run';
+    (folio.querySelector('h3') as HTMLElement).textContent = world.theme.name;
+    (folio.querySelector('p') as HTMLElement).textContent = arc.premise;
+    c.append(folio);
     const summary = document.createElement('p');
     summary.className = 'soft-copy';
     summary.textContent = `${state.discoveries.length} reactions remembered · ${state.seeds.length} seeds waiting · ${Object.keys(state.plantings).length} planted`;
@@ -349,9 +360,9 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
 
   function showHelp() {
     const c = shell('How to wander', true);
-    c.innerHTML = `<div class="controls keyboard-help"><b>WASD / ARROWS</b><span>Move</span><b>F</b><span>Use your current Gift near a strange object</span><b>E</b><span>Explore, borrow a Gift, or plant</span><b>J</b><span>Open field journal</span><b>C</b><span>Meet your companion</span></div><div class="touch-help"><div class="touch-help-mark">●</div><div><b>Drag the golden ember</b><span>Move in any direction. Let go to stop.</span></div><div class="touch-help-mark">✦</div><div><b>Tap a glowing petal</b><span>Use your Gift or explore whatever is nearby.</span></div></div><p class="soft-copy help-note">The lights are suggestions, not a timer. Wander as long as you like.</p><div class="choice-row"><button class="button danger">Reset this world</button></div>`;
+    c.innerHTML = `<div class="controls keyboard-help"><b>WASD / ARROWS</b><span>Move</span><b>F</b><span>Use your current Gift near a strange object</span><b>E</b><span>Explore, borrow a Gift, or plant</span><b>J</b><span>Open field journal</span><b>C</b><span>Meet your companion</span></div><div class="touch-help"><div class="touch-help-mark">●</div><div><b>Drag the golden ember</b><span>Move in any direction. Let go to stop.</span></div><div class="touch-help-mark">✦</div><div><b>Tap a glowing petal</b><span>Use your Gift or explore whatever is nearby.</span></div></div><p class="soft-copy help-note">The lights are suggestions, not a timer. Wander as long as you like.</p><div class="new-tale-note"><span class="eyebrow">Another beginning</span><p>Your companion stays, but this meadow, its story, and all progress will be replaced by a newly generated tale.</p><button class="button danger">Begin another tale</button></div>`;
     c.querySelector('.danger')?.addEventListener('click', () => {
-      if (confirm('Remove your character, discoveries, seeds, and sanctuary plantings from this browser?')) actions.onReset();
+      if (confirm('Begin another tale? Your companion stays, but this meadow and all of its progress will be replaced.')) actions.onNewTale();
     });
   }
 

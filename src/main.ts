@@ -22,6 +22,7 @@ let controller: ReturnType<typeof createGameController> | undefined;
 const panels = createPanels(modal, {
   onImport: (character: Character) => controller?.replaceCharacter(character),
   onReset: () => { store.clear(); location.reload(); },
+  onNewTale: () => controller?.beginNewTale(),
   onPersonality: (name: string, description: string, quirk: QuirkId) => controller?.updatePersonality(name, description, QUIRKS[quirk]),
   onAppearance: (appearance: Appearance) => controller?.updateAppearance(appearance),
   onPersonalizationDone: () => controller?.finishPersonalization(),

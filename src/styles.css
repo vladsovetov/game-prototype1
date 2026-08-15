@@ -186,6 +186,12 @@ textarea { min-height: 180px; resize: vertical; font: 13px/1.55 ui-monospace, SF
 
 .toast { max-width: min(620px, calc(100vw - 32px)); padding: 11px 17px; border: 1px solid #ffffff3b; border-radius: 999px; color: #fffcec; background: #173f3aeb; box-shadow: 0 12px 40px var(--shadow); text-align: center; animation: toast-in .25s ease-out; }
 .journal-list { display: grid; gap: 9px; }
+.tale-folio { display: grid; grid-template-columns: 92px 1fr; gap: 20px; align-items: center; margin: 0 0 22px; padding: 18px; border: 1px solid #315e5430; border-radius: 20px 6px 20px 6px; background: linear-gradient(135deg, #f9edcf, #fffdf5); }
+.tale-folio h3 { margin: 5px 0 8px; font: 500 30px/1 "Iowan Old Style", Georgia, serif; }
+.tale-folio p { margin: 0; color: var(--ink-soft); font-size: 13px; line-height: 1.5; }
+.run-seal { width: 82px; height: 82px; display: grid; place-items: center; align-content: center; border: 1px solid #a875326b; border-radius: 50%; color: #765326; background: #f2bd5824; box-shadow: inset 0 0 0 6px #fff8e271; transform: rotate(-3deg); }
+.run-seal small { font: 800 8px/1 ui-monospace, monospace; letter-spacing: .18em; }
+.run-seal strong { margin-top: 5px; font: 800 11px/1 ui-monospace, monospace; letter-spacing: .05em; }
 .journal-item { padding: 12px 14px; border-left: 3px solid #6fa18c; background: #eef5e9; }
 .journal-memory { margin: 22px 0; padding: 20px; border: 1px solid #315e5430; border-radius: 18px 5px 18px 5px; background: #fffdf5; }
 .journal-memory h3 { margin: 7px 0 9px; font: 500 31px/1 "Iowan Old Style", Georgia, serif; }
@@ -197,6 +203,8 @@ textarea { min-height: 180px; resize: vertical; font: 13px/1.55 ui-monospace, SF
 .controls b { color: var(--ink); font: 700 11px ui-monospace, monospace; }
 .touch-help { display: none; }
 .help-note { margin-top: 24px; }
+.new-tale-note { margin-top: 26px; padding-top: 20px; border-top: 1px solid #315e5430; }
+.new-tale-note p { max-width: 560px; margin: 8px 0 14px; color: var(--ink-soft); line-height: 1.5; }
 
 @keyframes rise { from { opacity: 0; transform: translateY(16px) scale(.98); } }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px) scale(.96); } }
@@ -218,6 +226,9 @@ textarea { min-height: 180px; resize: vertical; font: 13px/1.55 ui-monospace, SF
   .personalize-choice b { margin-top: 10px; }
   .passport { grid-template-columns: 1fr; }
   .trait-grid, .appearance-grid { grid-template-columns: 1fr; }
+  .tale-folio { grid-template-columns: 68px 1fr; gap: 13px; padding: 14px; }
+  .run-seal { width: 62px; height: 62px; }
+  .tale-folio h3 { font-size: 24px; }
   .hud-actions small { display: none; }
   .hud-actions button { min-width: 43px; height: 43px; }
   .identity { min-width: 0; }

@@ -4,6 +4,9 @@ import type { GameState } from './types';
 import { generatedDescription } from './character';
 import { gearForDirection } from './equipment';
 import { localizeExpedition, localizeReports } from './expedition';
+import { localizeRadio } from './radio';
+import { localizeRelics } from './relics';
+import { beatForExpedition, colorNarrative, ensureSeason } from './season';
 import { createRunDirection } from './run-direction';
 import type { BodyId, MaterialId } from './types';
 import { getActiveLocale, type Locale } from '../i18n/locale';
@@ -115,13 +118,15 @@ export function localizeState(state: GameState): GameState {
   const expeditionMeta = state.expeditionMeta ?? { completedContracts: 0, supplies: 0, insight: 0, rareFinds: [], builtProjects: [], reports: [] };
   const reports = localizeReports(expeditionMeta.reports);
   const fingerprints = reports.flatMap((report) => report.narrativeFingerprint ? [report.narrativeFingerprint] : []);
-  return {
+  const localized = ensureSeason({
     ...state,
     ...gear,
     character,
     memoryDetails,
     expeditionMeta: { ...expeditionMeta, reports },
     expedition: state.expedition ? localizeExpedition(state.expedition, fingerprints) : state.expedition,
+    radio: localizeRadio(state.radio, locale),
+    relics: localizeRelics(state.relics, locale),
     discoveries: state.discoveries.map((item) => {
       const current = localizeDiscovery(item);
       if (current !== item) return current;
@@ -129,5 +134,10 @@ export function localizeState(state: GameState): GameState {
       return legacy ? localizeDiscovery(legacy) : item;
     }),
     storyArc: storyNeedsRebuild(state, locale) ? createWovenStory(character, seed) : state.storyArc,
-  };
+  });
+  const beat = localized.expedition && localized.season ? beatForExpedition(localized.season, localized.expedition.id) : undefined;
+  if (localized.expedition && localized.season && beat && localized.expedition.narrative.source === 'fallback') {
+    return { ...localized, expedition: { ...localized.expedition, narrative: colorNarrative(localized.expedition.narrative, localized.season, beat) } };
+  }
+  return localized;
 }

@@ -2,7 +2,7 @@
 
 import { env, pipeline } from '@huggingface/transformers';
 import type { StoryWorkerMessage, StoryWorkerRequest } from './local-story-protocol';
-import { expeditionPrompt, openingPrompt } from './local-story-prompts';
+import { expeditionPrompt, openingPrompt, radioPrompt, relicPrompt } from './local-story-prompts';
 import { configureOnDeviceRuntime, fallbackStoryDevice, preferredStoryDevice, storyRuntimeError, type StoryDevice } from './local-story-runtime';
 
 const MODEL = 'onnx-community/SmolLM2-135M-Instruct-ONNX';
@@ -73,13 +73,21 @@ self.onmessage = async (event: MessageEvent<StoryWorkerRequest>) => {
     const localGenerator = await load(jobId);
     if (latestJobId !== jobId) return;
     send({ type: 'progress', jobId, stage: 'read', progress: 1 });
-    const isExpedition=event.data.type==='generate-expedition';
-    const prompt = isExpedition ? expeditionPrompt(event.data.locale,{character,seed,contractName:event.data.contractName,siteIds:event.data.siteIds,recentMemories:event.data.recentMemories,recentFingerprints:event.data.recentFingerprints}) : openingPrompt(event.data.locale,character,seed);
+    const kind=event.data.type;
+    const prompt = kind==='generate-expedition'
+      ? expeditionPrompt(event.data.locale,{character,seed,contractName:event.data.contractName,siteIds:event.data.siteIds,recentMemories:event.data.recentMemories,recentFingerprints:event.data.recentFingerprints,seasonBeat:event.data.seasonBeat,throughline:event.data.throughline,priorBeats:event.data.priorBeats})
+      : kind==='generate-radio'
+        ? radioPrompt(event.data.locale,{character,voice:event.data.voice,beat:event.data.beat,lastDecision:event.data.lastDecision,remembered:event.data.remembered})
+        : kind==='generate-relic'
+          ? relicPrompt(event.data.locale,{character,eventTitle:event.data.eventTitle,allowedForms:event.data.allowedForms,allowedColors:event.data.allowedColors})
+          : openingPrompt(event.data.locale,character,seed);
+    const completeType=kind==='generate-expedition'?'complete-expedition':kind==='generate-radio'?'complete-radio':kind==='generate-relic'?'complete-relic':'complete';
+    const maxTokens=kind==='generate-expedition'?420:kind==='generate-radio'?90:kind==='generate-relic'?180:220;
     send({ type: 'progress', jobId, stage: 'weave', progress: .1 });
-    const output = await localGenerator(prompt, { max_new_tokens: isExpedition?420:220, do_sample: true, temperature: .88, top_p: .92, repetition_penalty:1.12 });
+    const output = await localGenerator(prompt, { max_new_tokens: maxTokens, do_sample: true, temperature: .88, top_p: .92, repetition_penalty:1.12 });
     if (latestJobId !== jobId) return;
     send({ type: 'progress', jobId, stage: 'weave', progress: 1 });
-    send({ type: isExpedition?'complete-expedition':'complete', jobId, raw: generatedText(output) });
+    send({ type: completeType, jobId, raw: generatedText(output) });
   } catch (error) {
     if (latestJobId !== jobId) return;
     send({ type: 'error', jobId, message: storyRuntimeError(event.data.locale) });

@@ -142,4 +142,30 @@ describe('local story writer', () => {
 
     expect(expeditions).toEqual([{ expeditionId: 'water-route-7', title: 'Шепіт у водогоні' }]);
   });
+
+  it('lets a radio job run only while the writer is idle and yields a validated line', () => {
+    const worker = new FakeWorker();
+    const remarks: string[] = [];
+    const writer = createLocalStoryWriter({
+      workerFactory: () => worker,
+      onStatus: () => {},
+      onStory: () => {},
+      onRadio: (_id, remark) => remarks.push(remark.text),
+    });
+    const busy = writer.startExpedition({
+      expeditionId: 'water-route-7', seed: 7, character: generateCharacter(4),
+      contractName: 'Відновити водний маршрут', siteIds: ['pool'], recentMemories: [], recentFingerprints: [],
+    });
+    expect(writer.startRadio({
+      expeditionId: 'water-route-7', seed: 7, character: generateCharacter(4),
+      voice: 'curious', beat: 'strange-signal', lastDecision: '', remembered: [],
+    })).toBeUndefined();
+    worker.emit({ type: 'complete-expedition', jobId: busy, raw: '{' });
+    const radioId = writer.startRadio({
+      expeditionId: 'water-route-7', seed: 7, character: generateCharacter(4),
+      voice: 'curious', beat: 'strange-signal', lastDecision: '', remembered: [],
+    });
+    worker.emit({ type: 'complete-radio', jobId: radioId, raw: JSON.stringify({ text: 'Цей символ уже був на дверях станції.', mistaken: true }) });
+    expect(remarks).toEqual(['Цей символ уже був на дверях станції.']);
+  });
 });

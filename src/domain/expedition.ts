@@ -1,5 +1,7 @@
 import { getActiveLocale, localeTag, localizedCopy, type Locale } from '../i18n/locale';
 import { GIFTS } from './catalog';
+import { awardExpeditionRelic } from './relics';
+import { assignSeasonBeat, beatForExpedition, colorNarrative, resolveSeasonBeat } from './season';
 import { directionFor, REGION_NAMES } from './run-direction';
 import type { ContractId, ExpeditionMeta, ExpeditionNarrative, ExpeditionProgress, ExpeditionReport, ExpeditionSituation, GameState, GiftId, Point, RefugeProjectId } from './types';
 import { distance, worldFor } from './world';
@@ -301,7 +303,10 @@ export function startExpedition(state:GameState,contractId:ContractId,loadout:Gi
   const route=Array.from({length:4},(_,index)=>contract.sitePool[(offset+index)%contract.sitePool.length]!);
   const recent=expeditionMetaFor(state).reports.flatMap((report)=>report.narrativeFingerprint?[report.narrativeFingerprint]:[]);
   const expedition:ExpeditionProgress={id:`${contractId}-${seed>>>0}`,contractId,seed:seed>>>0,loadout:[loadout[0]!,loadout[1]!],siteIds:route.slice(0,3),requiredTotal:3,completed:[],optionalSiteId:route[3]!,pressure:0,supplies:0,insight:0,rareFinds:[],status:'active',narrative:fallbackNarrative(contractId,route,seed,recent)};
-  return result({...clone(state),expedition},true,say('started',{name:contract.name}));
+  let next:GameState=assignSeasonBeat({...clone(state),expedition},expedition.id);
+  const beat=beatForExpedition(next.season,expedition.id);
+  if(beat&&next.season&&next.expedition)next={...next,expedition:{...next.expedition,narrative:colorNarrative(next.expedition.narrative,next.season,beat)}};
+  return result(next,true,say('started',{name:contract.name}));
 }
 
 function sitePosition(state:GameState,siteId:string):Point|undefined{return worldFor(state).anomalies.find((site)=>site.id===siteId)?.position}
@@ -372,8 +377,10 @@ export function completeExpedition(state:GameState,now=Date.now()):ExpeditionRes
   const tag=localeTag();
   const memory=say('memory',{name:state.character.name,contract:contract.name.toLocaleLowerCase(tag),title:narrative.title,actions:run.completed.map((action)=>action.title.toLocaleLowerCase(tag)).join(', ')});
   const report:ExpeditionReport={id:`report-${run.id}-${now}`,contractId:run.contractId,title:narrative.title,summary:say('summary',{cause:narrative.cause,name:state.character.name,outcomes:run.completed.map((action)=>action.outcome).join(' ')}),actions:[...run.completed],securedSupplies,securedInsight,rareFinds:[...run.rareFinds],pressure:run.pressure,completedAt:now,memory,narrativeFingerprint:narrative.fingerprint};
-  const next=clone(state),meta=expeditionMetaFor(next);
+  let next=clone(state);const meta=expeditionMetaFor(next);
   next.expeditionMeta={completedContracts:meta.completedContracts+1,supplies:meta.supplies+securedSupplies,insight:meta.insight+securedInsight,rareFinds:[...meta.rareFinds,...run.rareFinds],builtProjects:meta.builtProjects,reports:[report,...meta.reports].slice(0,20)};
+  next=resolveSeasonBeat(next,run);
+  next=awardExpeditionRelic(next,run,now);
   delete next.expedition;
   return result(next,true,say('finished',{supplies:securedSupplies,insight:securedInsight}),report);
 }

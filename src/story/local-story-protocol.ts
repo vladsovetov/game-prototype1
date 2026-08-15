@@ -1,5 +1,6 @@
 import type { StoryIngredients } from '../domain/story';
-import type { ExpeditionMood, ExpeditionNarrative, ExpeditionPalette, ExpeditionSituation } from '../domain/types';
+import { RELIC_CONDITIONS, RELIC_FORMS, RELIC_MATERIALS, clampRelicColor } from '../domain/relics';
+import type { ExpeditionMood, ExpeditionNarrative, ExpeditionPalette, ExpeditionSituation, RadioRemark, Relic, RelicCondition, RelicForm, RelicMaterial } from '../domain/types';
 import type { Locale } from '../i18n/locale';
 
 const LIMITS: Record<keyof StoryIngredients, number> = {
@@ -22,12 +23,23 @@ export type StoryWorkerRequest = {
   locale: Locale;
   character: { name: string; description: string; gift: string; burden: string; quirk: string };
   contractName: string; siteIds: string[]; recentMemories: string[]; recentFingerprints: string[];
+  seasonBeat?: string; throughline?: string; priorBeats?: string[];
+} | {
+  type: 'generate-radio'; jobId: string; expeditionId: string; seed: number; locale: Locale;
+  character: { name: string; description: string; gift: string; burden: string; quirk: string };
+  voice: string; beat: string; lastDecision: string; remembered: string[];
+} | {
+  type: 'generate-relic'; jobId: string; eventId: string; seed: number; locale: Locale;
+  character: { name: string; description: string; gift: string; burden: string; quirk: string };
+  eventTitle: string; allowedForms: string; allowedColors: string;
 } | { type: 'cancel'; jobId: string };
 
 export type StoryWorkerMessage =
   | { type: 'progress'; jobId: string; stage: 'download' | 'read' | 'weave'; progress?: number }
   | { type: 'complete'; jobId: string; raw: string }
   | { type: 'complete-expedition'; jobId: string; raw: string }
+  | { type: 'complete-radio'; jobId: string; raw: string }
+  | { type: 'complete-relic'; jobId: string; raw: string }
   | { type: 'error'; jobId: string; message: string };
 
 export type StoryParseResult = { ok: true; value: StoryIngredients } | { ok: false; reason: string };
@@ -123,4 +135,30 @@ export function parseExpeditionNarrative(raw:string,siteIds:string[],recentFinge
   const fingerprint=`${situation}|${mood}|${palette}`;
   if(recentFingerprints.includes(fingerprint))return{ok:false,reason:expeditionReason(locale,'repeat')};
   return{ok:true,value:{title:card.title.trim(),situation,mood,palette,cause:card.cause.trim(),siteNotes:noteObjects.map((note)=>({siteId:note.siteId as string,observation:(note.observation as string).trim()})),optionalLead:card.optionalLead.trim(),warning:card.warning.trim(),rareFind:card.rareFind.trim(),visualTags:(card.visualTags as string[]).map((tag)=>tag.trim()),fingerprint,source:'local-model'}};
+}
+
+export type RadioParseResult={ok:true;value:Pick<RadioRemark,'text'|'mistaken'>}|{ok:false;reason:string};
+export function parseRadioRemark(raw:string,locale:Locale='uk'):RadioParseResult{
+  const start=raw.indexOf('{'),end=raw.lastIndexOf('}');
+  if(start<0||end<=start)return{ok:false,reason:expeditionReason(locale,'noCard')};
+  let parsed:unknown;try{parsed=JSON.parse(raw.slice(start,end+1))}catch{return{ok:false,reason:expeditionReason(locale,'incomplete')}}
+  if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))return{ok:false,reason:expeditionReason(locale,'shape')};
+  const card=parsed as Record<string,unknown>;
+  if(!bounded(card.text,160,locale))return{ok:false,reason:expeditionReason(locale,'language')};
+  return{ok:true,value:{text:card.text.trim(),mistaken:card.mistaken===true}};
+}
+
+export type RelicParseResult={ok:true;value:Omit<Relic,'id'|'eventId'|'wearableId'|'source'>}|{ok:false;reason:string};
+export function parseRelicCard(raw:string,seed:number,locale:Locale='uk'):RelicParseResult{
+  const start=raw.indexOf('{'),end=raw.lastIndexOf('}');
+  if(start<0||end<=start)return{ok:false,reason:expeditionReason(locale,'noCard')};
+  let parsed:unknown;try{parsed=JSON.parse(raw.slice(start,end+1))}catch{return{ok:false,reason:expeditionReason(locale,'incomplete')}}
+  if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))return{ok:false,reason:expeditionReason(locale,'shape')};
+  const card=parsed as Record<string,unknown>;
+  if(!bounded(card.name,48,locale)||!bounded(card.story,180,locale)||!bounded(card.symbol,32,locale))return{ok:false,reason:expeditionReason(locale,'language')};
+  const form=String(card.form) as RelicForm;
+  const material=String(card.material) as RelicMaterial;
+  const condition=String(card.condition) as RelicCondition;
+  if(!RELIC_FORMS.includes(form)||!RELIC_MATERIALS.includes(material)||!RELIC_CONDITIONS.includes(condition))return{ok:false,reason:expeditionReason(locale,'type')};
+  return{ok:true,value:{name:card.name.trim(),story:card.story.trim(),material,color:clampRelicColor(String(card.color??''),seed),symbol:card.symbol.trim(),condition,form,eventTitle:card.name.trim()}};
 }

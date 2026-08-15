@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseExpeditionNarrative, parseStoryIngredients } from './local-story-protocol';
+import { parseExpeditionNarrative, parseRadioRemark, parseRelicCard, parseStoryIngredients } from './local-story-protocol';
 
 const valid = {
   place: 'Скляний сад',
@@ -116,5 +116,26 @@ describe('local expedition protocol', () => {
     };
     const result = parseExpeditionNarrative(JSON.stringify(english), ['pool', 'root', 'sign', 'garden'], [], 'en');
     expect(result).toMatchObject({ ok: true, value: { title: english.title, situation: 'зникнення', mood: 'тиха-тривога', palette: 'мідь-мох' } });
+  });
+});
+
+describe('radio and relic protocol', () => {
+  it('accepts a short Ukrainian radio line and rejects English on a Ukrainian job', () => {
+    expect(parseRadioRemark(JSON.stringify({ text: 'Цей символ уже був на дверях станції.', mistaken: true }))).toEqual({
+      ok: true, value: { text: 'Цей символ уже був на дверях станції.', mistaken: true },
+    });
+    expect(parseRadioRemark(JSON.stringify({ text: 'This symbol was on the door.', mistaken: false })).ok).toBe(false);
+  });
+
+  it('accepts only trusted relic forms and remaps unknown colors', () => {
+    const parsed = parseRelicCard(JSON.stringify({
+      name: 'Мідний ліхтар', story: 'Зібрано після нічної помпи.', material: 'copper', color: '#ffffff',
+      symbol: 'крапля', condition: 'weathered', form: 'lantern',
+    }), 7);
+    expect(parsed).toMatchObject({ ok: true, value: { form: 'lantern', material: 'copper' } });
+    if (parsed.ok) expect(parsed.value.color).not.toBe('#ffffff');
+    expect(parseRelicCard(JSON.stringify({
+      name: 'Меч', story: 'Сила плюс десять.', material: 'steel', color: '#c47a3a', symbol: 'лезо', condition: 'new', form: 'sword',
+    }), 7).ok).toBe(false);
   });
 });

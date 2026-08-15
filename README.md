@@ -39,7 +39,7 @@ You can also keep the random character, add a short personality detail, or adjus
 
 Every fresh run immediately gets a deterministic procedural story, so gameplay never waits for AI. After the first recovered memory, **Let this device write the tale** can enhance that story using `onnx-community/SmolLM2-135M-Instruct-ONNX` through Transformers.js.
 
-The first opt-in downloads a quantized model of roughly 120–180 MB from Hugging Face and stores it in browser cache. The worker prefers WebGPU and falls back to WebAssembly/CPU where possible. WebGPU—not WebGL—is the browser API used for general GPU computation. Model inference happens in a Web Worker; character/story prompts are not sent to a game server.
+The first opt-in downloads a quantized model of roughly 120–180 MB from Hugging Face and stores it in browser cache. The worker uses WebGPU only when a real GPU adapter answers, then retries a single-thread WebAssembly/CPU path if that fails. Phones without WebGPU therefore stay on CPU instead of dying on a GPU-only load. WebGPU—not WebGL—is the browser API used for general GPU computation. Model inference happens in a Web Worker; character/story prompts are not sent to a game server.
 
 The model returns short narrative ingredients only. The game validates and length-limits them, composes trusted prose, and inserts it as text. It cannot create mechanics, statistics, rewards, HTML, or executable code. If downloading or generation fails, the procedural story already in the journal remains unchanged and the game stays playable.
 

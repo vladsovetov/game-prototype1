@@ -1,4 +1,5 @@
-import { AI_CONTEXT_PACKET, validateCharacterCard } from '../domain/character';
+import { aiContextPacket, validateCharacterCard } from '../domain/character';
+import { t } from '../i18n/messages';
 import { APPEARANCE_GROUP_NAMES, APPEARANCE_NAMES, BODIES, MARKS, MATERIALS, PALETTES, QUIRKS } from '../domain/catalog';
 import { WEARABLES } from '../domain/equipment';
 import { ROAD_HOME } from '../domain/memory';
@@ -32,7 +33,9 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = `modal${compact ? ' modal-compact' : ''}`;
-    section.innerHTML = `<div class="modal-body"><div class="modal-head"><div><span class="eyebrow">Ненаписане</span><h2></h2></div><button class="close" aria-label="Закрити">×</button></div><div data-slot="content"></div></div>`;
+    section.innerHTML = `<div class="modal-body"><div class="modal-head"><div><span class="eyebrow"></span><h2></h2></div><button class="close" aria-label="">×</button></div><div data-slot="content"></div></div>`;
+    (section.querySelector('.eyebrow') as HTMLElement).textContent = t('brand');
+    section.querySelector('.close')?.setAttribute('aria-label', t('close'));
     (section.querySelector('h2') as HTMLElement).textContent = title;
     section.querySelector('.close')?.addEventListener('click', onClose);
     root.append(section);
@@ -45,35 +48,39 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     const section = document.createElement('section');
     section.className = 'story-card wake-card';
     const localReady = story?.source === 'local-model';
-    section.innerHTML = `<span class="eyebrow"></span><h1 data-testid="tutorial-character-name"></h1><p class="wake-purpose"></p><div class="first-memory"><small>ПЕРША МІСІЯ</small><strong></strong><span data-summary></span></div><div class="wake-actions"></div>`;
-    (section.querySelector('.eyebrow') as HTMLElement).textContent = localReady ? 'Світ створено локально на цьому пристрої' : 'Ваш випадковий супутник';
+    section.innerHTML = `<span class="eyebrow"></span><h1 data-testid="tutorial-character-name"></h1><p class="wake-purpose"></p><div class="first-memory"><small></small><strong></strong><span data-summary></span></div><div class="wake-actions"></div>`;
+    (section.querySelector('.eyebrow') as HTMLElement).textContent = localReady ? t('localWorldReady') : t('randomCompanion');
     (section.querySelector('h1') as HTMLElement).textContent = character.name;
+    (section.querySelector('.first-memory small') as HTMLElement).textContent = t('firstMission');
     (section.querySelector('.wake-purpose') as HTMLElement).textContent = isRoadHome
-      ? `Допоможіть персонажу ${character.name} повернути втрачений спогад і завершити першу польову місію.`
-      : `Допоможіть персонажу ${character.name} зробити перше відкриття.`;
-    (section.querySelector('.first-memory strong') as HTMLElement).textContent = isRoadHome ? (story?.chapters.sign?.title ?? 'Дорога додому') : 'Перше відкриття';
+      ? t('wakePurposeRoad', { name: character.name })
+      : t('wakePurposeDiscovery', { name: character.name });
+    (section.querySelector('.first-memory strong') as HTMLElement).textContent = isRoadHome ? (story?.chapters.sign?.title ?? t('roadHome')) : t('firstDiscovery');
     const shortPremise = story?.premise.split('. ').slice(0, 2).join('. ');
     (section.querySelector('[data-summary]') as HTMLElement).textContent = isRoadHome
-      ? (shortPremise ? `${shortPremise}${shortPremise.endsWith('.') ? '' : '.'}` : 'Поверніть дві підказки, щоб дізнатися, хто чекав попереду.')
-      : `Ідіть за одним вогником і випробуйте інструмент «${character.gift.name}».`;
+      ? (shortPremise ? `${shortPremise}${shortPremise.endsWith('.') ? '' : '.'}` : t('rememberClues'))
+      : t('followGlow', { gift: character.gift.name });
     const actionsRoot = section.querySelector<HTMLElement>('.wake-actions')!;
     if (!localReady) {
       const local = document.createElement('button');
       local.className = 'button primary wake-local';
-      local.setAttribute('aria-label', 'Створити новий світ локально з ШІ');
-      local.innerHTML = `Створити мій світ локально <span aria-hidden="true">✦</span><small>≈120–180 МБ уперше · усе лишається у браузері</small>`;
+      local.setAttribute('aria-label', t('createLocalAria'));
+      local.innerHTML = `<span></span> <span aria-hidden="true">✦</span><small></small>`;
+      (local.querySelector('span') as HTMLElement).textContent = t('createLocal');
+      (local.querySelector('small') as HTMLElement).textContent = t('createLocalHint');
       local.addEventListener('click', actions.onLocalStory);
       actionsRoot.append(local);
     }
     const wake = document.createElement('button');
     wake.className = localReady ? 'button primary' : 'text-button';
-    wake.innerHTML = localReady ? 'Увійти у створений світ <span aria-hidden="true">→</span>' : 'Прокинутися без очікування <span aria-hidden="true">→</span>';
+    wake.innerHTML = `<span></span> <span aria-hidden="true">${localReady ? '→' : '→'}</span>`;
+    (wake.querySelector('span') as HTMLElement).textContent = localReady ? t('enterWorld') : t('wakeNow');
     wake.addEventListener('click', onWake);
     actionsRoot.append(wake);
     root.append(section);
   }
 
-  function showMemoryBeat(title: string, copy: string, action: string, onContinue: () => void, chapterTitle = 'Дорога додому') {
+  function showMemoryBeat(title: string, copy: string, action: string, onContinue: () => void, chapterTitle = t('roadHome')) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card memory-beat';
@@ -90,7 +97,10 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card memory-chapter-card';
-    section.innerHTML = `<div class="chapter-number"><span>Спогад</span><strong></strong></div><span class="eyebrow">Повертається ще одна сторінка</span><h2></h2><div class="chapter-keepsake"></div><p class="soft-copy"></p><button class="button primary">Зберегти цей спогад</button>`;
+    section.innerHTML = `<div class="chapter-number"><span></span><strong></strong></div><span class="eyebrow"></span><h2></h2><div class="chapter-keepsake"></div><p class="soft-copy"></p><button class="button primary"></button>`;
+    (section.querySelector('.chapter-number span') as HTMLElement).textContent = t('memory');
+    (section.querySelector('.eyebrow') as HTMLElement).textContent = t('anotherPage');
+    (section.querySelector('button') as HTMLElement).textContent = t('saveMemory');
     (section.querySelector('.chapter-number strong') as HTMLElement).textContent = String(recovered).padStart(2, '0');
     (section.querySelector('h2') as HTMLElement).textContent = chapter.title;
     (section.querySelector('.chapter-keepsake') as HTMLElement).textContent = chapter.keepsake;
@@ -103,9 +113,11 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card ending-card';
-    section.innerHTML = `<div class="ending-lantern" aria-hidden="true">✦</div><span class="eyebrow">Посаджено шість спогадів · Тепер ви пам’ятаєте</span><h2></h2><p class="ending-name"></p><p class="ending-story"></p><button class="button primary">Нести світло далі</button>`;
+    section.innerHTML = `<div class="ending-lantern" aria-hidden="true">✦</div><span class="eyebrow"></span><h2></h2><p class="ending-name"></p><p class="ending-story"></p><button class="button primary"></button>`;
+    (section.querySelector('.eyebrow') as HTMLElement).textContent = t('sixPlanted');
     (section.querySelector('h2') as HTMLElement).textContent = ending.title;
-    (section.querySelector('.ending-name') as HTMLElement).textContent = `${character.name}, ось що Притулок намагався вам розповісти.`;
+    (section.querySelector('.ending-name') as HTMLElement).textContent = t('endingName', { name: character.name });
+    (section.querySelector('button') as HTMLElement).textContent = t('carryLight');
     (section.querySelector('.ending-story') as HTMLElement).textContent = ending.story;
     section.querySelector('button')?.addEventListener('click', onContinue);
     root.append(section);
@@ -115,10 +127,12 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card memory-choice-card';
-    section.innerHTML = `<span class="eyebrow">Одна правда досі не написана</span><h2></h2><p class="soft-copy">Посаджений дороговказ зробив цей спогад видимим у Притулку. Сам спогад не знає останньої відповіді. Ваша відповідь стане частиною історії <b data-name></b>.</p><div class="memory-choices"></div><button class="text-button" data-custom>Написати власну відповідь →</button>`;
+    section.innerHTML = `<span class="eyebrow"></span><h2></h2><p class="soft-copy"></p><div class="memory-choices"></div><button class="text-button" data-custom></button>`;
+    (section.querySelector('.eyebrow') as HTMLElement).textContent = t('oneTruth');
+    (section.querySelector('p') as HTMLElement).textContent = t('memoryChoiceCopy', { name: character.name });
     (section.querySelector('h2') as HTMLElement).textContent = story?.question ?? ROAD_HOME.question;
-    (section.querySelector('[data-name]') as HTMLElement).textContent = character.name;
-    const choices = ['Обрана родина', 'Терплячий друг', 'Вогонь підтримували для себе'];
+    (section.querySelector('[data-custom]') as HTMLElement).textContent = t('writeOwn');
+    const choices = [t('chosenFamily'), t('patientFriend'), t('keptForSelf')];
     const list = section.querySelector<HTMLElement>('.memory-choices')!;
     for (const choice of choices) {
       const button = document.createElement('button');
@@ -135,10 +149,14 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card memory-choice-card';
-    section.innerHTML = `<span class="eyebrow"></span><h2></h2><p class="soft-copy">Напишіть одну коротку відповідь. Вона залишиться в історії <b data-name></b>.</p><label class="field-label">Ваша відповідь<input name="memory" maxlength="100" autocomplete="off" placeholder="Хтось, хто..."></label><div class="choice-row"><button class="button primary" data-save disabled>Зберегти цей спогад</button><button class="button ghost-light" data-back>Назад</button></div>`;
-    (section.querySelector('.eyebrow') as HTMLElement).textContent = story?.chapters.sign?.title ?? 'Дорога додому';
+    section.innerHTML = `<span class="eyebrow"></span><h2></h2><p class="soft-copy"></p><label class="field-label"><span></span><input name="memory" maxlength="100" autocomplete="off"></label><div class="choice-row"><button class="button primary" data-save disabled></button><button class="button ghost-light" data-back></button></div>`;
+    (section.querySelector('.eyebrow') as HTMLElement).textContent = story?.chapters.sign?.title ?? t('roadHome');
+    (section.querySelector('p') as HTMLElement).textContent = t('writeShort', { name: character.name });
+    (section.querySelector('.field-label span') as HTMLElement).textContent = t('yourAnswer');
+    section.querySelector('input')!.setAttribute('placeholder', t('someoneWho'));
+    (section.querySelector('[data-save]') as HTMLElement).textContent = t('saveMemory');
+    (section.querySelector('[data-back]') as HTMLElement).textContent = t('back');
     (section.querySelector('h2') as HTMLElement).textContent = story?.question ?? ROAD_HOME.question;
-    (section.querySelector('[data-name]') as HTMLElement).textContent = character.name;
     const input = section.querySelector<HTMLInputElement>('[name=memory]')!;
     const save = section.querySelector<HTMLButtonElement>('[data-save]')!;
     input.addEventListener('input', () => { save.disabled = !input.value.trim(); });
@@ -155,8 +173,11 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card compatibility-card';
-    section.innerHTML = `<span class="eyebrow">Збереження захищене</span><h2>Ця галявина з новішої версії</h2><p class="soft-copy">Цей прототип не може безпечно відкрити версію <b data-version></b>. Ваші збережені дані залишилися без змін.</p><button class="button primary">Почати на новій галявині</button>`;
-    (section.querySelector('[data-version]') as HTMLElement).textContent = String(version);
+    section.innerHTML = `<span class="eyebrow"></span><h2></h2><p class="soft-copy"></p><button class="button primary"></button>`;
+    (section.querySelector('.eyebrow') as HTMLElement).textContent = t('saveProtected');
+    (section.querySelector('h2') as HTMLElement).textContent = t('newVersion');
+    (section.querySelector('p') as HTMLElement).textContent = t('newerSaveCopy', { version });
+    (section.querySelector('button') as HTMLElement).textContent = t('startNewClearing');
     section.querySelector('button')?.addEventListener('click', actions.onReset);
     root.append(section);
   }
@@ -166,8 +187,20 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card personalize-card';
-    section.innerHTML = `<span class="eyebrow">Перший спогад створено</span><h2>Зробіть персонажа своїм</h2><p class="soft-copy">Тепер, коли ви зустріли <b data-name></b>, можна додати щось від себе або зберегти таємницю.</p><div class="personalize-actions"><button class="personalize-choice" data-personality><span>01</span><b>Додати характер</b><small>Дайте світові більше рис для відгуку</small></button><button class="personalize-choice" data-look><span>02</span><b>Змінити вигляд</b><small>Оберіть тіло, матеріал і кольори</small></button><button class="personalize-choice" data-ai><span>03</span><b>Створити за допомогою ШІ</b><small>Додайте глибше уявленого персонажа</small></button></div><button class="text-button" data-done>Досліджувати далі <span aria-hidden="true">→</span></button>`;
-    (section.querySelector('[data-name]') as HTMLElement).textContent = character.name;
+    section.innerHTML = `<span class="eyebrow"></span><h2></h2><p class="soft-copy"></p><div class="personalize-actions"><button class="personalize-choice" data-personality><span>01</span><b></b><small></small></button><button class="personalize-choice" data-look><span>02</span><b></b><small></small></button><button class="personalize-choice" data-ai><span>03</span><b></b><small></small></button></div><button class="text-button" data-done></button>`;
+    (section.querySelector('.eyebrow') as HTMLElement).textContent = t('firstMemoryMade');
+    (section.querySelector('h2') as HTMLElement).textContent = t('makeCharacterYours');
+    (section.querySelector('p') as HTMLElement).textContent = t('personalizeCopy', { name: character.name });
+    const personality = section.querySelector('[data-personality]')!;
+    personality.querySelector('b')!.textContent = t('addPersonality');
+    personality.querySelector('small')!.textContent = t('addPersonalityHint');
+    const look = section.querySelector('[data-look]')!;
+    look.querySelector('b')!.textContent = t('changeLook');
+    look.querySelector('small')!.textContent = t('changeLookHint');
+    const ai = section.querySelector('[data-ai]')!;
+    ai.querySelector('b')!.textContent = t('createWithAi');
+    ai.querySelector('small')!.textContent = t('createWithAiHint');
+    (section.querySelector('[data-done]') as HTMLElement).textContent = t('exploreOn');
     section.querySelector('[data-personality]')?.addEventListener('click', () => showPersonality(character));
     section.querySelector('[data-look]')?.addEventListener('click', () => showAppearance(character));
     section.querySelector('[data-ai]')?.addEventListener('click', () => showAI(() => showPersonalize(currentCharacter ?? character)));
@@ -177,8 +210,15 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
 
   function showPersonality(character: Character) {
     const back = () => showPersonalize(currentCharacter ?? character);
-    const c = shell('Розкажіть одну правдиву річ', true, back);
-    c.innerHTML = `<p class="soft-copy">Кількох слів достатньо. Це змінює лише те, як галявина описує вашого супутника, а не силу персонажа.</p><label class="field-label">Ім’я<input name="name" maxlength="24"></label><label class="field-label">Який це персонаж?<textarea name="description" maxlength="180"></textarea></label><label class="field-label">Маленька звичка<select name="quirk"></select></label><div class="choice-row"><button class="button primary" data-save>Зберегти</button><button class="button ghost-light" data-back>Не зараз</button></div>`;
+    const c = shell(t('tellOneTruth'), true, back);
+    c.innerHTML = `<p class="soft-copy"></p><label class="field-label"><span></span><input name="name" maxlength="24"></label><label class="field-label"><span></span><textarea name="description" maxlength="180"></textarea></label><label class="field-label"><span></span><select name="quirk"></select></label><div class="choice-row"><button class="button primary" data-save></button><button class="button ghost-light" data-back></button></div>`;
+    (c.querySelector('p') as HTMLElement).textContent = t('personalityCopy');
+    const labels = c.querySelectorAll('.field-label span');
+    labels[0]!.textContent = t('nameLabel');
+    labels[1]!.textContent = t('whatCharacter');
+    labels[2]!.textContent = t('smallHabit');
+    (c.querySelector('[data-save]') as HTMLElement).textContent = t('save');
+    (c.querySelector('[data-back]') as HTMLElement).textContent = t('notNow');
     const name = c.querySelector<HTMLInputElement>('[name=name]')!;
     const description = c.querySelector<HTMLTextAreaElement>('[name=description]')!;
     const quirk = c.querySelector<HTMLSelectElement>('[name=quirk]')!;
@@ -201,8 +241,11 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
 
   function showAppearance(character: Character) {
     const back = () => showPersonalize(currentCharacter ?? character);
-    const c = shell('Змініть вигляд', true, back);
-    c.innerHTML = `<p class="soft-copy">Усі ці зміни лише візуальні. Їх можна змінити будь-коли.</p><div class="appearance-grid"></div><div class="choice-row"><button class="button primary" data-save>Обрати цей вигляд</button><button class="button ghost-light" data-back>Не зараз</button></div>`;
+    const c = shell(t('changeAppearance'), true, back);
+    c.innerHTML = `<p class="soft-copy"></p><div class="appearance-grid"></div><div class="choice-row"><button class="button primary" data-save></button><button class="button ghost-light" data-back></button></div>`;
+    (c.querySelector('p') as HTMLElement).textContent = t('appearanceCopy');
+    (c.querySelector('[data-save]') as HTMLElement).textContent = t('chooseLook');
+    (c.querySelector('[data-back]') as HTMLElement).textContent = t('notNow');
     const grid = c.querySelector<HTMLElement>('.appearance-grid')!;
     const groups: Array<[keyof Appearance, readonly string[]]> = [
       ['body', BODIES], ['material', MATERIALS], ['palette', PALETTES], ['mark', MARKS],
@@ -231,8 +274,12 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
   }
 
   function showImport(back: () => void = clear) {
-    const c = shell('Додайте персонажа', false, back);
-    c.innerHTML = `<p class="soft-copy">Вставте JSON-картку, створену вашим ШІ. Галявина приймає уяву, але ігнорує вигадані характеристики й сили.</p><textarea aria-label="JSON персонажа" spellcheck="false"></textarea><div data-errors></div><div class="choice-row"><button class="button primary">Зустріти персонажа</button><button class="button ghost-light" data-back>Назад</button></div>`;
+    const c = shell(t('addCharacter'), false, back);
+    c.innerHTML = `<p class="soft-copy"></p><textarea spellcheck="false"></textarea><div data-errors></div><div class="choice-row"><button class="button primary"></button><button class="button ghost-light" data-back></button></div>`;
+    (c.querySelector('p') as HTMLElement).textContent = t('importCopy');
+    c.querySelector('textarea')!.setAttribute('aria-label', t('characterJson'));
+    (c.querySelector('.primary') as HTMLElement).textContent = t('meetCharacter');
+    (c.querySelector('[data-back]') as HTMLElement).textContent = t('back');
     const box = c.querySelector('textarea')!;
     const errors = c.querySelector<HTMLElement>('[data-errors]')!;
     c.querySelector('.primary')?.addEventListener('click', () => {
@@ -254,12 +301,18 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
   }
 
   function showAI(back: () => void = clear) {
-    const c = shell('Створіть за допомогою ШІ', false, back);
-    c.innerHTML = `<p class="soft-copy">Скопіюйте короткий опис світу до будь-якого ШІ. Попросіть уявити вашого супутника, а потім поверніть сюди результат у форматі JSON.</p><textarea readonly aria-label="Контекст для створення персонажа ШІ"></textarea><div class="choice-row"><button class="button primary">Скопіювати опис світу</button><button class="button" data-import>Вставити результат</button><button class="button ghost-light" data-back>Назад</button></div>`;
-    c.querySelector('textarea')!.value = AI_CONTEXT_PACKET;
+    const c = shell(t('createWithAi'), false, back);
+    c.innerHTML = `<p class="soft-copy"></p><textarea readonly></textarea><div class="choice-row"><button class="button primary"></button><button class="button" data-import></button><button class="button ghost-light" data-back></button></div>`;
+    (c.querySelector('p') as HTMLElement).textContent = t('aiCopy');
+    const packet = aiContextPacket();
+    c.querySelector('textarea')!.setAttribute('aria-label', t('aiContext'));
+    c.querySelector('textarea')!.value = packet;
+    (c.querySelector('.primary') as HTMLElement).textContent = t('copyWorld');
+    (c.querySelector('[data-import]') as HTMLElement).textContent = t('pasteResult');
+    (c.querySelector('[data-back]') as HTMLElement).textContent = t('back');
     c.querySelector('.primary')?.addEventListener('click', async () => {
-      await navigator.clipboard.writeText(AI_CONTEXT_PACKET);
-      c.querySelector('.primary')!.textContent = 'Скопійовано';
+      await navigator.clipboard.writeText(packet);
+      c.querySelector('.primary')!.textContent = t('copied');
     });
     c.querySelector('[data-import]')?.addEventListener('click', () => showImport(back));
     c.querySelector('[data-back]')?.addEventListener('click', back);
@@ -281,7 +334,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
   function showCharacter(state: GameState) {
     const character = state.character;
     currentCharacter = character;
-    const c = shell('Ваш супутник');
+    const c = shell(t('companion'));
     const pass = document.createElement('div');
     pass.className = 'passport';
     const preview = document.createElement('div');
@@ -294,17 +347,17 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     p.textContent = character.description;
     const grid = document.createElement('div');
     grid.className = 'trait-grid';
-    grid.append(trait('Інструмент', character.gift.name, character.gift.description), trait('Стиль роботи', character.burden.name, character.burden.description), trait('Особливість', character.quirk.name, character.quirk.description));
+    grid.append(trait(t('tool'), character.gift.name, character.gift.description), trait(t('workStyle'), character.burden.name, character.burden.description), trait(t('trait'), character.quirk.name, character.quirk.description));
     const edit = document.createElement('button');
     edit.className = 'text-button passport-edit';
-    edit.textContent = 'Налаштувати персонажа →';
+    edit.textContent = t('customizeCharacter');
     edit.addEventListener('click', () => showPersonalize(character));
     const fieldKit = document.createElement('section');
     fieldKit.className = 'field-kit';
     const kitTitle = document.createElement('h4');
-    kitTitle.textContent = 'Польове спорядження';
+    kitTitle.textContent = t('fieldGear');
     const kitCopy = document.createElement('p');
-    kitCopy.textContent = 'Торкніться предмета, щоб одягнути або зняти його. Зміни видно на персонажі.';
+    kitCopy.textContent = t('fieldGearCopy');
     const kitGrid = document.createElement('div');
     kitGrid.className = 'equipment-grid';
     for (const id of state.wardrobe) {
@@ -315,7 +368,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
       button.dataset.testid = `equipment-${id}`;
       button.setAttribute('aria-pressed', String(equipped));
       button.innerHTML = `<span></span><strong></strong><small></small>`;
-      button.querySelector('span')!.textContent = equipped ? 'ОДЯГНЕНО' : item.mark;
+      button.querySelector('span')!.textContent = equipped ? t('equipped') : item.mark;
       button.querySelector('strong')!.textContent = item.name;
       button.querySelector('small')!.textContent = item.description;
       button.addEventListener('click', () => actions.onEquip(id));
@@ -328,32 +381,33 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
   }
 
   function showJournal(state: GameState) {
-    const c = shell('Польовий щоденник');
+    const c = shell(t('fieldJournal'));
     const arc = storyFor(state);
     const world = worldFor(state);
     const folio = document.createElement('article');
     folio.className = 'tale-folio';
     folio.dataset.testid = 'tale-folio';
-    folio.innerHTML = `<div class="run-seal"><small>ОПОВІДЬ</small><strong data-testid="tale-run-mark"></strong></div><div><span class="eyebrow"></span><h3></h3><p></p></div>`;
+    folio.innerHTML = `<div class="run-seal"><small></small><strong data-testid="tale-run-mark"></strong></div><div><span class="eyebrow"></span><h3></h3><p></p></div>`;
+    (folio.querySelector('.run-seal small') as HTMLElement).textContent = t('tale');
     (folio.querySelector('[data-testid=tale-run-mark]') as HTMLElement).textContent = arc.runMark;
-    (folio.querySelector('.eyebrow') as HTMLElement).textContent = arc.source === 'local-model' ? 'Написано на цьому пристрої' : 'Виткано з цієї мандрівки';
+    (folio.querySelector('.eyebrow') as HTMLElement).textContent = arc.source === 'local-model' ? t('writtenHere') : t('wovenHere');
     (folio.querySelector('h3') as HTMLElement).textContent = world.theme.name;
     (folio.querySelector('p') as HTMLElement).textContent = arc.premise;
     c.append(folio);
     const summary = document.createElement('p');
     summary.className = 'soft-copy';
-    summary.textContent = `Відгуків збережено: ${state.discoveries.length} · Зернин чекає: ${state.seeds.length} · Посаджено: ${Object.keys(state.plantings).length}`;
+    summary.textContent = t('journalSummary', { discoveries: state.discoveries.length, seeds: state.seeds.length, planted: Object.keys(state.plantings).length });
     c.append(summary);
     const expeditionMeta=expeditionMetaFor(state);
     if(expeditionMeta.reports.length){
       const reports=document.createElement('section');
       reports.className='expedition-reports';
-      const title=document.createElement('h3'); title.textContent='Звіти експедицій'; reports.append(title);
+      const title=document.createElement('h3'); title.textContent=t('expeditionReports'); reports.append(title);
       for(const report of expeditionMeta.reports.slice(0,5)){
         const article=document.createElement('article'); article.className='expedition-report';
         const heading=document.createElement('strong'); heading.textContent=report.title;
         const copy=document.createElement('p'); copy.textContent=report.summary;
-        const loot=document.createElement('small'); loot.textContent=`${report.securedSupplies} припасів · ${report.securedInsight} знань${report.rareFinds.length?` · ${report.rareFinds.join(', ')}`:''}`;
+        const loot=document.createElement('small'); loot.textContent=t('reportLoot',{supplies:report.securedSupplies,insight:report.securedInsight,finds:report.rareFinds.length?` · ${report.rareFinds.join(', ')}`:''});
         article.append(heading,copy,loot); reports.append(article);
       }
       c.append(reports);
@@ -365,7 +419,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
       memory.className = 'journal-memory';
       const eyebrow = document.createElement('span');
       eyebrow.className = 'eyebrow';
-      eyebrow.textContent = 'Відновлений спогад';
+      eyebrow.textContent = t('recoveredMemory');
       const title = document.createElement('h3');
       title.textContent = chapter.title;
       const story = document.createElement('p');
@@ -384,7 +438,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
       ending.className = 'journal-memory journal-ending';
       const eyebrow = document.createElement('span');
       eyebrow.className = 'eyebrow';
-      eyebrow.textContent = 'Історію завершено';
+      eyebrow.textContent = t('storyComplete');
       const title = document.createElement('h3');
       title.textContent = arc.ending.title;
       const story = document.createElement('p');
@@ -396,7 +450,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     list.className = 'journal-list';
     if (!state.discoveries.length) {
       const p = document.createElement('p');
-      p.textContent = 'Перша сторінка чекає. Ідіть за сяйвом і спробуйте свій інструмент.';
+      p.textContent = t('emptyJournal');
       list.append(p);
     }
     for (const item of state.discoveries) {
@@ -408,7 +462,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     c.append(list);
     if (state.seeds.length) {
       const h = document.createElement('h3');
-      h.textContent = 'Таця спогадів';
+      h.textContent = t('memoryTray');
       const seeds = document.createElement('div');
       seeds.className = 'seed-grid';
       for (const seed of state.seeds) {
@@ -422,15 +476,21 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
   }
 
   function showContractBoard(state:GameState){
-    const c=shell('Дошка експедицій');
+    const c=shell(t('expeditionBoard'));
     const meta=expeditionMetaFor(state);
-    c.innerHTML=`<div class="contract-intro"><div><span class="eyebrow">ПОВТОРЮВАНІ МАРШРУТИ · ${expeditionRegionName(state)}</span><p>Оберіть контракт і рівно два інструменти. Різні інструменти дають інші способи виконання та іншу здобич.</p></div><div class="resource-strip"><span><b>${meta.supplies}</b> припасів</span><span><b>${meta.insight}</b> знань</span><span><b>${meta.rareFinds.length}</b> рідкісних</span></div></div><div class="loadout-title"><strong>Ваш польовий набір</strong><small>обрано <b data-loadout-count>0</b> / 2</small></div><div class="loadout-grid"></div><div class="contract-grid"></div><section class="refuge-projects"><div class="section-heading"><div><span class="eyebrow">ПРИТУЛОК ЗМІНЮЄТЬСЯ</span><h3>Проєкти майстерні</h3></div><small>Лише вигляд і колекція — жодної сили</small></div><div class="project-grid"></div></section>`;
+    c.innerHTML=`<div class="contract-intro"><div><span class="eyebrow"></span><p></p></div><div class="resource-strip"><span><b>${meta.supplies}</b> ${t('supplies')}</span><span><b>${meta.insight}</b> ${t('insight')}</span><span><b>${meta.rareFinds.length}</b> ${t('rares')}</span></div></div><div class="loadout-title"><strong></strong><small><span data-selected></span> <b data-loadout-count>0</b> / 2</small></div><div class="loadout-grid"></div><div class="contract-grid"></div><section class="refuge-projects"><div class="section-heading"><div><span class="eyebrow"></span><h3></h3></div><small></small></div><div class="project-grid"></div></section>`;
+    (c.querySelector('.contract-intro .eyebrow') as HTMLElement).textContent = t('repeatingRoutes', { region: expeditionRegionName(state) });
+    (c.querySelector('.contract-intro p') as HTMLElement).textContent = t('contractIntro');
+    (c.querySelector('.loadout-title strong') as HTMLElement).textContent = t('fieldKit');
+    const selectedLabel = c.querySelector<HTMLElement>('.loadout-title small')!;
+    (c.querySelector('.section-heading .eyebrow') as HTMLElement).textContent = t('refugeChanges');
+    (c.querySelector('.section-heading h3') as HTMLElement).textContent = t('workshopProjects');
+    (c.querySelector('.section-heading small') as HTMLElement).textContent = t('cosmeticOnly');
     const selected:GiftId[]=[];
     const tools=c.querySelector<HTMLElement>('.loadout-grid')!;
-    const count=c.querySelector<HTMLElement>('[data-loadout-count]')!;
     const contracts=c.querySelector<HTMLElement>('.contract-grid')!;
     const refresh=()=>{
-      count.textContent=String(selected.length);
+      selectedLabel.textContent=t('selectedOf',{count:selected.length});
       tools.querySelectorAll<HTMLButtonElement>('[data-tool]').forEach((button)=>button.classList.toggle('selected',selected.includes(button.dataset.tool as GiftId)));
       contracts.querySelectorAll<HTMLButtonElement>('[data-start]').forEach((button)=>button.disabled=selected.length!==2||!!state.expedition);
     };
@@ -442,7 +502,10 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     }
     for(const contract of Object.values(CONTRACTS)){
       const article=document.createElement('article');article.className='contract-card';
-      article.innerHTML=`<div class="contract-mark">${contract.id==='water-route'?'≈':contract.id==='signal-line'?'⌁':'△'}</div><span class="eyebrow">3 РОБОТИ · ВИБІР РИЗИКУ</span><h3></h3><p></p><div class="contract-reward">Нагорода: припаси, знання, шанс рідкісної знахідки</div><button class="button primary" data-start>Вирушити <span>→</span></button>`;
+      article.innerHTML=`<div class="contract-mark">${contract.id==='water-route'?'≈':contract.id==='signal-line'?'⌁':'△'}</div><span class="eyebrow"></span><h3></h3><p></p><div class="contract-reward"></div><button class="button primary" data-start></button>`;
+      article.querySelector('.eyebrow')!.textContent=t('threeJobs');
+      article.querySelector('.contract-reward')!.textContent=t('contractReward');
+      article.querySelector('button')!.textContent=t('setOut');
       article.querySelector('h3')!.textContent=contract.name;article.querySelector('p')!.textContent=contract.brief;
       article.querySelector('button')!.addEventListener('click',()=>actions.onStartExpedition(contract.id,[selected[0]!,selected[1]!]));contracts.append(article);
     }
@@ -452,24 +515,34 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
       const card=document.createElement('article');card.className=`project-card${built?' built':''}`;
       card.innerHTML=`<span class="project-icon">${project.id==='workshop'?'⚒':project.id==='archive'?'▤':'⌂'}</span><div><strong></strong><p></p><small></small></div><button class="button ghost-light"></button>`;
       card.querySelector('strong')!.textContent=project.name;card.querySelector('p')!.textContent=project.description;
-      card.querySelector('small')!.textContent=`${project.cost.supplies} припасів · ${project.cost.insight} знань · ${project.cost.rare} рідкісних`;
-      const button=card.querySelector('button')!;button.textContent=built?'Збудовано':affordable?'Збудувати':'Ще бракує';button.disabled=built||!affordable;button.addEventListener('click',()=>actions.onBuildProject(project.id));projects.append(card);
+      card.querySelector('small')!.textContent=t('projectCost',{supplies:project.cost.supplies,insight:project.cost.insight,rare:project.cost.rare});
+      const button=card.querySelector('button')!;button.textContent=built?t('built'):affordable?t('build'):t('stillShort');button.disabled=built||!affordable;button.addEventListener('click',()=>actions.onBuildProject(project.id));projects.append(card);
     }
     refresh();
   }
 
   function showWorkChoices(state:GameState,onChoose:(tool:GiftId)=>void){
-    const actionsAvailable=availableWorkActions(state);const c=shell('Як виконати роботу?',true);const run=state.expedition!;const narrative=expeditionNarrativeFor(state)!;const siteId=run.completed.length<run.requiredTotal?run.siteIds[run.completed.length]:run.optionalSiteId;const note=narrative.siteNotes.find((item)=>item.siteId===siteId)?.observation;
-    c.innerHTML=`<div class="field-evidence"><span class="eyebrow">ПОЛЬОВИЙ ДОКАЗ</span><strong></strong><p></p></div><p class="soft-copy">Обидва способи працюють. Вибір змінює здобич, знання й тиск погоди.</p><div class="work-choice-grid"></div>`;
+    const actionsAvailable=availableWorkActions(state);const c=shell(t('howToWork'),true);const run=state.expedition!;const narrative=expeditionNarrativeFor(state)!;const siteId=run.completed.length<run.requiredTotal?run.siteIds[run.completed.length]:run.optionalSiteId;const note=narrative.siteNotes.find((item)=>item.siteId===siteId)?.observation;
+    c.innerHTML=`<div class="field-evidence"><span class="eyebrow"></span><strong></strong><p></p></div><p class="soft-copy"></p><div class="work-choice-grid"></div>`;
+    c.querySelector('.field-evidence .eyebrow')!.textContent=t('fieldEvidence');
+    c.querySelector('.soft-copy')!.textContent=t('bothWays');
     c.querySelector('.field-evidence strong')!.textContent=narrative.title;c.querySelector('.field-evidence p')!.textContent=note??narrative.cause;
     const grid=c.querySelector<HTMLElement>('.work-choice-grid')!;
-    for(const action of actionsAvailable){const button=document.createElement('button');button.className='work-choice';button.innerHTML=`<span class="work-tool"></span><strong></strong><p></p><small></small>`;button.querySelector('.work-tool')!.textContent=GIFTS[action.tool].name;button.querySelector('strong')!.textContent=action.title;button.querySelector('p')!.textContent=action.outcome;button.querySelector('small')!.textContent=`+${action.supplies} припасів · +${action.insight} знань · погода +${action.pressure}`;button.addEventListener('click',()=>onChoose(action.tool));grid.append(button)}
+    for(const action of actionsAvailable){const button=document.createElement('button');button.className='work-choice';button.innerHTML=`<span class="work-tool"></span><strong></strong><p></p><small></small>`;button.querySelector('.work-tool')!.textContent=GIFTS[action.tool].name;button.querySelector('strong')!.textContent=action.title;button.querySelector('p')!.textContent=action.outcome;button.querySelector('small')!.textContent=t('workLoot',{supplies:action.supplies,insight:action.insight,pressure:action.pressure});button.addEventListener('click',()=>onChoose(action.tool));grid.append(button)}
   }
 
   function showExpeditionDecision(state:GameState,onChoose:(accept:boolean)=>void){
     const run=state.expedition!,narrative=expeditionNarrativeFor(state)!;clear();const section=document.createElement('section');section.className='story-card expedition-decision';
-    section.innerHTML=`<span class="eyebrow">ОБОВ’ЯЗКОВУ РОБОТУ ЗАВЕРШЕНО</span><h2>Повертатися чи піти за слабким сигналом?</h2><p></p><small class="decision-warning"></small><div class="decision-stakes"><span><b>${run.supplies}</b> припасів у наплічнику</span><span><b>${run.pressure}</b> тиск погоди</span></div><div class="choice-row"><button class="button primary" data-push>Піти далі за знахідкою →</button><button class="button ghost-light" data-return>Повернутися зараз</button></div>`;
-    section.querySelector('p')!.textContent=`${narrative.optionalLead} Можлива знахідка: ${narrative.rareFind}.`;section.querySelector('.decision-warning')!.textContent=narrative.warning;
+    section.innerHTML=`<span class="eyebrow"></span><h2></h2><p></p><small class="decision-warning"></small><div class="decision-stakes"><span></span><span></span></div><div class="choice-row"><button class="button primary" data-push></button><button class="button ghost-light" data-return></button></div>`;
+    section.querySelector('.eyebrow')!.textContent=t('requiredDone');
+    section.querySelector('h2')!.textContent=t('stayOrGo');
+    section.querySelector('p')!.textContent=`${narrative.optionalLead} ${t('possibleFind',{find:narrative.rareFind})}`;
+    section.querySelector('.decision-warning')!.textContent=narrative.warning;
+    const stakes=section.querySelectorAll('.decision-stakes span');
+    stakes[0]!.textContent=t('packSupplies',{supplies:run.supplies});
+    stakes[1]!.textContent=t('weatherPressure',{pressure:run.pressure});
+    section.querySelector('[data-push]')!.textContent=t('goFarther');
+    section.querySelector('[data-return]')!.textContent=t('returnNow');
     section.querySelector('[data-push]')!.addEventListener('click',()=>onChoose(true));section.querySelector('[data-return]')!.addEventListener('click',()=>onChoose(false));root.append(section);
   }
 
@@ -478,29 +551,47 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     const evidence=root.querySelector<HTMLElement>('.field-evidence');
     if(evidence){const siteId=run.completed.length<run.requiredTotal?run.siteIds[run.completed.length]:run.optionalSiteId;evidence.querySelector('strong')!.textContent=narrative.title;evidence.querySelector('p')!.textContent=narrative.siteNotes.find((item)=>item.siteId===siteId)?.observation??narrative.cause}
     const decision=root.querySelector<HTMLElement>('.expedition-decision');
-    if(decision){decision.querySelector('p')!.textContent=`${narrative.optionalLead} Можлива знахідка: ${narrative.rareFind}.`;decision.querySelector('.decision-warning')!.textContent=narrative.warning}
+    if(decision){decision.querySelector('p')!.textContent=`${narrative.optionalLead} ${t('possibleFind',{find:narrative.rareFind})}`;decision.querySelector('.decision-warning')!.textContent=narrative.warning}
   }
 
   function showExpeditionDebrief(report:ExpeditionReport,onContinue:()=>void){
     clear();const section=document.createElement('section');section.className='story-card expedition-debrief';
-    section.innerHTML=`<span class="eyebrow">ЗВІТ ЗБЕРЕЖЕНО У ЩОДЕННИКУ</span><h2></h2><p class="debrief-story"></p><div class="debrief-loot"><span><b></b> припасів</span><span><b></b> знань</span><span><b></b> рідкісних</span></div><small class="weather-result"></small><button class="button primary">Повернутися до Притулку</button>`;
+    section.innerHTML=`<span class="eyebrow"></span><h2></h2><p class="debrief-story"></p><div class="debrief-loot"><span><b></b> ${t('supplies')}</span><span><b></b> ${t('insight')}</span><span><b></b> ${t('rares')}</span></div><small class="weather-result"></small><button class="button primary"></button>`;
+    section.querySelector('.eyebrow')!.textContent=t('reportSaved');
     section.querySelector('h2')!.textContent=report.title;section.querySelector('.debrief-story')!.textContent=report.summary;
     const values=section.querySelectorAll<HTMLElement>('.debrief-loot b');values[0]!.textContent=String(report.securedSupplies);values[1]!.textContent=String(report.securedInsight);values[2]!.textContent=String(report.rareFinds.length);
-    section.querySelector('.weather-result')!.textContent=report.pressure>3?`Через погоду частина незакріплених припасів лишилася в полі. Прогрес не втрачено.`:'Погода дозволила принести всю здобич.';
+    section.querySelector('.weather-result')!.textContent=report.pressure>3?t('debriefWeatherBad'):t('debriefWeatherGood');
+    section.querySelector('button')!.textContent=t('returnRefuge');
     section.querySelector('button')!.addEventListener('click',onContinue);root.append(section);
   }
 
   function showHelp() {
-    const c = shell('Як мандрувати', true);
-    c.innerHTML = `<div class="controls keyboard-help"><b>WASD / СТРІЛКИ</b><span>Рух</span><b>F</b><span>Застосувати поточний інструмент біля зламаного об’єкта</span><b>E</b><span>Дослідити, взяти інструмент або зберегти знахідку</span><b>J</b><span>Відкрити польовий щоденник</span><b>C</b><span>Відкрити персонажа й спорядження</span></div><div class="touch-help"><div class="touch-help-mark">●</div><div><b>Тягніть золотий вогник</b><span>Рухайтеся в будь-якому напрямку. Відпустіть, щоб зупинитися.</span></div><div class="touch-help-mark">✦</div><div><b>Торкніться кнопки інструмента</b><span>Полагодьте або дослідіть те, що поруч.</span></div></div><p class="soft-copy help-note">Вогники лише підказують шлях — таймера немає. Мандруйте скільки захочете.</p><div class="new-tale-note"><span class="eyebrow">Інший початок</span><p>Супутник залишиться, але ця місцевість, її історія та весь прогрес будуть замінені новою випадково створеною оповіддю.</p><button class="button danger">Почати іншу оповідь</button></div>`;
+    const c = shell(t('howToTravel'), true);
+    c.innerHTML = `<div class="controls keyboard-help"><b></b><span></span><b>F</b><span></span><b>E</b><span></span><b>J</b><span></span><b>C</b><span></span></div><div class="touch-help"><div class="touch-help-mark">●</div><div><b></b><span></span></div><div class="touch-help-mark">✦</div><div><b></b><span></span></div></div><p class="soft-copy help-note"></p><div class="new-tale-note"><span class="eyebrow"></span><p></p><button class="button danger"></button></div>`;
+    const keys = c.querySelectorAll('.keyboard-help b, .keyboard-help span');
+    keys[0]!.textContent = t('wasd');
+    keys[1]!.textContent = t('helpMove');
+    keys[3]!.textContent = t('helpF');
+    keys[5]!.textContent = t('helpE');
+    keys[7]!.textContent = t('helpJ');
+    keys[9]!.textContent = t('helpC');
+    const touch = c.querySelectorAll('.touch-help b, .touch-help span');
+    touch[0]!.textContent = t('dragGlow');
+    touch[1]!.textContent = t('dragGlowHint');
+    touch[2]!.textContent = t('tapTool');
+    touch[3]!.textContent = t('tapToolHint');
+    (c.querySelector('.help-note') as HTMLElement).textContent = t('noTimer');
+    (c.querySelector('.new-tale-note .eyebrow') as HTMLElement).textContent = t('anotherStart');
+    (c.querySelector('.new-tale-note p') as HTMLElement).textContent = t('newTaleCopy');
+    (c.querySelector('.danger') as HTMLElement).textContent = t('startOtherTale');
     c.querySelector('.danger')?.addEventListener('click', () => {
-      if (confirm('Почати іншу оповідь? Супутник залишиться, але ця галявина й увесь її прогрес будуть замінені.')) actions.onNewTale();
+      if (confirm(t('newTaleConfirm'))) actions.onNewTale();
     });
   }
 
   function showStoryLoom(status: WriterStatus, onDismiss: () => void, onRetry: () => void) {
     const percent = Math.round(status.progress * 100);
-    const stage = status.phase === 'download' ? 'Завантажуємо маленького оповідача в браузер' : status.phase === 'read' ? 'Читаємо про супутника й цю галявину' : 'Виткаємо приватну історію';
+    const stage = status.phase === 'download' ? t('loomDownload') : status.phase === 'read' ? t('loomRead') : t('loomWeave');
     const currentProgress = root.querySelector<HTMLElement>('.story-loom-card[data-progress]');
     if (currentProgress && status.phase !== 'complete' && status.phase !== 'error') {
       const progress = currentProgress.querySelector<HTMLElement>('[role=progressbar]')!;
@@ -515,17 +606,29 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     else delete section.dataset.progress;
     section.className = 'story-card story-loom-card';
     if (status.phase === 'complete') {
-      section.innerHTML = `<div class="loom-mark" aria-hidden="true"><i></i><i></i><i></i></div><span class="eyebrow">Повністю написано на цьому пристрої</span><h2>Нова оповідь пустила коріння</h2><p class="soft-copy" data-story></p><button class="button primary">Зберегти цю оповідь</button>`;
+      section.innerHTML = `<div class="loom-mark" aria-hidden="true"><i></i><i></i><i></i></div><span class="eyebrow"></span><h2></h2><p class="soft-copy" data-story></p><button class="button primary"></button>`;
+      (section.querySelector('.eyebrow') as HTMLElement).textContent = t('writtenOnDevice');
+      (section.querySelector('h2') as HTMLElement).textContent = t('taleTookRoot');
+      (section.querySelector('button') as HTMLElement).textContent = t('saveTale');
       (section.querySelector('[data-story]') as HTMLElement).textContent = status.story.premise;
       section.querySelector('button')?.addEventListener('click', onDismiss);
     } else if (status.phase === 'error') {
-      section.innerHTML = `<div class="loom-mark broken" aria-hidden="true"><i></i><i></i><i></i></div><span class="eyebrow">Поточна оповідь у безпеці</span><h2>Нитка історії вислизнула</h2><p class="soft-copy" data-error></p><div class="choice-row"><button class="button primary" data-retry>Спробувати ще раз</button><button class="button ghost-light" data-dismiss>Залишити наявну історію</button></div>`;
+      section.innerHTML = `<div class="loom-mark broken" aria-hidden="true"><i></i><i></i><i></i></div><span class="eyebrow"></span><h2></h2><p class="soft-copy" data-error></p><div class="choice-row"><button class="button primary" data-retry></button><button class="button ghost-light" data-dismiss></button></div>`;
+      (section.querySelector('.eyebrow') as HTMLElement).textContent = t('taleSafe');
+      (section.querySelector('h2') as HTMLElement).textContent = t('threadSlipped');
+      (section.querySelector('[data-retry]') as HTMLElement).textContent = t('tryAgain');
+      (section.querySelector('[data-dismiss]') as HTMLElement).textContent = t('keepExisting');
       (section.querySelector('[data-error]') as HTMLElement).textContent = status.message;
       section.querySelector('[data-retry]')?.addEventListener('click', onRetry);
       section.querySelector('[data-dismiss]')?.addEventListener('click', onDismiss);
     } else {
       section.dataset.progress = '';
-      section.innerHTML = `<div class="loom-mark active" aria-hidden="true"><i></i><i></i><i></i></div><span class="eyebrow">Жоден запит не залишає цей пристрій</span><h2>Пристрій виткає оповідь</h2><p class="soft-copy">Під час першого запуску завантажиться близько 120–180 МБ. Можна продовжувати гру: наявна оповідь у безпеці.</p><div class="loom-progress" role="progressbar" aria-label="Прогрес локального оповідача" aria-valuemin="0" aria-valuemax="100"><span></span></div><div class="loom-status"><b></b><strong></strong></div><button class="text-button">Досліджувати далі, поки пишеться історія →</button>`;
+      section.innerHTML = `<div class="loom-mark active" aria-hidden="true"><i></i><i></i><i></i></div><span class="eyebrow"></span><h2></h2><p class="soft-copy"></p><div class="loom-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span></span></div><div class="loom-status"><b></b><strong></strong></div><button class="text-button"></button>`;
+      (section.querySelector('.eyebrow') as HTMLElement).textContent = t('nothingLeaves');
+      (section.querySelector('h2') as HTMLElement).textContent = t('deviceWillWeave');
+      (section.querySelector('.soft-copy') as HTMLElement).textContent = t('loomCopy');
+      section.querySelector('[role=progressbar]')!.setAttribute('aria-label', t('loomProgress'));
+      (section.querySelector('.text-button') as HTMLElement).textContent = t('exploreWhileWriting');
       const progress = section.querySelector<HTMLElement>('[role=progressbar]')!;
       progress.setAttribute('aria-valuenow', String(percent));
       (progress.querySelector('span') as HTMLElement).style.width = `${percent}%`;

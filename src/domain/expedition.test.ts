@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { setActiveLocale } from '../i18n/locale';
 import { generateCharacter } from './character';
 import {
   REFUGE_PROJECTS,
@@ -39,6 +40,8 @@ function finishRequired(state: GameState, tool: GiftId = 'mend') {
 }
 
 describe('expedition director', () => {
+  afterEach(() => setActiveLocale('uk'));
+
   it('rejects a loadout unless it contains exactly two distinct tools', () => {
     const state = initial();
 
@@ -140,5 +143,15 @@ describe('expedition director', () => {
     const migrated = localizeState(old);
 
     expect(expeditionMetaFor(migrated)).toEqual({ completedContracts: 0, supplies: 0, insight: 0, rareFinds: [], builtProjects: [], reports: [] });
+  });
+
+  it('rewrites an English fallback expedition popup into the active language', () => {
+    setActiveLocale('en');
+    const started = startExpedition(initial(), 'water-route', ['mend', 'reveal'], 11);
+    expect(started.state.expedition?.narrative.title).toMatch(/[A-Za-z]/);
+
+    setActiveLocale('uk');
+    const localized = localizeState(started.state);
+    expect(localized.expedition?.narrative.title).toMatch(/[А-ЯІЇЄҐа-яіїєґ]/);
   });
 });

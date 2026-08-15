@@ -1,4 +1,5 @@
 import { GIFTS, PALETTE_COLORS } from '../domain/catalog';
+import { t } from '../i18n/messages';
 import { tutorialTarget } from '../domain/tutorial';
 import type { BodyId, Facing, GameState, Point, WearableId } from '../domain/types';
 import { SEED_NAMES, WORLD, worldFor, type WorldLayout } from '../domain/world';
@@ -157,7 +158,7 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
     ctx.fillStyle = '#315c55';
     ctx.font = '600 12px ui-monospace, SFMono-Regular, Menlo, monospace';
     ctx.letterSpacing = '2px';
-    ctx.fillText('ВАШ ТИХИЙ ПРИТУЛОК', 132, 156);
+    ctx.fillText(t('quietRefuge'), 132, 156);
     ctx.restore();
 
     for (const plot of world.plots) {

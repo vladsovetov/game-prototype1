@@ -9,12 +9,26 @@ import { createSaveStore } from './persistence/save-store';
 import { createCanvasRenderer } from './ui/canvas-renderer';
 import { createPanels } from './ui/panels';
 import { createLocalStoryWriter } from './story/local-story-writer';
+import { createLocalePreference, setActiveLocale } from './i18n/locale';
+import { t } from './i18n/messages';
+import { createLanguageSwitcher } from './ui/language-switcher';
+
+const localePreference = createLocalePreference(localStorage, navigator.languages?.length ? navigator.languages : [navigator.language]);
+const locale = localePreference.load();
+setActiveLocale(locale);
+document.documentElement.lang = locale;
+document.title = t('brand');
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas');
 const modal = document.querySelector<HTMLElement>('#modal-root');
 const hud = document.querySelector<HTMLElement>('#hud');
 const toasts = document.querySelector<HTMLElement>('#toast-root');
-if (!canvas || !modal || !hud || !toasts) throw new Error('Оболонка застосунку неповна.');
+if (!canvas || !modal || !hud || !toasts) throw new Error(t('incompleteShell'));
+canvas.setAttribute('aria-label', t('canvasLabel', { brand: t('brand') }));
+document.body.append(createLanguageSwitcher(locale, (nextLocale) => {
+  localePreference.save(nextLocale);
+  location.reload();
+}));
 
 const store = createSaveStore(localStorage);
 const renderer = createCanvasRenderer(canvas);
@@ -43,14 +57,14 @@ if (loaded.kind === 'newer-version') {
     ? loaded.state
     : prepareNewRun(generateCharacter(seed), seed);
   if (loaded.kind === 'corrupt') {
-    setTimeout(() => alert('Не вдалося прочитати старе локальне збереження, тому відкрито нову галявину.'), 50);
+    setTimeout(() => alert(t('corruptSave')), 50);
   }
   const localWriter = createLocalStoryWriter({
     workerFactory: () => new Worker(new URL('./story/local-story-worker.ts', import.meta.url), { type: 'module' }),
     onStatus: (status) => controller?.showWriterStatus(status),
     onStory: (story) => controller?.applyLocalStory(story),
     onExpedition: (expeditionId,narrative) => controller?.applyLocalExpedition(expeditionId,narrative),
-  });
+  }, locale);
   controller = createGameController(state, renderer, panels, store, hud, toasts, localWriter, {
     enable: () => localStorage.setItem(WRITER_PREFERENCE, 'enabled'),
     isEnabled: () => localStorage.getItem(WRITER_PREFERENCE) === 'enabled',

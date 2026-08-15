@@ -17,6 +17,7 @@ import type { WearableId } from './domain/types';
 import { movementPose } from './ui/canvas-renderer';
 import { CONTRACTS, applyExpeditionNarrative, applyWorkAction, buildRefugeProject, chooseOptionalLead, completeExpedition, expeditionMetaFor, expeditionNarrativeFor, expeditionTarget, startExpedition } from './domain/expedition';
 import { randomSeed } from './domain/random';
+import { t } from './i18n/messages';
 
 type Renderer = ReturnType<typeof createCanvasRenderer>;
 type Panels = ReturnType<typeof createPanels>;
@@ -119,36 +120,47 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       const progress = memoryProgress(state);
       hud.innerHTML = `<div class="tutorial-hud" data-testid="tutorial-objective"><div class="memory-progress"><span class="eyebrow"></span><small></small></div><strong></strong><div class="objective-action"><span class="objective-key"></span><span class="objective-copy"></span></div></div>`;
       (hud.querySelector('.memory-progress .eyebrow') as HTMLElement).textContent = progress.title;
-      (hud.querySelector('.memory-progress small') as HTMLElement).textContent = `${progress.found} / ${progress.total} ПІДКАЗКИ`;
+      (hud.querySelector('.memory-progress small') as HTMLElement).textContent = `${progress.found} / ${progress.total} ${t('clues')}`;
       (hud.querySelector('.tutorial-hud strong') as HTMLElement).textContent = objective.title;
       (hud.querySelector('.objective-copy') as HTMLElement).textContent = objective.action;
       const key = hud.querySelector<HTMLElement>('.objective-key')!;
-      if (objective.key) key.textContent = isTouchLayout() ? (objective.key === 'WASD' ? 'ТЯГНІТЬ' : 'ТОРКНІТЬСЯ') : objective.key;
+      if (objective.key) key.textContent = isTouchLayout() ? (objective.key === 'WASD' ? t('drag') : t('touch')) : objective.key;
       else key.remove();
       if (isTouchLayout()) renderTouchControls(objective.key === 'E');
       return;
     }
 
     const run=state.expedition;
-    hud.innerHTML = `<div class="hud-top"><button class="hud-card identity" data-testid="character-button" aria-label="Ваш супутник"><span class="identity-mark">✦</span><span><strong data-testid="player-name"></strong><small></small><em class="memory-count"></em></span></button><div class="hud-actions"><button data-testid="contracts-button" aria-label="Дошка експедицій"><span>K</span><small>Експедиції</small></button><button data-testid="journal-button" aria-label="Польовий щоденник"><span>J</span><small>Щоденник</small></button><button data-testid="help-button" aria-label="Довідка"><span>?</span><small>Довідка</small></button></div></div><div class="expedition-objective" data-expedition-objective></div><div class="prompt"><span class="key">F</span> <span data-primary-label>Інструмент</span> <i></i><span class="key">E</span> <span data-secondary-label>Дослідити</span> <span class="hud-meta"></span></div>`;
+    hud.innerHTML = `<div class="hud-top"><button class="hud-card identity" data-testid="character-button"><span class="identity-mark">✦</span><span><strong data-testid="player-name"></strong><small></small><em class="memory-count"></em></span></button><div class="hud-actions"><button data-testid="contracts-button"><span>K</span><small></small></button><button data-testid="journal-button"><span>J</span><small></small></button><button data-testid="help-button"><span>?</span><small></small></button></div></div><div class="expedition-objective" data-expedition-objective></div><div class="prompt"><span class="key">F</span> <span data-primary-label></span> <i></i><span class="key">E</span> <span data-secondary-label></span> <span class="hud-meta"></span></div>`;
+    hud.querySelector('[data-testid=character-button]')?.setAttribute('aria-label', t('companion'));
+    hud.querySelector('[data-testid=contracts-button]')?.setAttribute('aria-label', t('expeditionBoard'));
+    hud.querySelector('[data-testid=journal-button]')?.setAttribute('aria-label', t('fieldJournal'));
+    hud.querySelector('[data-testid=help-button]')?.setAttribute('aria-label', t('help'));
+    (hud.querySelector('[data-testid=contracts-button] small') as HTMLElement).textContent = t('expeditions');
+    (hud.querySelector('[data-testid=journal-button] small') as HTMLElement).textContent = t('journal');
+    (hud.querySelector('[data-testid=help-button] small') as HTMLElement).textContent = t('help');
+    (hud.querySelector('[data-primary-label]') as HTMLElement).textContent = t('tool');
+    (hud.querySelector('[data-secondary-label]') as HTMLElement).textContent = t('inspect');
     (hud.querySelector('[data-testid=player-name]') as HTMLElement).textContent = state.character.name;
-    (hud.querySelector('.identity small') as HTMLElement).textContent = state.borrowedGift ? `позичено: ${GIFTS[state.borrowedGift].name}` : state.character.gift.name;
+    (hud.querySelector('.identity small') as HTMLElement).textContent = state.borrowedGift ? t('borrowed', { gift: GIFTS[state.borrowedGift].name }) : state.character.gift.name;
     const progress = sanctuaryProgress(state);
-    (hud.querySelector('.memory-count') as HTMLElement).textContent = state.endingSeen ? 'Історію завершено' : `${progress.planted} / ${progress.required} спогадів посаджено`;
-    (hud.querySelector('.hud-meta') as HTMLElement).textContent = state.seeds.length ? `Спогадів у таці: ${state.seeds.length}` : '';
+    (hud.querySelector('.memory-count') as HTMLElement).textContent = state.endingSeen ? t('storyComplete') : t('memoriesPlanted', { planted: progress.planted, required: progress.required });
+    (hud.querySelector('.hud-meta') as HTMLElement).textContent = state.seeds.length ? t('seedsInTray', { count: state.seeds.length }) : '';
     const meta=expeditionMetaFor(state);
     if(run){
       const narrative=expeditionNarrativeFor(state)!;
       const requiredDone=Math.min(run.completed.length,run.requiredTotal);const objective=hud.querySelector<HTMLElement>('[data-expedition-objective]')!;
-      objective.innerHTML=`<span class="eyebrow">ЕКСПЕДИЦІЯ · ${requiredDone}/${run.requiredTotal}</span><strong></strong><small></small><div class="pressure-meter"><i></i></div>`;
+      objective.innerHTML=`<span class="eyebrow"></span><strong></strong><small></small><div class="pressure-meter"><i></i></div>`;
+      objective.querySelector('.eyebrow')!.textContent=t('expeditionHud',{done:requiredDone,total:run.requiredTotal});
       objective.querySelector('strong')!.textContent=narrative.title;
-      objective.querySelector('small')!.textContent=`${run.status==='returning'?'Поверніться до воріт':run.status==='decision'?'Вирішіть, чи йти далі':'Ідіть до вогників'} · ${run.supplies} припасів · ${run.insight} знань · погода ${run.pressure}`;
+      const statusCopy=run.status==='returning'?t('returnToGate'):run.status==='decision'?t('decideFarther'):t('followGlows');
+      objective.querySelector('small')!.textContent=`${statusCopy} · ${t('expeditionMeta',{supplies:run.supplies,insight:run.insight,pressure:run.pressure})}`;
       (objective.querySelector('.pressure-meter i') as HTMLElement).style.width=`${Math.min(100,run.pressure*12)}%`;
-      (hud.querySelector('[data-primary-label]') as HTMLElement).textContent=run.status==='active'?'Виконати роботу':'Інструмент';
-      (hud.querySelector('[data-secondary-label]') as HTMLElement).textContent=run.status==='returning'?'Завершити експедицію':'Дослідити';
+      (hud.querySelector('[data-primary-label]') as HTMLElement).textContent=run.status==='active'?t('doWork'):t('tool');
+      (hud.querySelector('[data-secondary-label]') as HTMLElement).textContent=run.status==='returning'?t('finishExpedition'):t('inspect');
     }else{
       hud.querySelector('[data-expedition-objective]')?.remove();
-      (hud.querySelector('.hud-meta') as HTMLElement).textContent=`${meta.supplies} припасів · ${meta.insight} знань`;
+      (hud.querySelector('.hud-meta') as HTMLElement).textContent=`${meta.supplies} ${t('supplies')} · ${meta.insight} ${t('insight')}`;
     }
     hud.querySelector('[data-testid=character-button]')?.addEventListener('click', () => panels.showCharacter(state));
     hud.querySelector('[data-testid=journal-button]')?.addEventListener('click', () => panels.showJournal(state));
@@ -162,7 +174,9 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     const controls = document.createElement('div');
     controls.className = 'touch-controls';
     controls.dataset.testid = 'touch-controls';
-    controls.innerHTML = `<div class="touch-joystick" data-testid="touch-joystick" role="application" aria-label="Рух персонажа"><span class="touch-ring"><i class="touch-knob"></i></span><small>Рух</small></div><div class="touch-actions"></div>`;
+    controls.innerHTML = `<div class="touch-joystick" data-testid="touch-joystick" role="application"><span class="touch-ring"><i class="touch-knob"></i></span><small></small></div><div class="touch-actions"></div>`;
+    controls.querySelector('.touch-joystick')?.setAttribute('aria-label', t('moveCharacter'));
+    (controls.querySelector('.touch-joystick small') as HTMLElement).textContent = t('touchMove');
     const joystick = controls.querySelector<HTMLElement>('.touch-joystick')!;
     touchKnob = controls.querySelector<HTMLElement>('.touch-knob')!;
     joystick.addEventListener('pointerdown', (event) => {
@@ -190,11 +204,11 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
     const step = state.tutorial?.step;
     if (!isTutorial()) {
-      const gift = addAction(state.expedition?.status==='active'?'Робота':'Інструмент', 'Застосувати інструмент', '✦', useGift, true);
+      const gift = addAction(state.expedition?.status==='active'?t('work'):t('tool'), t('useTool'), '✦', useGift, true);
       gift.dataset.testid = 'touch-primary-action';
-      addAction('Дослідити', 'Дослідити поруч', '◌', interact);
+      addAction(t('inspect'), t('inspectNearby'), '◌', interact);
     } else if (step === 'gift') {
-      const button = addAction(state.character.gift.name, `Застосувати «${state.character.gift.name}»`, '✦', useGift, true);
+      const button = addAction(state.character.gift.name, t('useNamedTool', { gift: state.character.gift.name }), '✦', useGift, true);
       button.dataset.testid = 'touch-primary-action';
     } else if (step === 'combine') {
       const borrowed = state.tutorial?.borrowedGift ?? state.character.gift.id;
@@ -202,11 +216,11 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       const button = addAction(label, label, '✦', useGift, true);
       button.dataset.testid = 'touch-primary-action';
     } else if (step === 'plant') {
-      const button = addAction('Посадити спогад', 'Посадити спогад', '⌁', interact, true);
+      const button = addAction(t('plantMemory'), t('plantMemory'), '⌁', interact, true);
       button.dataset.testid = 'touch-primary-action';
     } else if (step === 'resonate' && atResonance) {
       const borrowed = state.tutorial?.borrowedGift ?? 'mend';
-      const label = `Взяти «${GIFTS[borrowed].name}»`;
+      const label = t('takeNamed', { gift: GIFTS[borrowed].name });
       const button = addAction(label, label, '◇', interact, true);
       button.dataset.testid = 'touch-primary-action';
     }
@@ -239,9 +253,9 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   function showCurrentStoryStep() {
     const story = storyFor(state);
     if (state.tutorial?.step === 'clue') {
-      panels.showMemoryBeat('Підказка повернулася', story.firstClue, 'Завершити спогад', finishClue, story.chapters.sign?.title);
+      panels.showMemoryBeat(t('clueReturned'), story.firstClue, t('finishMemory'), finishClue, story.chapters.sign?.title);
     } else if (state.tutorial?.step === 'recovered') {
-      panels.showMemoryBeat('Спогад відновлено', story.recovered, 'Віднести додому', finishRecoveredMemory, story.chapters.sign?.title);
+      panels.showMemoryBeat(t('memoryRestored'), story.recovered, t('takeHome'), finishRecoveredMemory, story.chapters.sign?.title);
     }
   }
 
@@ -267,7 +281,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     state = { ...state, endingSeen: true };
     panels.clear();
     saveAndRefresh();
-    toast('Притулок пам’ятає. Галявина залишається відкритою для дослідження.');
+    toast(t('refugeRemembers'));
   }
 
   function showPendingEnding() {
@@ -278,7 +292,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   function useGift() {
     if(!isTutorial()&&state.expedition?.status==='active'){
-      if(!expeditionTarget(state)||distance(state.player,expeditionTarget(state)!)>165){toast('Ідіть за золотими вогниками до робочої точки.');return}
+      if(!expeditionTarget(state)||distance(state.player,expeditionTarget(state)!)>165){toast(t('followGold'));return}
       panels.showWorkChoices(state,performExpeditionWork);return;
     }
     const before = state.tutorial?.step;
@@ -337,7 +351,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     if (target.type === 'plot') {
       const planted = state.plantings[target.value.id];
       if (planted) {
-        if (!isTutorial() && confirm(`Повернути «${SEED_NAMES[planted] ?? planted}» до таці спогадів?`)) apply(removePlanting(state, target.value.id));
+        if (!isTutorial() && confirm(t('returnSeed', { seed: SEED_NAMES[planted] ?? planted }))) apply(removePlanting(state, target.value.id));
         return;
       }
       const seed = state.seeds[0];
@@ -436,21 +450,21 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     else if (state.tutorial?.step === 'remember') panels.showMemoryChoice(character, rememberMemory, storyFor(state));
     else if (state.tutorial?.step === 'personalize') panels.showPersonalize(character);
     else panels.clear();
-    toast(`${character.name} входить у цей спогад.`);
+    toast(t('entersMemory', { name: character.name }));
   }
 
   function updatePersonality(name: string, description: string, quirk: CatalogEntry<QuirkId>) {
     state = { ...state, character: { ...state.character, name, description, quirk } };
     saveAndRefresh();
     panels.showPersonalize(state.character);
-    toast('Галявина це запам’ятала.');
+    toast(t('clearingRemembered'));
   }
 
   function updateAppearance(appearance: Appearance) {
     state = { ...state, character: { ...state.character, appearance } };
     saveAndRefresh();
     panels.showPersonalize(state.character);
-    toast('Новий вигляд набуває форми.');
+    toast(t('newLook'));
   }
 
   function updateEquipment(id: WearableId) {
@@ -463,7 +477,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     state = advanceTutorial(state, 'personalization-dismissed');
     panels.clear();
     saveAndRefresh();
-    toast('Уся галявина відкрита. Натисніть K, щоб обрати першу експедицію.');
+    toast(t('clearingOpen'));
   }
 
   function startContract(contractId:ContractId,loadout:[GiftId,GiftId]){
@@ -484,7 +498,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   function applyLocalExpedition(expeditionId:string,narrative:Parameters<typeof applyExpeditionNarrative>[2]){
     const next=applyExpeditionNarrative(state,expeditionId,narrative);
     if(next===state)return;
-    state=next;saveAndRefresh();panels.refreshExpeditionNarrative(state);toast(`Локальний режисер завершив пригоду «${narrative.title}».`);
+    state=next;saveAndRefresh();panels.refreshExpeditionNarrative(state);toast(t('directorFinished',{title:narrative.title}));
   }
 
   function buildProject(projectId:RefugeProjectId){
@@ -501,7 +515,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     state = advanceTutorial(state, 'memory-shaped');
     saveAndRefresh();
     panels.showPersonalize(state.character);
-    toast(`Ця правда тепер є частиною історії «${storyFor(state).chapters.sign?.title ?? 'цей спогад'}».`);
+    toast(t('truthNowPart', { title: storyFor(state).chapters.sign?.title ?? t('thisMemory') }));
   }
 
   function beginNewTale() {

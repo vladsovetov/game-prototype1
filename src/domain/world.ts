@@ -1,3 +1,4 @@
+import { getActiveLocale, localizedCopy, type Locale } from '../i18n/locale';
 import { seededRandom } from './random';
 import { createRunDirection, directionFor, REGION_NAMES, WEATHER_NAMES } from './run-direction';
 import type { GameState, GiftId, Point, RegionId, RunDirection } from './types';
@@ -16,7 +17,68 @@ export const ANOMALIES:Anomaly[]=[
 ];
 export const SHRINES:{id:string;gift:GiftId;position:Point}[]=[{id:'shrine-grow',gift:'grow',position:{x:1030,y:600}},{id:'shrine-echo',gift:'echo',position:{x:2150,y:650}},{id:'shrine-mend',gift:'mend',position:{x:1840,y:500}},{id:'shrine-reveal',gift:'reveal',position:{x:2630,y:920}}];
 export const PLOTS=Array.from({length:6},(_,i)=>({id:`plot-${i+1}`,position:{x:230+(i%3)*190,y:300+Math.floor(i/3)*190}}));
-export const SEED_NAMES:Record<string,string>={'singing-tree':'Польовий резонатор','waypost':'Схема маршрутів','whisper-pool':'Журнал рівня води','hidden-door':'Ключ від комори','rain-bell':'Сигнальний розклад','paper-flock':'Пачка польових записок','named-moon':'Сигнальна лампа','lantern-garden':'Табличка робочої ділянки'};
+const SEED_COPY: Record<Locale, Record<string, string>> = {
+  uk: {'singing-tree':'Польовий резонатор','waypost':'Схема маршрутів','whisper-pool':'Журнал рівня води','hidden-door':'Ключ від комори','rain-bell':'Сигнальний розклад','paper-flock':'Пачка польових записок','named-moon':'Сигнальна лампа','lantern-garden':'Табличка робочої ділянки'},
+  en: {'singing-tree':'Field resonator','waypost':'Route diagram','whisper-pool':'Water-level log','hidden-door':'Storehouse key','rain-bell':'Signal timetable','paper-flock':'A sheaf of field notes','named-moon':'Signal lamp','lantern-garden':'Work-plot tablet'},
+  ru: {'singing-tree':'Полевой резонатор','waypost':'Схема маршрутов','whisper-pool':'Журнал уровня воды','hidden-door':'Ключ от склада','rain-bell':'Сигнальное расписание','paper-flock':'Пачка полевых записок','named-moon':'Сигнальная лампа','lantern-garden':'Табличка рабочего участка'},
+};
+export const SEED_NAMES = {} as Record<string, string>;
+for (const id of Object.keys(SEED_COPY.uk)) {
+  Object.defineProperty(SEED_NAMES, id, { enumerable: true, get: () => localizedCopy(SEED_COPY)[id] });
+}
+
+type AnomalyText = Pick<Anomaly, 'name' | 'states' | 'transitions'>;
+const ANOMALY_TEXT: Record<Exclude<Locale, 'uk'>, Record<string, AnomalyText>> = {
+  en: {
+    stone: { name: 'Detuned resonator', states: ['Detuned resonator', 'Tuned resonator', 'Secured resonator'], transitions: { 0: { gift: 'echo', to: 'Tuned resonator', message: 'The tuning fork finds the mechanism’s true frequency.' }, 1: { gift: 'mend', to: 'Secured resonator', message: 'New fittings keep the signal even in the wind.', seed: 'singing-tree' } } },
+    sign: { name: 'Mud-covered marker', states: ['Mud-covered marker', 'Read marker', 'Repaired marker'], transitions: { 0: { gift: 'reveal', to: 'Read marker', message: 'A side beam makes the worn names visible again.' }, 1: { gift: 'mend', to: 'Repaired marker', message: 'A new plank and bolts return the arrows to the right direction.', seed: 'waypost' } } },
+    pool: { name: 'Broken water pump', states: ['Broken water pump', 'Running pump', 'Checked well'], transitions: { 0: { gift: 'mend', to: 'Running pump', message: 'The gasket seats, and the pump supplies water again.' }, 1: { gift: 'reveal', to: 'Checked well', message: 'The flashlight reveals water-level marks on the well wall.', seed: 'whisper-pool' } } },
+    root: { name: 'Overgrown storehouse door', states: ['Overgrown storehouse door', 'Cleared entrance', 'Opened storehouse'], transitions: { 0: { gift: 'grow', to: 'Cleared entrance', message: 'The shears free the door from brambles and old shoots.' }, 1: { gift: 'reveal', to: 'Opened storehouse', message: 'In the flashlight beam a hidden latch appears.', seed: 'hidden-door' } } },
+    bell: { name: 'Untuned signal bell', states: ['Untuned signal bell', 'Tuned signal bell'], transitions: { 0: { gift: 'echo', to: 'Tuned signal bell', message: 'The tuning fork helps restore the bell’s clear warning tone.', seed: 'rain-bell' } } },
+    moth: { name: 'Soaked field notes', states: ['Soaked field notes', 'Preserved field notes'], transitions: { 0: { gift: 'mend', to: 'Preserved field notes', message: 'Dry paper and a new binding keep the most important pages.', seed: 'paper-flock' } } },
+    moon: { name: 'Dark signal lamp', states: ['Dark signal lamp', 'Lit signal lamp'], transitions: { 0: { gift: 'reveal', to: 'Lit signal lamp', message: 'The flashlight flame lights the larger signal lamp.', seed: 'named-moon' } } },
+    garden: { name: 'Neglected work plot', states: ['Neglected work plot', 'Tended work plot'], transitions: { 0: { gift: 'grow', to: 'Tended work plot', message: 'The shears free young plants and uncover a stone tablet.', seed: 'lantern-garden' } } },
+  },
+  ru: {
+    stone: { name: 'Расстроенный резонатор', states: ['Расстроенный резонатор', 'Настроенный резонатор', 'Закреплённый резонатор'], transitions: { 0: { gift: 'echo', to: 'Настроенный резонатор', message: 'Камертон находит верную частоту механизма.' }, 1: { gift: 'mend', to: 'Закреплённый резонатор', message: 'Новые крепления держат сигнал даже на ветру.', seed: 'singing-tree' } } },
+    sign: { name: 'Залитый грязью указатель', states: ['Залитый грязью указатель', 'Прочитанный указатель', 'Отремонтированный указатель'], transitions: { 0: { gift: 'reveal', to: 'Прочитанный указатель', message: 'Боковой луч снова делает стёртые названия видимыми.' }, 1: { gift: 'mend', to: 'Отремонтированный указатель', message: 'Новая планка и болты возвращают стрелкам верное направление.', seed: 'waypost' } } },
+    pool: { name: 'Сломанная водяная помпа', states: ['Сломанная водяная помпа', 'Запущенная помпа', 'Проверенный колодец'], transitions: { 0: { gift: 'mend', to: 'Запущенная помпа', message: 'Прокладка встаёт на место, и помпа снова подаёт воду.' }, 1: { gift: 'reveal', to: 'Проверенный колодец', message: 'Фонарик открывает метки уровня воды на стенке колодца.', seed: 'whisper-pool' } } },
+    root: { name: 'Заросший вход на склад', states: ['Заросший вход на склад', 'Расчищенный вход', 'Открытый склад'], transitions: { 0: { gift: 'grow', to: 'Расчищенный вход', message: 'Секатор освобождает дверь от ежевики и старых побегов.' }, 1: { gift: 'reveal', to: 'Открытый склад', message: 'В свете фонарика находится скрытая защёлка.', seed: 'hidden-door' } } },
+    bell: { name: 'Ненастроенный сигнальный колокол', states: ['Ненастроенный сигнальный колокол', 'Настроенный сигнальный колокол'], transitions: { 0: { gift: 'echo', to: 'Настроенный сигнальный колокол', message: 'Камертон помогает вернуть колоколу чистый предупреждающий тон.', seed: 'rain-bell' } } },
+    moth: { name: 'Промокшие полевые записки', states: ['Промокшие полевые записки', 'Сохранённые полевые записки'], transitions: { 0: { gift: 'mend', to: 'Сохранённые полевые записки', message: 'Сухая бумага и новый переплёт сохраняют важнейшие страницы.', seed: 'paper-flock' } } },
+    moon: { name: 'Погасшая сигнальная лампа', states: ['Погасшая сигнальная лампа', 'Зажжённая сигнальная лампа'], transitions: { 0: { gift: 'reveal', to: 'Зажжённая сигнальная лампа', message: 'Огонь ручного фонарика зажигает большую сигнальную лампу.', seed: 'named-moon' } } },
+    garden: { name: 'Заброшенный рабочий участок', states: ['Заброшенный рабочий участок', 'Ухоженный рабочий участок'], transitions: { 0: { gift: 'grow', to: 'Ухоженный рабочий участок', message: 'Секатор освобождает молодые растения и открывает каменную табличку.', seed: 'lantern-garden' } } },
+  },
+};
+
+function anomalyText(id: string, locale: Locale): AnomalyText {
+  const template = ANOMALIES.find((item) => item.id === id);
+  if (!template) return { name: id, states: [], transitions: {} };
+  if (locale === 'uk') return template;
+  return ANOMALY_TEXT[locale][id] ?? template;
+}
+
+function localizeAnomaly(template: Anomaly): Anomaly {
+  const locale = getActiveLocale();
+  if (locale === 'uk') return template;
+  const text = ANOMALY_TEXT[locale][template.id];
+  return text ? { ...template, ...text } : template;
+}
+
+export function localizeDiscovery(line: string, locale = getActiveLocale()): string {
+  for (const template of ANOMALIES) {
+    const current = anomalyText(template.id, locale);
+    for (const sourceLocale of ['uk', 'en', 'ru'] as const) {
+      const source = anomalyText(template.id, sourceLocale);
+      for (const [stage, transition] of Object.entries(source.transitions)) {
+        if (`${source.states[Number(stage)]} → ${transition.to}` !== line) continue;
+        const next = current.transitions[Number(stage)];
+        if (next) return `${current.states[Number(stage)]} → ${next.to}`;
+      }
+    }
+  }
+  return line;
+}
 export function distance(a:Point,b:Point){return Math.hypot(a.x-b.x,a.y-b.y)}
 
 export const LEGACY_WORLD_SEED = 0;
@@ -48,13 +110,21 @@ export interface WorldLayout {
 export type SceneryKind='fruit-tree'|'fence'|'shed'|'water'|'reeds'|'boardwalk'|'pine'|'boulder'|'weather-station'|'shore'|'dock'|'boat'|'dune-grass';
 export interface SceneryObject{kind:SceneryKind;position:Point;size:number;rotation?:number}
 
-const THEMES: WorldTheme[] = [
-  { name: 'Галявина дощового скла', ground: ['#b8d3c1', '#9fc5b6', '#96b4aa'], washes: ['#c6d8b4aa', '#b3cda7a8', '#9ec8c3aa', '#bdafd0a0'], trail: '#efd9aa9c' },
-  { name: 'Простір дзвіночків', ground: ['#bbcfd0', '#a8c5c4', '#96b4b8'], washes: ['#c7d7c3a8', '#a9c9b7a8', '#a5bfd4a8', '#c1b5d0a0'], trail: '#f1d7a59c' },
-  { name: 'Долина світла молі', ground: ['#c7d2b4', '#afc4aa', '#9fb7a4'], washes: ['#d7d8a9a8', '#b9cfa2a8', '#b1c5c1a8', '#d2b4c4a0'], trail: '#f3d39a9c' },
-  { name: 'Срібне поле дощу', ground: ['#c1cfca', '#a9c1bc', '#92b2ad'], washes: ['#d0d9bea8', '#aac7aaa8', '#9fc4c7a8', '#c5b2cda0'], trail: '#e8d4ad9c' },
-  { name: 'Пустка сутінкових пелюсток', ground: ['#c4cdb9', '#a9bda9', '#9cafa7'], washes: ['#d4d3aaa8', '#b6c69da8', '#a4c1bba8', '#c9aec4a0'], trail: '#efcf979c' },
+const THEME_NAMES: Record<Locale, string[]> = {
+  uk: ['Галявина дощового скла', 'Простір дзвіночків', 'Долина світла молі', 'Срібне поле дощу', 'Пустка сутінкових пелюсток'],
+  en: ['Rain-glass clearing', 'Bellflower space', 'Moth-light valley', 'Silver rain field', 'Dusk-petal waste'],
+  ru: ['Поляна дождевого стекла', 'Пространство колокольчиков', 'Долина света мотылька', 'Серебряное поле дождя', 'Пустошь сумеречных лепестков'],
+};
+const THEME_LOOKS: Array<Omit<WorldTheme, 'name'>> = [
+  { ground: ['#b8d3c1', '#9fc5b6', '#96b4aa'], washes: ['#c6d8b4aa', '#b3cda7a8', '#9ec8c3aa', '#bdafd0a0'], trail: '#efd9aa9c' },
+  { ground: ['#bbcfd0', '#a8c5c4', '#96b4b8'], washes: ['#c7d7c3a8', '#a9c9b7a8', '#a5bfd4a8', '#c1b5d0a0'], trail: '#f1d7a59c' },
+  { ground: ['#c7d2b4', '#afc4aa', '#9fb7a4'], washes: ['#d7d8a9a8', '#b9cfa2a8', '#b1c5c1a8', '#d2b4c4a0'], trail: '#f3d39a9c' },
+  { ground: ['#c1cfca', '#a9c1bc', '#92b2ad'], washes: ['#d0d9bea8', '#aac7aaa8', '#9fc4c7a8', '#c5b2cda0'], trail: '#e8d4ad9c' },
+  { ground: ['#c4cdb9', '#a9bda9', '#9cafa7'], washes: ['#d4d3aaa8', '#b6c69da8', '#a4c1bba8', '#c9aec4a0'], trail: '#efcf979c' },
 ];
+function themes(): WorldTheme[] {
+  return THEME_LOOKS.map((look, index) => ({ ...look, name: localizedCopy(THEME_NAMES)[index]! }));
+}
 
 const SLOTS: Record<RegionId, Point[]> = {
   orchard:[{x:1120,y:340},{x:1600,y:270},{x:2120,y:420},{x:2720,y:330},{x:1110,y:1080},{x:1630,y:1390},{x:2220,y:1160},{x:2780,y:1390}],
@@ -119,16 +189,16 @@ function routesFor(region:RegionId):Point[][]{
 export function createWorld(seed = LEGACY_WORLD_SEED, suppliedDirection?:RunDirection): WorldLayout {
   const key = seed >>> 0;
   const direction=suppliedDirection??createRunDirection(key);
-  const cacheKey=`${key}:${JSON.stringify(direction)}`;
+  const cacheKey=`${getActiveLocale()}:${key}:${JSON.stringify(direction)}`;
   const found = cache.get(cacheKey);
   if (found) return found;
   if (key === LEGACY_WORLD_SEED&&!suppliedDirection) {
     const routes=[[{ x: 640, y: 430 }, { x: 1120, y: 360 }, { x: 1870, y: 850 }, { x: 3000, y: 1060 }]];
     const legacy: WorldLayout = {
       seed: key, width: WORLD.width, height: WORLD.height, sanctuary: WORLD.sanctuary, gate: WORLD.gate,
-      theme: THEMES[0]!,
+      theme: themes()[0]!,
       trail: routes[0] as [Point,Point,Point,Point], routes, scenery:sceneryFor('orchard',seededRandom(0)),
-      anomalies: ANOMALIES, shrines: SHRINES, plots: PLOTS,
+      anomalies: ANOMALIES.map(localizeAnomaly), shrines: SHRINES, plots: PLOTS,
       grass: Array.from({ length: 180 }, (_, i) => ({ x: (i * 307 + 83) % WORLD.width, y: (i * 173 + 119) % WORLD.height })),
     };
     cache.set(cacheKey, legacy);
@@ -137,7 +207,7 @@ export function createWorld(seed = LEGACY_WORLD_SEED, suppliedDirection?:RunDire
   const random = seededRandom(key);
   const slots = shuffled(SLOTS[direction.region], random);
   const anomalies = ANOMALIES.map((template, index) => ({
-    ...template,
+    ...localizeAnomaly(template),
     position: { x: slots[index]!.x + Math.round((random() - .5) * 70), y: slots[index]!.y + Math.round((random() - .5) * 70) },
   }));
   const shrines = shuffled(SHRINES, random).map((template, index) => ({

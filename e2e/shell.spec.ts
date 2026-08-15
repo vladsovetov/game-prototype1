@@ -9,7 +9,8 @@ test('opens directly in the world with AI and instant-start choices', async ({ p
   await expect(page.getByTestId('game-canvas')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Прокинутися' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Створити новий світ локально з ШІ' })).toBeVisible();
-  await expect(page.getByRole('button')).toHaveCount(2);
+  await expect(page.locator('.wake-card button')).toHaveCount(2);
+  await expect(page.getByTestId('language-switcher')).toBeVisible();
 });
 
 test('keeps a generated opening usable on a short phone', async ({ page }) => {

@@ -1,3 +1,4 @@
+import { localizedCopy, type Locale } from '../i18n/locale';
 import { seededRandom } from './random';
 import type { GameState, RegionId, RunDirection, StoryFrameId, WearableId, WeatherId } from './types';
 
@@ -57,10 +58,24 @@ export function directionFor(state: Pick<GameState, 'worldSeed' | 'storyArc'>) {
   return state.storyArc?.direction ?? createRunDirection(state.worldSeed ?? state.storyArc?.seed ?? 0);
 }
 
-export const REGION_NAMES: Record<RegionId, string> = {
-  orchard: 'Сад старих яблунь', marsh: 'Тиха болотяна стежка', highland: 'Вітряне нагір’я', coast: 'Берег сигнальних вогнів',
+const REGION_COPY: Record<Locale, Record<RegionId, string>> = {
+  uk: { orchard: 'Сад старих яблунь', marsh: 'Тиха болотяна стежка', highland: 'Вітряне нагір’я', coast: 'Берег сигнальних вогнів' },
+  en: { orchard: 'Old Apple Orchard', marsh: 'Quiet Marsh Path', highland: 'Windy Highlands', coast: 'Signal-Light Coast' },
+  ru: { orchard: 'Сад старых яблонь', marsh: 'Тихая болотная тропа', highland: 'Ветреное нагорье', coast: 'Берег сигнальных огней' },
+};
+const WEATHER_COPY: Record<Locale, Record<WeatherId, string>> = {
+  uk: { sunbreak: 'сонце після дощу', rain: 'дрібний дощ', mist: 'низький туман', wind: 'сильний вітер' },
+  en: { sunbreak: 'sun after rain', rain: 'fine rain', mist: 'low mist', wind: 'strong wind' },
+  ru: { sunbreak: 'солнце после дождя', rain: 'мелкий дождь', mist: 'низкий туман', wind: 'сильный ветер' },
 };
 
-export const WEATHER_NAMES: Record<WeatherId, string> = {
-  sunbreak: 'сонце після дощу', rain: 'дрібний дощ', mist: 'низький туман', wind: 'сильний вітер',
-};
+function localizedNames<K extends string>(copy: Record<Locale, Record<K, string>>) {
+  const result = {} as Record<K, string>;
+  for (const id of Object.keys(copy.uk) as K[]) {
+    Object.defineProperty(result, id, { enumerable: true, get: () => localizedCopy(copy)[id] });
+  }
+  return result;
+}
+
+export const REGION_NAMES = localizedNames(REGION_COPY);
+export const WEATHER_NAMES = localizedNames(WEATHER_COPY);

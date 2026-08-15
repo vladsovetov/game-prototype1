@@ -5,7 +5,8 @@ import { createRunDirection } from '../domain/run-direction';
 
 class FakeWorker implements StoryWorkerLike {
   onmessage: ((event: MessageEvent) => void) | null = null;
-  postMessage() {}
+  messages: unknown[] = [];
+  postMessage(message: unknown) { this.messages.push(message); }
   terminate() {}
   emit(data: unknown) { this.onmessage?.({ data } as MessageEvent); }
 }
@@ -29,6 +30,20 @@ describe('local story writer', () => {
     expect(statuses.at(-2)).toMatchObject({ phase: 'download', progress: .4 });
     expect(statuses.at(-1)).toMatchObject({ phase: 'complete' });
     expect(stories).toEqual(['local-model']);
+  });
+
+  it('sends and validates the selected language across the worker boundary', () => {
+    const worker = new FakeWorker();
+    const stories: string[] = [];
+    const writer = createLocalStoryWriter({ workerFactory: () => worker, onStatus: () => {}, onStory: (story) => stories.push(story.premise) }, 'en');
+    const jobId = writer.start(generateCharacter(4), 99);
+    expect(worker.messages.at(-1)).toMatchObject({ type: 'generate', locale: 'en' });
+    worker.emit({ type: 'complete', jobId, raw: JSON.stringify({
+      place: 'The Glass Orchard', role: 'keeper of small storms', disaster: 'the north road vanished in rain',
+      vow: 'No traveler will be left without a light.', motif: 'copper leaves', truth: 'home was the promise they kept together',
+    }) });
+    expect(stories).toHaveLength(1);
+    expect(stories[0]).toContain('The Glass Orchard');
   });
 
   it('keeps the existing story after worker or validation failure', () => {

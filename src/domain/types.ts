@@ -24,7 +24,7 @@ export interface Appearance{body:BodyId;material:MaterialId;palette:PaletteId;ma
 export interface Character{version:1;name:string;description:string;appearance:Appearance;gift:CatalogEntry<GiftId>;burden:CatalogEntry<BurdenId>;quirk:CatalogEntry<QuirkId>}
 export interface Point{x:number;y:number}
 export interface StoryChapter{id:string;title:string;keepsake:string;story:string}
-export interface StoryArc{seed:number;source:'woven'|'local-model';worldName:string;runMark:string;premise:string;question:string;firstClue:string;recovered:string;chapters:Record<string,StoryChapter>;ending:{title:string;story:string};direction?:RunDirection}
+export interface StoryArc{seed:number;source:'woven'|'local-model';locale?:'en'|'uk'|'ru';worldName:string;runMark:string;premise:string;question:string;firstClue:string;recovered:string;chapters:Record<string,StoryChapter>;ending:{title:string;story:string};direction?:RunDirection}
 export type TutorialStep='wake'|'move'|'gift'|'clue'|'resonate'|'combine'|'recovered'|'plant'|'remember'|'personalize'|'done';
 export interface TutorialState{step:TutorialStep;targetAnomalyId:string;borrowedGift:GiftId;start:Point}
 export interface ExpeditionActionRecord{siteId:string;tool:GiftId;title:string;outcome:string}

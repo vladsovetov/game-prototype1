@@ -26,6 +26,10 @@ describe('local story protocol', () => {
 
   it('rejects malformed model prose without changing game data', () => {
     expect(parseStoryIngredients('The answer is {not actually json}.').ok).toBe(false);
+    expect(parseStoryIngredients('The answer is {not actually json}.', 'en')).toEqual({
+      ok: false,
+      reason: 'The device returned an unfinished story object.',
+    });
   });
 
   it('rejects an English result so it cannot leak into the Ukrainian interface', () => {
@@ -35,6 +39,24 @@ describe('local story protocol', () => {
       ok: false,
       reason: 'Локальний оповідач не повернув текст українською.',
     });
+  });
+
+  it('accepts English for an English job and rejects Cyrillic output', () => {
+    const english = {
+      place: 'The Glass Orchard', role: 'keeper of small storms', disaster: 'the north road vanished in rain',
+      vow: 'No traveler will be left without a light.', motif: 'copper leaves', truth: 'home was the promise they kept together',
+    };
+    expect(parseStoryIngredients(JSON.stringify(english), 'en')).toEqual({ ok: true, value: english });
+    expect(parseStoryIngredients(JSON.stringify(valid), 'en').ok).toBe(false);
+  });
+
+  it('accepts Russian for a Russian job and rejects Latin output', () => {
+    const russian = {
+      place: 'Стеклянный сад', role: 'хранитель малых бурь', disaster: 'северная дорога исчезла под дождём',
+      vow: 'Ни один путник не останется без света.', motif: 'медные листья', truth: 'домом было обещание, которое они хранили вместе',
+    };
+    expect(parseStoryIngredients(JSON.stringify(russian), 'ru')).toEqual({ ok: true, value: russian });
+    expect(parseStoryIngredients(JSON.stringify({ ...russian, motif: 'copper leaves' }), 'ru').ok).toBe(false);
   });
 });
 
@@ -82,5 +104,17 @@ describe('local expedition protocol', () => {
     expect(() => parseExpeditionNarrative(JSON.stringify(nullNotes), ['pool', 'root', 'sign', 'garden'], [])).not.toThrow();
     expect(parseExpeditionNarrative(JSON.stringify(nullNotes), ['pool', 'root', 'sign', 'garden'], []).ok).toBe(false);
     expect(parseExpeditionNarrative(JSON.stringify(primitiveNotes), ['pool', 'root', 'sign', 'garden'], []).ok).toBe(false);
+  });
+
+  it('maps an English expedition schema to stable game values', () => {
+    const english = {
+      title: 'A Voice Under the Old Pump', situation: 'disappearance', mood: 'quiet-tension', palette: 'copper-moss',
+      cause: 'An old valve opens only after sunset.',
+      siteNotes: validExpedition.siteNotes.map((note) => ({ siteId: note.siteId, observation: `Fresh field evidence near ${note.siteId}.` })),
+      optionalLead: 'A weak beacon flashes beyond the garden.', warning: 'The longer route will worsen the weather.',
+      rareFind: 'old waterworks token', visualTags: ['copper', 'moss', 'rain'],
+    };
+    const result = parseExpeditionNarrative(JSON.stringify(english), ['pool', 'root', 'sign', 'garden'], [], 'en');
+    expect(result).toMatchObject({ ok: true, value: { title: english.title, situation: 'зникнення', mood: 'тиха-тривога', palette: 'мідь-мох' } });
   });
 });

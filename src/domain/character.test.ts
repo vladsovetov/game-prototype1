@@ -1,9 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { generateCharacter, validateCharacterCard } from './character';
+import { setActiveLocale } from '../i18n/locale';
 
 const morrow = JSON.stringify({version:1,name:'Morrow',description:'A porcelain fox that remembers vanished roads.',appearance:{body:'fox',material:'porcelain',palette:'dusk',mark:'map-lines'},gift:'reveal',burden:'fragile',quirk:'moon-touched',power:999,stats:{speed:999}});
 
 describe('character import', () => {
+  afterEach(()=>setActiveLocale('uk'));
   it('normalizes a valid card through trusted catalogs', () => {
     const result = validateCharacterCard(morrow);
     expect(result.ok).toBe(true);
@@ -27,5 +29,17 @@ describe('character import', () => {
   it('generates deterministic catalog-valid characters', () => {
     expect(generateCharacter(42)).toEqual(generateCharacter(42));
     expect(generateCharacter(42)).not.toEqual(generateCharacter(43));
+  });
+  it('generates authored character and tool copy in the active language', () => {
+    setActiveLocale('en');
+    const english=generateCharacter(42);
+    expect(english.description).toMatch(/[A-Za-z]/);
+    expect(english.description).not.toMatch(/[А-Яа-яІіЇїЄєҐґ]/);
+    expect(english.gift.name).toBe('Flashlight');
+
+    setActiveLocale('ru');
+    const russian=generateCharacter(42);
+    expect(russian.description).toMatch(/[А-Яа-яЁё]/);
+    expect(russian.gift.name).toBe('Фонарик');
   });
 });

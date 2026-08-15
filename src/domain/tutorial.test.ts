@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { setActiveLocale } from '../i18n/locale';
 import { generateCharacter } from './character';
 import { createInitialState } from './simulation';
 import {
@@ -13,6 +14,8 @@ import { memoryProgress } from './memory';
 import { prepareNewRun } from './run';
 
 describe('progressive tutorial', () => {
+  afterEach(() => setActiveLocale('uk'));
+
   it.each(['echo', 'reveal', 'mend', 'grow'] as const)(
     'starts the authored Road Home route even when the generated gift was %s',
     (gift) => {
@@ -109,5 +112,11 @@ describe('progressive tutorial', () => {
     state.tutorial!.step = 'resonate';
 
     expect(tutorialObjective(state).title).toContain(state.storyArc!.worldName);
+  });
+
+  it('guides the opening in English when that locale is active', () => {
+    setActiveLocale('en');
+    const state = prepareTutorial(createInitialState(generateCharacter(4)));
+    expect(tutorialObjective(state).action).toBe('Wake up');
   });
 });

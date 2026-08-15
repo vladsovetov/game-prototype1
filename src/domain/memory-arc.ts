@@ -8,64 +8,22 @@ export interface MemoryChapter {
 }
 
 export const MEMORY_CHAPTERS: Record<string, MemoryChapter> = {
-  sign: {
-    id: 'sign',
-    title: 'The Road Home',
-    keepsake: 'Remembered Waypost',
-    story: 'A sign for Lantern House led through a storm toward a distant light—one that somebody kept burning so the way home would not disappear.',
-  },
-  stone: {
-    id: 'stone',
-    title: 'The Song Below',
-    keepsake: 'Singing Tree',
-    story: 'Your voice returns inside the silver leaves. You taught a room of frightened travelers the same four notes, and they sang together until the thunder sounded small.',
-  },
-  pool: {
-    id: 'pool',
-    title: 'The Basin at Dawn',
-    keepsake: 'Whispering Pool',
-    story: 'Cold water circles your wrists. At every dawn after a storm, you washed the road from each guest’s coat before you ever asked their name.',
-  },
-  root: {
-    id: 'root',
-    title: 'The Door Left Unlocked',
-    keepsake: 'Little Hidden Door',
-    story: 'Behind the living roots waits a narrow room with blankets and dry bread. You never locked it; a refuge is only a refuge if anyone can enter.',
-  },
-  bell: {
-    id: 'bell',
-    title: 'The Storm Bell',
-    keepsake: 'Rain Bell',
-    story: 'You pulled this bell through the rain until your palms bled. Every ring told the people beyond the hill: Lantern House still stands. Follow the sound.',
-  },
-  moth: {
-    id: 'moth',
-    title: 'Letters with Wings',
-    keepsake: 'Paper Flock',
-    story: 'Hundreds of folded notes flew into the dark: “There is room here. You do not have to arrive brave.” Some returned carrying names.',
-  },
-  moon: {
-    id: 'moon',
-    title: 'A Name for the Moon',
-    keepsake: 'Named Moon',
-    story: 'A child at your window could not sleep. You named the blank moon Morrow and promised that morning would come. The name stayed after the storm.',
-  },
-  garden: {
-    id: 'garden',
-    title: 'The Garden That Waited',
-    keepsake: 'Lantern Garden',
-    story: 'When the lamp oil ran out, you planted warm flowers beside the road. Each bloom held enough dusk to show a lost traveler the next step.',
-  },
+  sign: { id: 'sign', title: 'Дорога додому', keepsake: 'Пригаданий дороговказ', story: 'Дороговказ до Дому Ліхтарів вів крізь бурю до далекого світла — хтось підтримував його, щоб дорога додому не зникла.' },
+  stone: { id: 'stone', title: 'Пісня під каменем', keepsake: 'Співоче дерево', story: 'Ваш голос повертається у срібному листі. Колись ви навчили наляканих мандрівників чотирьох нот, і вони співали разом, доки грім не став тихим.' },
+  pool: { id: 'pool', title: 'Чаша на світанку', keepsake: 'Шепітливий ставок', story: 'Холодна вода огортає зап’ястки. На кожному світанку після бурі ви змивали дорогу з плащів гостей, перш ніж питати їхні імена.' },
+  root: { id: 'root', title: 'Незамкнені двері', keepsake: 'Маленькі потаємні двері', story: 'За живим корінням чекає вузька кімната з ковдрами й сухим хлібом. Її не замикали: прихисток лишається прихистком, тільки коли ввійти може кожен.' },
+  bell: { id: 'bell', title: 'Дзвін бурі', keepsake: 'Дощовий дзвін', story: 'Ви тягнули цей дзвін крізь дощ, аж долоні вкрилися кров’ю. Кожен удар сповіщав людей за пагорбом: Дім Ліхтарів стоїть. Ідіть на звук.' },
+  moth: { id: 'moth', title: 'Листи з крилами', keepsake: 'Паперова зграя', story: 'Сотні складених записок полетіли в темряву: «Тут є місце. Не обов’язково приходити хоробрими». Деякі повернулися з іменами.' },
+  moon: { id: 'moon', title: 'Ім’я для місяця', keepsake: 'Названий місяць', story: 'Дитина біля вікна не могла заснути. Ви назвали порожній місяць Морроу й пообіцяли, що ранок прийде. Ім’я залишилося після бурі.' },
+  garden: { id: 'garden', title: 'Сад, що чекав', keepsake: 'Сад ліхтарів', story: 'Коли скінчилася олія для ламп, ви посадили теплі квіти край дороги. У кожній квітці було досить сутінків, щоб показати заблукалим наступний крок.' },
 };
 
 export const LANTERN_HOUSE_ENDING = {
-  title: 'The Keeper of Lantern House',
-  story: 'Lantern House was never the home you were trying to find. It was the home you made for everyone still on the road. In the last great storm, you carried its light into the dark and spent your memories guiding others home. This meadow grew from what you gave away. You were the Keeper of Lantern House.',
+  title: 'Хранитель Дому Ліхтарів',
+  story: 'Дім Ліхтарів був не домом, який ви намагалися знайти. Це був дім, створений для всіх, хто ще в дорозі. Під час останньої великої бурі ви винесли його світло в темряву й віддали свої спогади, щоб провести інших додому. Ця галявина виросла з того дарунка. Ви були Хранителем Дому Ліхтарів.',
 } as const;
 
-export function memoryChapter(id: string): MemoryChapter | undefined {
-  return MEMORY_CHAPTERS[id];
-}
+export function memoryChapter(id: string): MemoryChapter | undefined { return MEMORY_CHAPTERS[id]; }
 
 export function sanctuaryProgress(state: GameState) {
   const required = 6;
@@ -73,6 +31,4 @@ export function sanctuaryProgress(state: GameState) {
   return { planted, required, complete: planted >= required };
 }
 
-export function hasReachedEnding(state: GameState) {
-  return sanctuaryProgress(state).complete && !state.endingSeen;
-}
+export function hasReachedEnding(state: GameState) { return sanctuaryProgress(state).complete && !state.endingSeen; }

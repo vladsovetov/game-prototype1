@@ -15,21 +15,21 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('starts with a random creature and one clear action', async ({ page }) => {
-  await expect(page.getByRole('button', { name: 'Wake up' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Import Character' })).toHaveCount(0);
-  await expect(page.getByText(/Gift|Burden|Quirk/)).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Прокинутися' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Додати персонажа' })).toHaveCount(0);
+  await expect(page.getByText(/Дар|Тягар|Особливість/)).toHaveCount(0);
   await expect(page.getByTestId('tutorial-character-name')).toBeVisible();
 });
 
 test('reveals movement only after waking', async ({ page }) => {
-  await page.getByRole('button', { name: 'Wake up' }).click();
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Find the rain-covered sign');
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
+  await expect(page.getByTestId('tutorial-objective')).toContainText('Знайдіть залитий дощем дороговказ');
   await expect(page.getByText('WASD')).toBeVisible();
   await expect(page.getByTestId('journal-button')).toHaveCount(0);
 });
 
 test('offers optional personalization only after the first memory', async ({ page }) => {
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   await page.evaluate(() => {
     const key = 'unwritten.prototype.save.v1';
     const state = JSON.parse(localStorage.getItem(key)!);
@@ -38,15 +38,15 @@ test('offers optional personalization only after the first memory', async ({ pag
   });
   await page.reload();
 
-  await expect(page.getByRole('heading', { name: 'Make them yours' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Add personality' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Shape their look' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Create with your AI' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Keep exploring' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Зробіть персонажа своїм' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Додати характер' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Змінити вигляд' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Створити за допомогою ШІ' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Досліджувати далі' })).toBeVisible();
 });
 
 test('can back out of a personalization detail without getting stuck', async ({ page }) => {
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   await page.evaluate(() => {
     const key = 'unwritten.prototype.save.v1';
     const state = JSON.parse(localStorage.getItem(key)!);
@@ -55,14 +55,14 @@ test('can back out of a personalization detail without getting stuck', async ({ 
   });
   await page.reload();
 
-  await page.getByRole('button', { name: 'Add personality' }).click();
-  await expect(page.getByRole('heading', { name: 'Tell us one true thing' })).toBeVisible();
-  await page.getByRole('button', { name: 'Close' }).click();
-  await expect(page.getByRole('heading', { name: 'Make them yours' })).toBeVisible();
+  await page.getByRole('button', { name: 'Додати характер' }).click();
+  await expect(page.getByRole('heading', { name: 'Розкажіть одну правдиву річ' })).toBeVisible();
+  await page.getByRole('button', { name: 'Закрити' }).click();
+  await expect(page.getByRole('heading', { name: 'Зробіть персонажа своїм' })).toBeVisible();
 });
 
 test('introduces the E key when the player reaches a Resonance Shrine', async ({ page }) => {
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   await page.evaluate(() => {
     const key = 'unwritten.prototype.save.v1';
     const state = JSON.parse(localStorage.getItem(key)!);
@@ -75,12 +75,12 @@ test('introduces the E key when the player reaches a Resonance Shrine', async ({
   });
   await page.reload();
 
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Borrow Mend');
+  await expect(page.getByTestId('tutorial-objective')).toContainText('Позичити «Відновлення»');
   await expect(page.getByTestId('tutorial-objective')).toContainText('E');
 });
 
 test('does not advance the tutorial after changing an off-route anomaly', async ({ page }) => {
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   await page.evaluate(() => {
     const key = 'unwritten.prototype.save.v1';
     const state = JSON.parse(localStorage.getItem(key)!);
@@ -94,11 +94,11 @@ test('does not advance the tutorial after changing an off-route anomaly', async 
   await page.reload();
   await page.keyboard.press('f');
 
-  await expect(page.getByTestId('tutorial-objective')).toContainText(/Use /);
+  await expect(page.getByTestId('tutorial-objective')).toContainText(/Застосуйте Дар/);
 });
 
 test('continues an older unfinished route without switching it to The Road Home', async ({ page }) => {
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   await page.evaluate(() => {
     const key = 'unwritten.prototype.save.v1';
     const state = JSON.parse(localStorage.getItem(key)!);
@@ -110,9 +110,9 @@ test('continues an older unfinished route without switching it to The Road Home'
   await page.reload();
   await page.keyboard.press('f');
 
-  await expect(page.getByRole('heading', { name: 'A clue returned' })).toHaveCount(0);
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Follow the grow lights');
-  await expect(page.getByTestId('tutorial-objective')).toContainText('FIRST MEMORY');
+  await expect(page.getByRole('heading', { name: 'Підказка повернулася' })).toHaveCount(0);
+  await expect(page.getByTestId('tutorial-objective')).toContainText('Ідіть за вогнями Дару «Зростання»');
+  await expect(page.getByTestId('tutorial-objective')).toContainText('ПЕРШИЙ СПОГАД');
 });
 
 test('opens an untouched legacy route without relabeling it The Road Home', async ({ page }) => {
@@ -125,8 +125,8 @@ test('opens an untouched legacy route without relabeling it The Road Home', asyn
   });
   await page.reload();
 
-  await expect(page.getByText('A First Discovery', { exact: true })).toBeVisible();
-  await expect(page.getByText('The Road Home')).toHaveCount(0);
+  await expect(page.getByText('Перше відкриття', { exact: true })).toBeVisible();
+  await expect(page.getByText('Дорога додому')).toHaveCount(0);
 });
 
 test('preserves a save from a newer build instead of overwriting it', async ({ page }) => {
@@ -134,13 +134,13 @@ test('preserves a save from a newer build instead of overwriting it', async ({ p
   await page.evaluate(({ key, rawValue }) => localStorage.setItem(key, rawValue), { key: 'unwritten.prototype.save.v1', rawValue: raw });
   await page.reload();
 
-  await expect(page.getByRole('heading', { name: 'This meadow is from a newer version' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Ця галявина з новішої версії' })).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('unwritten.prototype.save.v1'))).toBe(raw);
 });
 
 test('keeps personalization scrollable on a short phone viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 600 });
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   await page.evaluate(() => {
     const key = 'unwritten.prototype.save.v1';
     const state = JSON.parse(localStorage.getItem(key)!);
@@ -151,6 +151,6 @@ test('keeps personalization scrollable on a short phone viewport', async ({ page
 
   const card = page.locator('.personalize-card');
   expect(await card.evaluate((element) => element.clientHeight <= window.innerHeight - 30)).toBe(true);
-  await page.getByRole('button', { name: 'Keep exploring' }).click();
+  await page.getByRole('button', { name: 'Досліджувати далі' }).click();
   await expect(page.getByTestId('journal-button')).toBeVisible();
 });

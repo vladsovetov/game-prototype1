@@ -16,11 +16,11 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('completes the guided first memory and opens the free meadow', async ({ page }) => {
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   await page.keyboard.down('d');
   await page.waitForTimeout(240);
   await page.keyboard.up('d');
-  await expect(page.getByTestId('tutorial-objective')).toContainText(/Use /);
+  await expect(page.getByTestId('tutorial-objective')).toContainText(/Застосуйте Дар/);
 
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
@@ -32,9 +32,9 @@ test('completes the guided first memory and opens the free meadow', async ({ pag
   }, SAVE_KEY);
   await page.reload();
   await page.keyboard.press('f');
-  await expect(page.getByRole('heading', { name: 'A clue returned' })).toBeVisible();
-  await page.getByRole('button', { name: 'Finish the memory' }).click();
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Find Mend');
+  await expect(page.getByRole('heading', { name: 'Підказка повернулася' })).toBeVisible();
+  await page.getByRole('button', { name: 'Завершити спогад' }).click();
+  await expect(page.getByTestId('tutorial-objective')).toContainText('Знайдіть Дар «Відновлення»');
 
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
@@ -46,7 +46,7 @@ test('completes the guided first memory and opens the free meadow', async ({ pag
   }, SAVE_KEY);
   await page.reload();
   await page.keyboard.press('e');
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Return and restore the sign');
+  await expect(page.getByTestId('tutorial-objective')).toContainText('Поверніться й відновіть дороговказ');
 
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
@@ -58,38 +58,38 @@ test('completes the guided first memory and opens the free meadow', async ({ pag
   }, SAVE_KEY);
   await page.reload();
   await page.keyboard.press('f');
-  await expect(page.getByRole('heading', { name: 'Memory recovered' })).toBeVisible();
-  await page.getByRole('button', { name: 'Bring it home' }).click();
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Plant the Waypost');
+  await expect(page.getByRole('heading', { name: 'Спогад відновлено' })).toBeVisible();
+  await page.getByRole('button', { name: 'Віднести додому' }).click();
+  await expect(page.getByTestId('tutorial-objective')).toContainText('Посадіть дороговказ');
   await page.keyboard.press('e');
 
-  await expect(page.getByRole('heading', { name: 'Who kept the light burning?' })).toBeVisible();
-  await page.getByRole('button', { name: 'A patient friend' }).click();
-  await expect(page.getByRole('heading', { name: 'Make them yours' })).toBeVisible();
-  await page.getByRole('button', { name: 'Keep exploring' }).click();
+  await expect(page.getByRole('heading', { name: 'Хто підтримував вогонь?' })).toBeVisible();
+  await page.getByRole('button', { name: 'Терплячий друг' }).click();
+  await expect(page.getByRole('heading', { name: 'Зробіть персонажа своїм' })).toBeVisible();
+  await page.getByRole('button', { name: 'Досліджувати далі' }).click();
   await expect(page.getByTestId('journal-button')).toBeVisible();
   await page.getByTestId('journal-button').click();
-  await expect(page.getByRole('heading', { name: 'Field journal' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Польовий щоденник' })).toBeVisible();
 });
 
 test('keeps an invalid AI result editable and accepts Morrow', async ({ page }) => {
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
     state.tutorial.step = 'personalize';
     localStorage.setItem(key, JSON.stringify(state));
   }, SAVE_KEY);
   await page.reload();
-  await page.getByRole('button', { name: 'Create with your AI' }).click();
-  await page.getByRole('button', { name: 'Paste the result' }).click();
-  const box = page.getByRole('textbox', { name: 'Character JSON' });
+  await page.getByRole('button', { name: 'Створити за допомогою ШІ' }).click();
+  await page.getByRole('button', { name: 'Вставити результат' }).click();
+  const box = page.getByRole('textbox', { name: 'JSON персонажа' });
   await box.fill('{}');
-  await page.getByRole('button', { name: 'Meet this character' }).click();
+  await page.getByRole('button', { name: 'Зустріти персонажа' }).click();
   await expect(page.getByTestId('import-errors')).toBeVisible();
-  await box.fill(JSON.stringify({ version: 1, name: 'Morrow', description: 'A porcelain fox that remembers vanished roads.', appearance: { body: 'fox', material: 'porcelain', palette: 'dusk', mark: 'map-lines' }, gift: 'reveal', burden: 'fragile', quirk: 'moon-touched' }));
-  await page.getByRole('button', { name: 'Meet this character' }).click();
-  await expect(page.getByRole('heading', { name: 'Make them yours' })).toBeVisible();
-  await expect(page.getByText(/met Morrow/)).toBeVisible();
+  await box.fill(JSON.stringify({ version: 1, name: 'Морроу', description: 'Порцелянова лисиця, що пам’ятає зниклі дороги.', appearance: { body: 'fox', material: 'porcelain', palette: 'dusk', mark: 'map-lines' }, gift: 'reveal', burden: 'fragile', quirk: 'moon-touched' }));
+  await page.getByRole('button', { name: 'Зустріти персонажа' }).click();
+  await expect(page.getByRole('heading', { name: 'Зробіть персонажа своїм' })).toBeVisible();
+  await expect(page.getByText(/Морроу входить/)).toBeVisible();
 });
 
 test('persists the random character across reload', async ({ page }) => {

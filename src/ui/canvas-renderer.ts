@@ -1,4 +1,4 @@
-import { PALETTE_COLORS } from '../domain/catalog';
+import { GIFTS, PALETTE_COLORS } from '../domain/catalog';
 import { tutorialTarget } from '../domain/tutorial';
 import type { GameState, Point } from '../domain/types';
 import { SEED_NAMES, WORLD, worldFor, type WorldLayout } from '../domain/world';
@@ -16,7 +16,7 @@ export function worldToScreen(point: Point, camera: Point) {
 
 export function createCanvasRenderer(canvas: HTMLCanvasElement) {
   const context = canvas.getContext('2d');
-  if (!context) throw new Error('Canvas 2D is unavailable.');
+  if (!context) throw new Error('Полотно Canvas 2D недоступне.');
   const ctx = context;
   let width = innerWidth;
   let height = innerHeight;
@@ -105,7 +105,7 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
     ctx.fillStyle = '#315c55';
     ctx.font = '600 12px ui-monospace, SFMono-Regular, Menlo, monospace';
     ctx.letterSpacing = '2px';
-    ctx.fillText('YOUR QUIET PATCH', 132, 156);
+    ctx.fillText('ВАШ ТИХИЙ ПРИТУЛОК', 132, 156);
     ctx.restore();
 
     for (const plot of world.plots) {
@@ -162,7 +162,7 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
       ctx.fillStyle = '#31554f';
       ctx.font = '700 10px ui-monospace, SFMono-Regular, Menlo, monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(shrine.gift.toUpperCase(), shrine.position.x, shrine.position.y + 54);
+      ctx.fillText(GIFTS[shrine.gift].name.toLocaleUpperCase('uk-UA'), shrine.position.x, shrine.position.y + 54);
     }
   }
 

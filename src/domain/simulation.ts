@@ -1,12 +1,70 @@
-import type { GameState, GiftId, InteractionResult, Point } from './types';
-import type { Character } from './types'; import { distance, worldFor } from './world';
-const clone=(s:GameState):GameState=>structuredClone(s);
-export function createInitialState(character:Character,worldSeed?:number):GameState{const world=worldFor({worldSeed});return{version:1,character,player:{x:620,y:420},...(worldSeed===undefined?{}:{worldSeed}),anomalies:Object.fromEntries(world.anomalies.map(a=>[a.id,0])),discoveries:[],seeds:[],plantings:{},rewarded:[],effects:{rootedUntil:0,fragileUntil:0,fadingUntil:0,awakeProps:[]},lastUpdated:Date.now()}}
-export function movePlayer(state:GameState,delta:Point,elapsedMs:number):GameState{if(state.effects.rootedUntil>elapsedMs)return state;const world=worldFor(state);const s=clone(state);s.player={x:Math.max(40,Math.min(world.width-40,s.player.x+delta.x)),y:Math.max(40,Math.min(world.height-40,s.player.y+delta.y))};s.lastUpdated=elapsedMs;return s}
+import type { Character, GameState, GiftId, InteractionResult, Point } from './types';
+import { GIFTS } from './catalog';
+import { distance, SEED_NAMES, worldFor } from './world';
+
+const clone = (state: GameState): GameState => structuredClone(state);
+export function createInitialState(character: Character, worldSeed?: number): GameState {
+  const world = worldFor({ worldSeed });
+  return { version:1, character, player:{x:620,y:420}, ...(worldSeed===undefined?{}:{worldSeed}), anomalies:Object.fromEntries(world.anomalies.map((anomaly)=>[anomaly.id,0])), discoveries:[], seeds:[], plantings:{}, rewarded:[], effects:{rootedUntil:0,fragileUntil:0,fadingUntil:0,awakeProps:[]}, lastUpdated:Date.now() };
+}
+export function movePlayer(state:GameState,delta:Point,elapsedMs:number):GameState {
+  if(state.effects.rootedUntil>elapsedMs)return state;
+  const world=worldFor(state), next=clone(state);
+  next.player={x:Math.max(40,Math.min(world.width-40,next.player.x+delta.x)),y:Math.max(40,Math.min(world.height-40,next.player.y+delta.y))};
+  next.lastUpdated=elapsedMs;
+  return next;
+}
 function result(state:GameState,message:string,changed=false,kind?:InteractionResult['kind']):InteractionResult{return{state,message,changed,...(kind?{kind}:{})}}
-export function nearestTarget(state:GameState){const world=worldFor(state);const anomalies=world.anomalies.map(a=>({type:'anomaly' as const,value:a,distance:distance(state.player,a.position)}));const shrines=world.shrines.map(a=>({type:'shrine' as const,value:a,distance:distance(state.player,a.position)}));const plots=world.plots.map(a=>({type:'plot' as const,value:a,distance:distance(state.player,a.position)}));return [...anomalies,...shrines,...plots].sort((a,b)=>a.distance-b.distance)[0]}
-export function activateGift(state:GameState,now=Date.now()):InteractionResult{const target=nearestTarget(state);if(!target||target.type!=='anomaly'||target.distance>145)return result(state,'Move closer to the object the lights are circling.');const a=target.value,stage=state.anomalies[a.id]??0,t=a.transitions[stage];if(!t)return result(state,`${a.states[stage]} has told you all it knows.`);const gifts:GiftId[]=[state.character.gift.id,...(state.borrowedGift?[state.borrowedGift]:[])];if(!gifts.includes(t.gift))return result(state,`${a.states[stage]} needs ${t.gift.toUpperCase()} before it can change again.`);const s=clone(state);s.anomalies[a.id]=stage+1;s.discoveries.push(`${a.states[stage]} → ${t.to}`);if(t.seed&&!s.rewarded.includes(a.id)){s.rewarded.push(a.id);s.seeds.push(t.seed)};if(s.character.burden.id==='rooted')s.effects.rootedUntil=now+850;if(s.character.burden.id==='fragile')s.effects.fragileUntil=now+3500;if(s.character.burden.id==='fading')s.effects.fadingUntil=now+4500;if(s.character.burden.id==='loud')s.effects.awakeProps.push(a.id);s.lastUpdated=now;return result(s,t.message,true,t.seed?'seed':'discovery')}
-export function activateShrine(state:GameState):InteractionResult{const shrine=worldFor(state).shrines.map(x=>({...x,d:distance(state.player,x.position)})).sort((a,b)=>a.d-b.d)[0];if(!shrine||shrine.d>145)return result(state,'Move closer to the Gift shrine.');const s=clone(state);s.borrowedGift=shrine.gift;return result(s,`You can now use ${shrine.gift.toUpperCase()}.`,true,'info')}
-export function inspectNearest(state:GameState):InteractionResult{const target=nearestTarget(state);if(!target||target.distance>160)return result(state,'Only wind and paper grass nearby.');if(target.type==='anomaly'){const stage=state.anomalies[target.value.id]??0;const curious=state.character.quirk.id==='curious'?' You sense it is waiting for the right Gift.':'';return result(state,`${target.value.states[stage]}.${curious}`)}if(target.type==='shrine')return result(state,`A place that can lend the ${target.value.gift.toUpperCase()} Gift.`);const planted=state.plantings[target.value.id];return result(state,planted?`A memory is planted here: ${planted}.`:'An empty sanctuary plot.')}
-export function plantSeed(state:GameState,plotId:string,seedId:string):InteractionResult{if(state.plantings[plotId])return result(state,'That plot already holds a memory.');const index=state.seeds.indexOf(seedId);if(index<0)return result(state,'That seed is not in your tray.');const s=clone(state);s.seeds.splice(index,1);s.plantings[plotId]=seedId;return result(s,'The sanctuary keeps this memory.',true,'seed')}
-export function removePlanting(state:GameState,plotId:string):InteractionResult{const seed=state.plantings[plotId];if(!seed)return result(state,'That plot is already empty.');const s=clone(state);delete s.plantings[plotId];s.seeds.push(seed);return result(s,'The memory returns safely to your seed tray.',true)}
+export function nearestTarget(state:GameState){const world=worldFor(state);const anomalies=world.anomalies.map(value=>({type:'anomaly' as const,value,distance:distance(state.player,value.position)}));const shrines=world.shrines.map(value=>({type:'shrine' as const,value,distance:distance(state.player,value.position)}));const plots=world.plots.map(value=>({type:'plot' as const,value,distance:distance(state.player,value.position)}));return[...anomalies,...shrines,...plots].sort((a,b)=>a.distance-b.distance)[0]}
+
+export function activateGift(state:GameState,now=Date.now()):InteractionResult {
+  const target=nearestTarget(state);
+  if(!target||target.type!=='anomaly'||target.distance>145)return result(state,'Підійдіть ближче до предмета, навколо якого кружляють вогні.');
+  const anomaly=target.value,stage=state.anomalies[anomaly.id]??0,transition=anomaly.transitions[stage];
+  if(!transition)return result(state,`${anomaly.states[stage]} уже розповів усе, що знав.`);
+  const gifts:GiftId[]=[state.character.gift.id,...(state.borrowedGift?[state.borrowedGift]:[])];
+  if(!gifts.includes(transition.gift))return result(state,`${anomaly.states[stage]} потребує Дару «${GIFTS[transition.gift].name}», щоб змінитися знову.`);
+  const next=clone(state);
+  next.anomalies[anomaly.id]=stage+1;
+  next.discoveries.push(`${anomaly.states[stage]} → ${transition.to}`);
+  if(transition.seed&&!next.rewarded.includes(anomaly.id)){next.rewarded.push(anomaly.id);next.seeds.push(transition.seed)}
+  if(next.character.burden.id==='rooted')next.effects.rootedUntil=now+850;
+  if(next.character.burden.id==='fragile')next.effects.fragileUntil=now+3500;
+  if(next.character.burden.id==='fading')next.effects.fadingUntil=now+4500;
+  if(next.character.burden.id==='loud')next.effects.awakeProps.push(anomaly.id);
+  next.lastUpdated=now;
+  return result(next,transition.message,true,transition.seed?'seed':'discovery');
+}
+
+export function activateShrine(state:GameState):InteractionResult {
+  const shrine=worldFor(state).shrines.map(value=>({...value,distance:distance(state.player,value.position)})).sort((a,b)=>a.distance-b.distance)[0];
+  if(!shrine||shrine.distance>145)return result(state,'Підійдіть ближче до святині Дару.');
+  const next=clone(state); next.borrowedGift=shrine.gift;
+  return result(next,`Тепер ви можете застосувати Дар «${GIFTS[shrine.gift].name}».`,true,'info');
+}
+
+export function inspectNearest(state:GameState):InteractionResult {
+  const target=nearestTarget(state);
+  if(!target||target.distance>160)return result(state,'Поруч лише вітер і паперова трава.');
+  if(target.type==='anomaly'){
+    const stage=state.anomalies[target.value.id]??0;
+    const curious=state.character.quirk.id==='curious'?' Ви відчуваєте: він чекає на правильний Дар.':'';
+    return result(state,`${target.value.states[stage]}.${curious}`);
+  }
+  if(target.type==='shrine')return result(state,`Місце, що може позичити Дар «${GIFTS[target.value.gift].name}».`);
+  const planted=state.plantings[target.value.id];
+  return result(state,planted?`Тут посаджено спогад: ${SEED_NAMES[planted]??planted}.`:'Порожнє місце у Притулку.');
+}
+
+export function plantSeed(state:GameState,plotId:string,seedId:string):InteractionResult {
+  if(state.plantings[plotId])return result(state,'У цьому місці вже зберігається спогад.');
+  const index=state.seeds.indexOf(seedId);
+  if(index<0)return result(state,'Цієї зернини немає у вашій таці.');
+  const next=clone(state);next.seeds.splice(index,1);next.plantings[plotId]=seedId;
+  return result(next,'Притулок зберігає цей спогад.',true,'seed');
+}
+export function removePlanting(state:GameState,plotId:string):InteractionResult {
+  const seed=state.plantings[plotId];if(!seed)return result(state,'Це місце вже порожнє.');
+  const next=clone(state);delete next.plantings[plotId];next.seeds.push(seed);
+  return result(next,'Спогад безпечно повертається до таці.',true);
+}

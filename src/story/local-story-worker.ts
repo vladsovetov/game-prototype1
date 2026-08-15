@@ -58,8 +58,8 @@ self.onmessage = async (event: MessageEvent<StoryWorkerRequest>) => {
     if (latestJobId !== jobId) return;
     send({ type: 'progress', jobId, stage: 'read', progress: 1 });
     const prompt = [
-      { role: 'system', content: 'You write compact, gentle fantasy story ingredients. Return JSON only. Never add powers, rules, HTML, markdown, or extra keys.' },
-      { role: 'user', content: `Create one coherent lost-memory tale for ${character.name}. Description: ${character.description}. Gift: ${character.gift}. Burden: ${character.burden}. Quirk: ${character.quirk}. Random run seed: ${seed}. Return exactly these short string fields: place, role, disaster, vow, motif, truth. Keep place/role/motif under 8 words and the other fields under 18 words.` },
+      { role: 'system', content: 'Ти пишеш лаконічні й лагідні складники фантастичних історій українською мовою. Поверни лише JSON. Не додавай сил, правил, HTML, markdown чи зайвих ключів. Усі значення мають бути українською.' },
+      { role: 'user', content: `Створи цілісну українську історію про втрачену пам’ять для ${character.name}. Опис: ${character.description}. Дар: ${character.gift}. Тягар: ${character.burden}. Особливість: ${character.quirk}. Випадкове зерно історії: ${seed}. Поверни рівно такі короткі текстові поля українською: place, role, disaster, vow, motif, truth. Поля place, role і motif — до 8 слів, інші — до 18 слів.` },
     ];
     send({ type: 'progress', jobId, stage: 'weave', progress: .1 });
     const output = await localGenerator(prompt, { max_new_tokens: 180, do_sample: true, temperature: .8, top_p: .9 });
@@ -68,6 +68,6 @@ self.onmessage = async (event: MessageEvent<StoryWorkerRequest>) => {
     send({ type: 'complete', jobId, raw: generatedText(output) });
   } catch (error) {
     if (latestJobId !== jobId) return;
-    send({ type: 'error', jobId, message: error instanceof Error ? error.message : 'The local writer could not finish.' });
+    send({ type: 'error', jobId, message: 'Локальний оповідач не зміг завершити роботу. Перевірте підтримку WebGPU або спробуйте ще раз.' });
   }
 };

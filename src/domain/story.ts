@@ -2,90 +2,62 @@ import { seededRandom } from './random';
 import type { Character, GameState, StoryArc, StoryChapter } from './types';
 import { LANTERN_HOUSE_ENDING, MEMORY_CHAPTERS } from './memory-arc';
 
-export interface StoryIngredients {
-  place: string;
-  role: string;
-  disaster: string;
-  vow: string;
-  motif: string;
-  truth: string;
-}
+export interface StoryIngredients { place: string; role: string; disaster: string; vow: string; motif: string; truth: string }
 
-const PLACES = ['the House of Blue Windows', 'Mothbell Refuge', 'the Rain Archive', 'the Last Warm Station', 'the Orchard of Small Moons'];
-const ROLES = ['keeper of the night road', 'listener at the weather door', 'mender of travelers’ names', 'cartographer of vanished paths', 'gardener of borrowed light'];
-const DISASTERS = ['the river rose into the sky', 'a silver storm erased every road', 'the moon went dark for seven nights', 'the bells forgot how to warn the valley', 'the wind carried every name away'];
-const VOWS = ['No lost traveler will face the dark alone.', 'I will leave a light wherever the road divides.', 'Every stranger will be welcomed before they are questioned.', 'What the storm scatters, I will gather gently.', 'I will remember for those who cannot.'];
-const MOTIFS = ['blue thread', 'rain on warm glass', 'four quiet notes', 'paper wings', 'golden seeds'];
-const TRUTHS = ['home was the shelter they made for others', 'their memories became the lights that guided everyone out', 'the road survived because they taught strangers to care for one another', 'they were never searching for a refuge—they were building one', 'every person they saved carried one piece of them onward'];
+const PLACES = ['Дім Блакитних Вікон', 'Прихисток Метеликового Дзвону', 'Архів Дощу', 'Остання Тепла Станція', 'Сад Малих Місяців'];
+const ROLES = ['хранитель нічної дороги', 'слухач біля дверей погоди', 'реставратор імен мандрівників', 'картограф зниклих шляхів', 'садівник позиченого світла'];
+const DISASTERS = ['ріка піднялася в небо', 'срібна буря стерла всі дороги', 'місяць згас на сім ночей', 'дзвони забули попередити долину', 'вітер забрав усі імена'];
+const VOWS = ['Жоден заблукалий мандрівник не зустріне темряву на самоті.', 'Я залишатиму світло на кожному роздоріжжі.', 'Кожного незнайомця спершу приймуть, а вже потім розпитають.', 'Те, що розвіє буря, я обережно зберу.', 'Я пам’ятатиму за тих, хто не може.'];
+const MOTIFS = ['блакитна нитка', 'дощ на теплому склі', 'чотири тихі ноти', 'паперові крила', 'золоті зерна'];
+const TRUTHS = ['домом був прихисток, створений для інших', 'спогади стали вогнями, що вивели всіх із темряви', 'дорога вціліла, бо незнайомці навчилися дбати одне про одного', 'пошуки прихистку насправді були його створенням', 'кожна врятована людина понесла частинку цієї пам’яті далі'];
 
-function pick<T>(values: readonly T[], random: () => number) {
-  return values[Math.floor(random() * values.length)]!;
-}
+function pick<T>(values: readonly T[], random: () => number) { return values[Math.floor(random() * values.length)]!; }
 
 export function wovenIngredients(seed: number): StoryIngredients {
   const random = seededRandom((seed ^ 0x51f15e) >>> 0);
-  return {
-    place: pick(PLACES, random), role: pick(ROLES, random), disaster: pick(DISASTERS, random),
-    vow: pick(VOWS, random), motif: pick(MOTIFS, random), truth: pick(TRUTHS, random),
-  };
+  return { place: pick(PLACES, random), role: pick(ROLES, random), disaster: pick(DISASTERS, random), vow: pick(VOWS, random), motif: pick(MOTIFS, random), truth: pick(TRUTHS, random) };
 }
 
-function chapter(id: string, title: string, keepsake: string, story: string): StoryChapter {
-  return { id, title, keepsake, story };
-}
-
-function titleCase(value: string) {
-  return value.replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
+function chapter(id: string, title: string, keepsake: string, story: string): StoryChapter { return { id, title, keepsake, story }; }
+function firstUpper(value: string) { return value[0]?.toLocaleUpperCase('uk-UA') + value.slice(1); }
 
 export function composeStory(character: Character, seed: number, ingredients: StoryIngredients, source: StoryArc['source']): StoryArc {
-  const name = character.name;
-  const place = ingredients.place;
-  const motif = ingredients.motif;
-  const role = ingredients.role;
+  const name = character.name, place = ingredients.place, motif = ingredients.motif, role = ingredients.role;
   return {
     seed: seed >>> 0,
     source,
-    worldName: place.replace(/^the /i, ''),
+    worldName: place,
     runMark: (seed >>> 0).toString(16).toUpperCase().padStart(8, '0').slice(-6),
-    premise: `${name} wakes in a meadow that remembers ${motif}. Once, they tended ${place} as its ${role}; then ${ingredients.disaster}, and their past broke into living keepsakes.`,
-    question: `Who helped ${name} keep their vow?`,
-    firstClue: `The erased letters return: “${place}.” ${name} feels the shape of an old promise: ${ingredients.vow}`,
-    recovered: `${name} remembers walking through ${ingredients.disaster}. A trail of ${motif} led toward ${place}, where someone was still waiting.`,
+    premise: `${name} прокидається на галявині, що пам’ятає образ «${motif}». Колись місце «${place}» було важливою частиною життя, а роль ${name} там — ${role}. Потім ${ingredients.disaster}, і минуле розсипалося на живі пам’ятки.`,
+    question: `Хто допомагав ${name} берегти цю обітницю?`,
+    firstClue: `Стерті літери повертаються: «${place}». ${name} відчуває обриси давньої обіцянки: ${ingredients.vow}`,
+    recovered: `${name} згадує час, коли ${ingredients.disaster}. Слід, сповнений образу «${motif}», вів до місця «${place}», де хтось досі чекав.`,
     chapters: {
-      sign: chapter('sign', 'The Road That Remembered', 'Remembered Waypost', `The restored sign points toward ${place}. In ${name}’s hand, its letters glow like ${motif}: the first proof that the lost road was real.`),
-      stone: chapter('stone', 'The Song Under Stone', 'Singing Tree', `${name} once used ${character.gift.name} to wake a song beneath the floor of ${place}. Travelers learned its four notes and sang until ${ingredients.disaster} sounded far away.`),
-      pool: chapter('pool', 'Water Before Questions', 'Whispering Pool', `At every dawn, ${name} washed the road from each guest’s coat before asking their name. The water still whispers their vow: “${ingredients.vow}”`),
-      root: chapter('root', 'The Unlocked Room', 'Little Hidden Door', `Behind living roots waits a narrow room with blankets and bread. The door of ${place} was never locked; refuge had to belong to whoever found it.`),
-      bell: chapter('bell', 'The Warning in the Rain', 'Rain Bell', `${name} pulled the bell through the dark while ${ingredients.disaster}. Each ring meant that ${place} still stood and that the next step was safe.`),
-      moth: chapter('moth', 'Letters Given Wings', 'Paper Flock', `Hundreds of folded notes left ${place} on paper wings. Each carried ${name}’s promise to the lost: “${ingredients.vow}” Some returned bearing names.`),
-      moon: chapter('moon', 'A Name for Morning', 'Named Moon', `A child at the window could not sleep, so ${name} named the blank moon after ${motif}. The invented name stayed after the storm and became a word for courage.`),
-      garden: chapter('garden', 'The Garden That Answered', 'Lantern Garden', `When the lamps failed, ${name} planted warm flowers beside the road. Each bloom held a trace of ${motif}, enough to show one traveler the next step.`),
+      sign: chapter('sign', 'Дорога, що пам’ятала', 'Пригаданий дороговказ', `Відновлений дороговказ указує на місце «${place}». У руках ${name} літери сяють образом «${motif}»: перший доказ, що загублена дорога була справжньою.`),
+      stone: chapter('stone', 'Пісня під каменем', 'Співоче дерево', `Дар «${character.gift.name}» колись пробудив для ${name} стару пісню під підлогою місця «${place}». Мандрівники вивчили її чотири ноти й співали, доки лихо — ${ingredients.disaster} — не стало далеким.`),
+      pool: chapter('pool', 'Вода перед питаннями', 'Шепітливий ставок', `На кожному світанку завдяки турботі ${name} дорожній пил змивали з плащів гостей ще до запитання про їхні імена. Вода й досі шепоче обітницю: «${ingredients.vow}»`),
+      root: chapter('root', 'Незамкнена кімната', 'Маленькі потаємні двері', `За живим корінням чекає вузька кімната з ковдрами й хлібом. Двері в місці «${place}» ніколи не замикали: прихисток мав належати кожному, хто його знайшов.`),
+      bell: chapter('bell', 'Застереження під дощем', 'Дощовий дзвін', `Завдяки ${name} дзвін рухався крізь темряву, поки ${ingredients.disaster}. Кожен удар означав: місце «${place}» досі стоїть, а наступний крок безпечний.`),
+      moth: chapter('moth', 'Листи отримують крила', 'Паперова зграя', `Сотні складених записок вилетіли зі стін місця «${place}» на паперових крилах. Кожна несла загубленим обіцянку ${name}: «${ingredients.vow}» Деякі поверталися з іменами.`),
+      moon: chapter('moon', 'Ім’я для ранку', 'Названий місяць', `Дитина біля вікна не могла заснути. Порожній місяць отримав від ${name} назву на честь образу «${motif}». Вигадане ім’я пережило бурю й стало словом для хоробрості.`),
+      garden: chapter('garden', 'Сад, що відповів', 'Сад ліхтарів', `Коли лампи згасли, теплі квіти, посаджені ${name} край дороги, зберегли відблиск образу «${motif}» — досить, щоб показати одному мандрівникові наступний крок.`),
     },
     ending: {
-      title: `The ${titleCase(role)}`,
-      story: `${name} was not trying to return to ${place}. They made it for everyone still on the road. When ${ingredients.disaster}, they spent their memories guiding others through the dark. ${ingredients.truth[0]!.toUpperCase()}${ingredients.truth.slice(1)}. This meadow grew from what they gave away, and every recovered keepsake carries the old vow: ${ingredients.vow}`,
+      title: firstUpper(role),
+      story: `Метою ${name} не було повернення до місця «${place}». Воно було створене для всіх, хто ще в дорозі. Коли ${ingredients.disaster}, спогади стали світлом, що вело інших крізь темряву. ${firstUpper(ingredients.truth)}. Ця галявина виросла з того, що було віддано, а кожна повернена пам’ятка береже давню обітницю: ${ingredients.vow}`,
     },
   };
 }
 
-export function createWovenStory(character: Character, seed: number) {
-  return composeStory(character, seed, wovenIngredients(seed), 'woven');
-}
+export function createWovenStory(character: Character, seed: number) { return composeStory(character, seed, wovenIngredients(seed), 'woven'); }
 
 const LEGACY_ARC: StoryArc = {
-  seed: 0, source: 'woven', worldName: 'Lantern House', runMark: 'LEGACY',
-  premise: 'A forgotten road crosses this meadow. Its scattered memories lead toward Lantern House and the truth of its missing keeper.',
-  question: 'Who kept the light burning?',
-  firstClue: '', recovered: '', chapters: MEMORY_CHAPTERS,
-  ending: LANTERN_HOUSE_ENDING,
+  seed: 0, source: 'woven', worldName: 'Дім Ліхтарів', runMark: 'ДАВНЯ',
+  premise: 'Забута дорога перетинає цю галявину. Розсипані спогади ведуть до Дому Ліхтарів і правди про його зниклого хранителя.',
+  question: 'Хто підтримував вогонь?', firstClue: '', recovered: '', chapters: MEMORY_CHAPTERS, ending: LANTERN_HOUSE_ENDING,
 };
 
 export function storyFor(state: GameState): StoryArc {
   if (state.storyArc) return state.storyArc;
-  return {
-    ...LEGACY_ARC,
-    firstClue: `The erased letters return: “Lantern House.” The words make ${state.character.name}'s chest feel warm. This was a road they once followed.`,
-    recovered: `${state.character.name} remembers walking through a storm toward a distant light—one that somebody kept burning so they could find the way home.`,
-  };
+  return { ...LEGACY_ARC, firstClue: `Стерті літери повертаються: «Дім Ліхтарів». Від цих слів у грудях ${state.character.name} стає тепло. Колись ця дорога вже вела вперед.`, recovered: `${state.character.name} згадує шлях крізь бурю до далекого світла — хтось підтримував його, щоб дорогу додому можна було знайти.` };
 }

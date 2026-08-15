@@ -39,7 +39,7 @@ export function createLocalStoryWriter(options: WriterOptions) {
     }
     if (message.type === 'error') {
       active = undefined;
-      updateStatus({ phase: 'error', progress: 0, message: message.message || 'The local writer could not finish.' });
+      updateStatus({ phase: 'error', progress: 0, message: message.message || 'Локальний оповідач не зміг завершити роботу.' });
       return;
     }
     const parsed = parseStoryIngredients(message.raw);

@@ -5,8 +5,8 @@ const SAVE = 'unwritten.prototype.save.v1';
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     const raw = JSON.stringify({
-      place: 'The Glass Orchard', role: 'keeper of small storms', disaster: 'the northern road disappeared in rain',
-      vow: 'No traveler will be left without a light.', motif: 'copper leaves', truth: 'home was the promise they kept together',
+      place: 'Скляний сад', role: 'хранитель малих буревіїв', disaster: 'північна дорога зникла під дощем',
+      vow: 'Жоден мандрівник не залишиться без світла.', motif: 'мідне листя', truth: 'домом була обіцянка, яку берегли разом',
     });
     class FakeStoryWorker {
       onmessage: ((event: MessageEvent) => void) | null = null;
@@ -24,8 +24,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('offers and applies the on-device writer only after the first memory', async ({ page }) => {
-  await expect(page.getByRole('button', { name: 'Let this device write the tale' })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await expect(page.getByRole('button', { name: 'Дозволити цьому пристрою написати історію' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
     state.tutorial.step = 'personalize';
@@ -33,17 +33,17 @@ test('offers and applies the on-device writer only after the first memory', asyn
   }, SAVE);
   await page.reload();
 
-  const option = page.getByRole('button', { name: 'Let this device write the tale' });
-  await expect(option).toContainText(/120–180 MB/i);
+  const option = page.getByRole('button', { name: 'Дозволити цьому пристрою написати історію' });
+  await expect(option).toContainText(/120–180 МБ/i);
   await page.setViewportSize({ width: 390, height: 480 });
   await option.click();
 
   const loom = page.locator('.story-loom-card');
-  await expect(page.getByRole('heading', { name: 'This device is weaving' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Пристрій виткає оповідь' })).toBeVisible();
   await expect(loom).toContainText('42%');
   expect(await loom.evaluate((element) => element.clientHeight <= window.innerHeight - 24)).toBe(true);
-  await expect(page.getByRole('heading', { name: 'A new tale has taken root' })).toBeVisible();
-  await page.getByRole('button', { name: 'Keep this tale' }).click();
+  await expect(page.getByRole('heading', { name: 'Нова оповідь пустила коріння' })).toBeVisible();
+  await page.getByRole('button', { name: 'Зберегти цю оповідь' }).click();
 
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
@@ -52,7 +52,7 @@ test('offers and applies the on-device writer only after the first memory', asyn
   }, SAVE);
   await page.reload();
   await page.getByTestId('journal-button').click();
-  await expect(page.getByTestId('tale-folio')).toContainText('Written on this device');
-  await expect(page.getByTestId('tale-folio')).toContainText('Glass Orchard');
+  await expect(page.getByTestId('tale-folio')).toContainText('Написано на цьому пристрої');
+  await expect(page.getByTestId('tale-folio')).toContainText('Скляний сад');
   expect(await page.evaluate((key) => localStorage.getItem(key), 'unwritten.prototype.local-writer.v1')).toBe('enabled');
 });

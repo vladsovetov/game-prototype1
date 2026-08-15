@@ -38,6 +38,6 @@ describe('procedural story', () => {
   it('keeps the Lantern House arc for an older save', () => {
     const legacy = createInitialState(generateCharacter(9));
 
-    expect(storyFor(legacy).ending.title).toBe('The Keeper of Lantern House');
+    expect(storyFor(legacy).ending.title).toBe('Хранитель Дому Ліхтарів');
   });
 });

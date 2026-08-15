@@ -19,8 +19,8 @@ test.beforeEach(async ({ page }) => {
 test('moves the character by dragging the phone joystick', async ({ page }) => {
   const pageErrors: string[] = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
-  await page.getByRole('button', { name: 'Wake up' }).click();
-  await expect(page.getByTestId('tutorial-objective')).toContainText('DRAG');
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
+  await expect(page.getByTestId('tutorial-objective')).toContainText('ТЯГНІТЬ');
 
   const before = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
   const joystick = page.getByTestId('touch-joystick');
@@ -40,7 +40,7 @@ test('moves the character by dragging the phone joystick', async ({ page }) => {
 });
 
 test('uses the contextual touch action during the first discovery', async ({ page }) => {
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
     const positions: Record<string, { x: number; y: number }> = {
@@ -53,15 +53,15 @@ test('uses the contextual touch action during the first discovery', async ({ pag
   await page.reload();
 
   const action = page.getByTestId('touch-primary-action');
-  await expect(action).toContainText(/Use /);
+  await expect(action).toContainText(/Дар «/);
   await action.click();
-  await expect(page.getByRole('heading', { name: 'A clue returned' })).toBeVisible();
-  await page.getByRole('button', { name: 'Finish the memory' }).click();
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Find Mend');
+  await expect(page.getByRole('heading', { name: 'Підказка повернулася' })).toBeVisible();
+  await page.getByRole('button', { name: 'Завершити спогад' }).click();
+  await expect(page.getByTestId('tutorial-objective')).toContainText('Знайдіть Дар «Відновлення»');
 });
 
 test('names the correct borrowed Gift for an older touch save', async ({ page }) => {
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
     state.character.gift = { id: 'echo', name: 'Echo', description: 'Repeats a hidden sound.' };
@@ -71,12 +71,12 @@ test('names the correct borrowed Gift for an older touch save', async ({ page })
   }, SAVE_KEY);
   await page.reload();
 
-  await expect(page.getByRole('button', { name: 'Borrow Grow' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Borrow Mend' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Позичити «Зростання»' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Позичити «Відновлення»' })).toHaveCount(0);
 });
 
 test('keeps the first thumb in control when a second pointer touches the joystick', async ({ page }) => {
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   const before = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
   const joystick = page.getByTestId('touch-joystick');
   const box = await joystick.boundingBox();
@@ -95,7 +95,7 @@ test('keeps the first thumb in control when a second pointer touches the joystic
 });
 
 test('stops and saves joystick movement when the window is interrupted', async ({ page }) => {
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   const before = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
   const joystick = page.getByTestId('touch-joystick');
   const box = await joystick.boundingBox();
@@ -115,7 +115,7 @@ test('stops and saves joystick movement when the window is interrupted', async (
 });
 
 test('does not drift when the player touches the visual joystick center', async ({ page }) => {
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   const before = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
   const joystick = page.getByTestId('touch-joystick');
   const ring = joystick.locator('.touch-ring');
@@ -133,7 +133,7 @@ test('does not drift when the player touches the visual joystick center', async 
 });
 
 test('shows both touch actions after the meadow opens', async ({ page }) => {
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
     state.tutorial.step = 'done';
@@ -142,8 +142,8 @@ test('shows both touch actions after the meadow opens', async ({ page }) => {
   await page.reload();
 
   await expect(page.getByTestId('touch-joystick')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Use Gift' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Explore nearby' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Застосувати Дар' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Дослідити поруч' })).toBeVisible();
   await page.getByTestId('help-button').click();
-  await expect(page.getByText('Drag the golden ember')).toBeVisible();
+  await expect(page.getByText('Тягніть золотий вогник')).toBeVisible();
 });

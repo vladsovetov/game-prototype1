@@ -2,12 +2,12 @@ import type { GameState, TutorialStep } from './types';
 
 export const ROAD_HOME = {
   id: 'road-home',
-  title: 'THE ROAD HOME',
-  question: 'Who kept the light burning?',
+  title: 'ДОРОГА ДОДОМУ',
+  question: 'Хто підтримував вогонь?',
   firstClue: (name: string) =>
-    `The erased letters return: “Lantern House.” The words make ${name}'s chest feel warm. This was a road they once followed.`,
+    `Стерті літери повертаються: «Дім Ліхтарів». Від цих слів у грудях ${name} стає тепло. Колись ця дорога вже вела вперед.`,
   recovered: (name: string) =>
-    `${name} remembers walking through a storm toward a distant light—one that somebody kept burning so they could find the way home.`,
+    `${name} згадує шлях крізь бурю до далекого світла — хтось підтримував його, щоб дорогу додому можна було знайти.`,
 } as const;
 
 const FOUND_BY_STEP: Record<TutorialStep, number> = {
@@ -26,7 +26,7 @@ const FOUND_BY_STEP: Record<TutorialStep, number> = {
 
 export function memoryProgress(state: GameState) {
   return {
-    title: state.tutorial?.targetAnomalyId === 'sign' ? (state.storyArc?.chapters.sign?.title.toUpperCase() ?? ROAD_HOME.title) : 'FIRST MEMORY',
+    title: state.tutorial?.targetAnomalyId === 'sign' ? (state.storyArc?.chapters.sign?.title.toLocaleUpperCase('uk-UA') ?? ROAD_HOME.title) : 'ПЕРШИЙ СПОГАД',
     found: FOUND_BY_STEP[state.tutorial?.step ?? 'done'],
     total: 2,
   };

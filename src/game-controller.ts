@@ -10,6 +10,7 @@ import type { createSaveStore } from './persistence/save-store';
 import type { createCanvasRenderer } from './ui/canvas-renderer';
 import type { createPanels } from './ui/panels';
 import type { createLocalStoryWriter, WriterStatus } from './story/local-story-writer';
+import { GIFTS } from './domain/catalog';
 
 type Renderer = ReturnType<typeof createCanvasRenderer>;
 type Panels = ReturnType<typeof createPanels>;
@@ -101,22 +102,22 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       const progress = memoryProgress(state);
       hud.innerHTML = `<div class="tutorial-hud" data-testid="tutorial-objective"><div class="memory-progress"><span class="eyebrow"></span><small></small></div><strong></strong><div class="objective-action"><span class="objective-key"></span><span class="objective-copy"></span></div></div>`;
       (hud.querySelector('.memory-progress .eyebrow') as HTMLElement).textContent = progress.title;
-      (hud.querySelector('.memory-progress small') as HTMLElement).textContent = `${progress.found} / ${progress.total} CLUES`;
+      (hud.querySelector('.memory-progress small') as HTMLElement).textContent = `${progress.found} / ${progress.total} ПІДКАЗКИ`;
       (hud.querySelector('.tutorial-hud strong') as HTMLElement).textContent = objective.title;
       (hud.querySelector('.objective-copy') as HTMLElement).textContent = objective.action;
       const key = hud.querySelector<HTMLElement>('.objective-key')!;
-      if (objective.key) key.textContent = isTouchLayout() ? (objective.key === 'WASD' ? 'DRAG' : 'TAP') : objective.key;
+      if (objective.key) key.textContent = isTouchLayout() ? (objective.key === 'WASD' ? 'ТЯГНІТЬ' : 'ТОРКНІТЬСЯ') : objective.key;
       else key.remove();
       if (isTouchLayout()) renderTouchControls(objective.key === 'E');
       return;
     }
 
-    hud.innerHTML = `<div class="hud-top"><button class="hud-card identity" data-testid="character-button" aria-label="Your companion"><span class="identity-mark">✦</span><span><strong data-testid="player-name"></strong><small></small><em class="memory-count"></em></span></button><div class="hud-actions"><button data-testid="journal-button" aria-label="Field journal"><span>J</span><small>Journal</small></button><button data-testid="help-button" aria-label="Help"><span>?</span><small>Help</small></button></div></div><div class="prompt"><span class="key">F</span> Gift <i></i><span class="key">E</span> Explore <span class="hud-meta"></span></div>`;
+    hud.innerHTML = `<div class="hud-top"><button class="hud-card identity" data-testid="character-button" aria-label="Ваш супутник"><span class="identity-mark">✦</span><span><strong data-testid="player-name"></strong><small></small><em class="memory-count"></em></span></button><div class="hud-actions"><button data-testid="journal-button" aria-label="Польовий щоденник"><span>J</span><small>Щоденник</small></button><button data-testid="help-button" aria-label="Довідка"><span>?</span><small>Довідка</small></button></div></div><div class="prompt"><span class="key">F</span> Дар <i></i><span class="key">E</span> Дослідити <span class="hud-meta"></span></div>`;
     (hud.querySelector('[data-testid=player-name]') as HTMLElement).textContent = state.character.name;
-    (hud.querySelector('.identity small') as HTMLElement).textContent = state.borrowedGift ? `carrying ${state.borrowedGift}` : state.character.gift.name;
+    (hud.querySelector('.identity small') as HTMLElement).textContent = state.borrowedGift ? `позичено: ${GIFTS[state.borrowedGift].name}` : state.character.gift.name;
     const progress = sanctuaryProgress(state);
-    (hud.querySelector('.memory-count') as HTMLElement).textContent = state.endingSeen ? 'Story complete' : `${progress.planted} / ${progress.required} memories planted`;
-    (hud.querySelector('.hud-meta') as HTMLElement).textContent = state.seeds.length ? `${state.seeds.length} seed${state.seeds.length === 1 ? '' : 's'}` : '';
+    (hud.querySelector('.memory-count') as HTMLElement).textContent = state.endingSeen ? 'Історію завершено' : `${progress.planted} / ${progress.required} спогадів посаджено`;
+    (hud.querySelector('.hud-meta') as HTMLElement).textContent = state.seeds.length ? `Спогадів у таці: ${state.seeds.length}` : '';
     hud.querySelector('[data-testid=character-button]')?.addEventListener('click', () => panels.showCharacter(state.character));
     hud.querySelector('[data-testid=journal-button]')?.addEventListener('click', () => panels.showJournal(state));
     hud.querySelector('[data-testid=help-button]')?.addEventListener('click', panels.showHelp);
@@ -128,7 +129,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     const controls = document.createElement('div');
     controls.className = 'touch-controls';
     controls.dataset.testid = 'touch-controls';
-    controls.innerHTML = `<div class="touch-joystick" data-testid="touch-joystick" role="application" aria-label="Move character"><span class="touch-ring"><i class="touch-knob"></i></span><small>Move</small></div><div class="touch-actions"></div>`;
+    controls.innerHTML = `<div class="touch-joystick" data-testid="touch-joystick" role="application" aria-label="Рух персонажа"><span class="touch-ring"><i class="touch-knob"></i></span><small>Рух</small></div><div class="touch-actions"></div>`;
     const joystick = controls.querySelector<HTMLElement>('.touch-joystick')!;
     touchKnob = controls.querySelector<HTMLElement>('.touch-knob')!;
     joystick.addEventListener('pointerdown', (event) => {
@@ -156,23 +157,23 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
     const step = state.tutorial?.step;
     if (!isTutorial()) {
-      const gift = addAction('Gift', 'Use Gift', '✦', useGift, true);
+      const gift = addAction('Дар', 'Застосувати Дар', '✦', useGift, true);
       gift.dataset.testid = 'touch-primary-action';
-      addAction('Explore', 'Explore nearby', '◌', interact);
+      addAction('Дослідити', 'Дослідити поруч', '◌', interact);
     } else if (step === 'gift') {
-      const button = addAction(`Use ${state.character.gift.name}`, `Use ${state.character.gift.name}`, '✦', useGift, true);
+      const button = addAction(`Дар «${state.character.gift.name}»`, `Застосувати Дар «${state.character.gift.name}»`, '✦', useGift, true);
       button.dataset.testid = 'touch-primary-action';
     } else if (step === 'combine') {
       const borrowed = state.tutorial?.borrowedGift ?? state.character.gift.id;
-      const label = `Use ${borrowed[0]!.toUpperCase()}${borrowed.slice(1)}`;
+      const label = `Дар «${GIFTS[borrowed].name}»`;
       const button = addAction(label, label, '✦', useGift, true);
       button.dataset.testid = 'touch-primary-action';
     } else if (step === 'plant') {
-      const button = addAction('Plant memory', 'Plant memory', '⌁', interact, true);
+      const button = addAction('Посадити спогад', 'Посадити спогад', '⌁', interact, true);
       button.dataset.testid = 'touch-primary-action';
     } else if (step === 'resonate' && atResonance) {
       const borrowed = state.tutorial?.borrowedGift ?? 'mend';
-      const label = `Borrow ${borrowed[0]!.toUpperCase()}${borrowed.slice(1)}`;
+      const label = `Позичити «${GIFTS[borrowed].name}»`;
       const button = addAction(label, label, '◇', interact, true);
       button.dataset.testid = 'touch-primary-action';
     }
@@ -205,9 +206,9 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   function showCurrentStoryStep() {
     const story = storyFor(state);
     if (state.tutorial?.step === 'clue') {
-      panels.showMemoryBeat('A clue returned', story.firstClue, 'Finish the memory', finishClue, story.chapters.sign?.title);
+      panels.showMemoryBeat('Підказка повернулася', story.firstClue, 'Завершити спогад', finishClue, story.chapters.sign?.title);
     } else if (state.tutorial?.step === 'recovered') {
-      panels.showMemoryBeat('Memory recovered', story.recovered, 'Bring it home', finishRecoveredMemory, story.chapters.sign?.title);
+      panels.showMemoryBeat('Спогад відновлено', story.recovered, 'Віднести додому', finishRecoveredMemory, story.chapters.sign?.title);
     }
   }
 
@@ -233,7 +234,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     state = { ...state, endingSeen: true };
     panels.clear();
     saveAndRefresh();
-    toast('The sanctuary remembers. The meadow remains yours to explore.');
+    toast('Притулок пам’ятає. Галявина залишається відкритою для дослідження.');
   }
 
   function showPendingEnding() {
@@ -286,7 +287,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     if (target.type === 'plot') {
       const planted = state.plantings[target.value.id];
       if (planted) {
-        if (!isTutorial() && confirm(`Return ${SEED_NAMES[planted] ?? planted} to the seed tray?`)) apply(removePlanting(state, target.value.id));
+        if (!isTutorial() && confirm(`Повернути «${SEED_NAMES[planted] ?? planted}» до таці спогадів?`)) apply(removePlanting(state, target.value.id));
         return;
       }
       const seed = state.seeds[0];
@@ -378,28 +379,28 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     else if (state.tutorial?.step === 'remember') panels.showMemoryChoice(character, rememberMemory, storyFor(state));
     else if (state.tutorial?.step === 'personalize') panels.showPersonalize(character);
     else panels.clear();
-    toast(`${character.name} steps into this memory.`);
+    toast(`${character.name} входить у цей спогад.`);
   }
 
   function updatePersonality(name: string, description: string, quirk: CatalogEntry<QuirkId>) {
     state = { ...state, character: { ...state.character, name, description, quirk } };
     saveAndRefresh();
     panels.showPersonalize(state.character);
-    toast('The meadow remembers that.');
+    toast('Галявина це запам’ятала.');
   }
 
   function updateAppearance(appearance: Appearance) {
     state = { ...state, character: { ...state.character, appearance } };
     saveAndRefresh();
     panels.showPersonalize(state.character);
-    toast('A new shape settles into place.');
+    toast('Новий вигляд набуває форми.');
   }
 
   function finishPersonalization() {
     state = advanceTutorial(state, 'personalization-dismissed');
     panels.clear();
     saveAndRefresh();
-    toast('The whole meadow is open. There is no timer.');
+    toast('Уся галявина відкрита. Таймера немає.');
   }
 
   function rememberMemory(answer: string) {
@@ -412,7 +413,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     state = advanceTutorial(state, 'memory-shaped');
     saveAndRefresh();
     panels.showPersonalize(state.character);
-    toast(`That truth is now part of ${storyFor(state).chapters.sign?.title ?? 'this memory'}.`);
+    toast(`Ця правда тепер є частиною історії «${storyFor(state).chapters.sign?.title ?? 'цей спогад'}».`);
   }
 
   function beginNewTale() {

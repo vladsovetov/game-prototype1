@@ -16,7 +16,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('reveals and preserves a story chapter when a later memory is recovered', async ({ page }) => {
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
     state.tutorial.step = 'done';
@@ -32,28 +32,28 @@ test('reveals and preserves a story chapter when a later memory is recovered', a
   await page.reload();
   await page.keyboard.press('f');
 
-  await expect(page.getByRole('heading', { name: 'The Song Below' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Пісня під каменем' })).toBeVisible();
   await expect(page.locator('.toast')).toHaveCount(0, { timeout: 250 });
-  await expect(page.getByText(/frightened travelers/i)).toBeVisible();
+  await expect(page.getByText(/наляканих мандрівників/i)).toBeVisible();
   const before = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
   await page.keyboard.down('d');
   await page.waitForTimeout(650);
   await page.keyboard.up('d');
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'The Song Below' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Пісня під каменем' })).toBeVisible();
   const after = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
   expect(after).toEqual(before);
 
-  await page.getByRole('button', { name: 'Keep this memory' }).click();
+  await page.getByRole('button', { name: 'Зберегти цей спогад' }).click();
   await page.getByTestId('journal-button').click();
-  await expect(page.getByRole('heading', { name: 'Field journal' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'The Song Below' })).toBeVisible();
-  await expect(page.getByText(/thunder sounded small/i)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Польовий щоденник' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Пісня під каменем' })).toBeVisible();
+  await expect(page.getByText(/грім не став тихим/i)).toBeVisible();
 });
 
 test('keeps a recovered chapter usable on a short phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 480 });
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
     state.tutorial.step = 'done';
@@ -64,13 +64,13 @@ test('keeps a recovered chapter usable on a short phone', async ({ page }) => {
   await page.reload();
 
   const chapter = page.locator('.memory-chapter-card');
-  await expect(page.getByRole('heading', { name: 'The Storm Bell' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Дзвін бурі' })).toBeVisible();
   expect(await chapter.evaluate((element) => element.clientHeight <= window.innerHeight - 24)).toBe(true);
-  await expect(page.getByRole('button', { name: 'Keep this memory' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Зберегти цей спогад' })).toBeVisible();
 });
 
 test('turns the sixth planted memory into a persistent story ending', async ({ page }) => {
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
     state.tutorial.step = 'done';
@@ -88,28 +88,28 @@ test('turns the sixth planted memory into a persistent story ending', async ({ p
   }, SAVE_KEY);
   await page.reload();
 
-  await expect(page.getByText('5 / 6 memories planted')).toBeVisible();
+  await expect(page.getByText('5 / 6 спогадів посаджено')).toBeVisible();
   await page.keyboard.press('e');
-  await expect(page.getByRole('heading', { name: 'The Keeper of Lantern House' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Хранитель Дому Ліхтарів' })).toBeVisible();
   await expect(page.locator('.toast')).toHaveCount(0, { timeout: 250 });
-  await expect(page.getByText(/home you made for everyone still on the road/i)).toBeVisible();
+  await expect(page.getByText(/дім, створений для всіх, хто ще в дорозі/i)).toBeVisible();
   const before = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
   await page.keyboard.down('d');
   await page.waitForTimeout(650);
   await page.keyboard.up('d');
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'The Keeper of Lantern House' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Хранитель Дому Ліхтарів' })).toBeVisible();
   const after = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
   expect(after).toEqual(before);
 
-  await page.getByRole('button', { name: 'Carry the light forward' }).click();
-  await expect(page.getByText('Story complete')).toBeVisible();
+  await page.getByRole('button', { name: 'Нести світло далі' }).click();
+  await expect(page.getByText('Історію завершено')).toBeVisible();
   await page.getByTestId('journal-button').click();
-  await expect(page.getByRole('heading', { name: 'The Keeper of Lantern House' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Хранитель Дому Ліхтарів' })).toBeVisible();
 });
 
 test('gives an already-full older sanctuary its ending without losing saved choices', async ({ page }) => {
-  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.getByRole('button', { name: 'Прокинутися' }).click();
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
     state.tutorial.step = 'done';
@@ -127,9 +127,9 @@ test('gives an already-full older sanctuary its ending without losing saved choi
   }, SAVE_KEY);
   await page.reload();
 
-  await expect(page.getByRole('heading', { name: 'The Keeper of Lantern House' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Хранитель Дому Ліхтарів' })).toBeVisible();
   const saved = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), SAVE_KEY);
   expect(saved.character.name).toBe('Morrow');
-  expect(saved.memoryDetails['road-home']).toBe('A family they chose');
+  expect(saved.memoryDetails['road-home']).toBe('Обрана родина');
   expect(Object.keys(saved.plantings)).toHaveLength(6);
 });

@@ -30,21 +30,21 @@ describe('progressive tutorial', () => {
 
   it('reveals one instruction at a time', () => {
     let state = prepareTutorial(createInitialState(generateCharacter(4)));
-    expect(tutorialObjective(state).action).toBe('Wake up');
+    expect(tutorialObjective(state).action).toBe('Прокинутися');
     state = advanceTutorial(state, 'wake');
-    expect(tutorialObjective(state).action).toContain('Find the rain-covered sign');
+    expect(tutorialObjective(state).action).toContain('Знайдіть залитий дощем дороговказ');
     state = advanceTutorial(state, 'moved');
     expect(tutorialObjective(state).action).toContain(state.character.gift.name);
     state = advanceTutorial(state, 'gift-used');
     expect(state.tutorial?.step).toBe('clue');
     state = advanceTutorial(state, 'clue-read');
-    expect(tutorialObjective(state).action).toContain('Find Mend');
+    expect(tutorialObjective(state).action).toContain('Знайдіть Дар «Відновлення»');
     state = advanceTutorial(state, 'resonance-borrowed');
-    expect(tutorialObjective(state).action).toContain('Return');
+    expect(tutorialObjective(state).action).toContain('Поверніться');
     state = advanceTutorial(state, 'chain-completed');
     expect(state.tutorial?.step).toBe('recovered');
     state = advanceTutorial(state, 'memory-read');
-    expect(tutorialObjective(state).action).toContain('Plant');
+    expect(tutorialObjective(state).action).toContain('Посадіть');
     state = advanceTutorial(state, 'seed-planted');
     expect(state.tutorial?.step).toBe('remember');
     state = advanceTutorial(state, 'memory-shaped');
@@ -55,14 +55,14 @@ describe('progressive tutorial', () => {
 
   it('reports concrete clue progress through The Road Home', () => {
     let state = prepareTutorial(createInitialState(generateCharacter(7)));
-    expect(memoryProgress(state)).toEqual({ title: 'THE ROAD HOME', found: 0, total: 2 });
+    expect(memoryProgress(state)).toEqual({ title: 'ДОРОГА ДОДОМУ', found: 0, total: 2 });
 
     state = advanceTutorial(advanceTutorial(advanceTutorial(state, 'wake'), 'moved'), 'gift-used');
-    expect(memoryProgress(state)).toEqual({ title: 'THE ROAD HOME', found: 1, total: 2 });
+    expect(memoryProgress(state)).toEqual({ title: 'ДОРОГА ДОДОМУ', found: 1, total: 2 });
 
     state = advanceTutorial(state, 'clue-read');
     state = advanceTutorial(advanceTutorial(state, 'resonance-borrowed'), 'chain-completed');
-    expect(memoryProgress(state)).toEqual({ title: 'THE ROAD HOME', found: 2, total: 2 });
+    expect(memoryProgress(state)).toEqual({ title: 'ДОРОГА ДОДОМУ', found: 2, total: 2 });
   });
 
   it.each([
@@ -75,10 +75,10 @@ describe('progressive tutorial', () => {
     state.character.gift = { id: gift, name: giftName, description: '' };
     state.tutorial = { ...state.tutorial!, step: 'move', targetAnomalyId, borrowedGift };
 
-    expect(memoryProgress(state).title).toBe('FIRST MEMORY');
-    expect(tutorialObjective(state).action).toBe('Move toward the light');
+    expect(memoryProgress(state).title).toBe('ПЕРШИЙ СПОГАД');
+    expect(tutorialObjective(state).action).toBe('Ідіть до світла');
     state.tutorial.step = 'gift';
-    expect(tutorialObjective(state).action).toBe(`Use ${giftName}`);
+    expect(tutorialObjective(state).action).toBe(`Застосуйте Дар «${giftName}»`);
   });
 
   it('points to the relevant world object for each step', () => {

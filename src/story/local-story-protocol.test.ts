@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { parseStoryIngredients } from './local-story-protocol';
 
 const valid = {
-  place: 'The Glass Orchard',
-  role: 'keeper of small storms',
-  disaster: 'the northern road disappeared in rain',
-  vow: 'No traveler will be left without a light.',
-  motif: 'copper leaves',
-  truth: 'home was the promise they kept together',
+  place: 'Скляний сад',
+  role: 'хранитель малих буревіїв',
+  disaster: 'північна дорога зникла під дощем',
+  vow: 'Жоден мандрівник не залишиться без світла.',
+  motif: 'мідне листя',
+  truth: 'домом була обіцянка, яку вони берегли разом',
 };
 
 describe('local story protocol', () => {
@@ -26,5 +26,14 @@ describe('local story protocol', () => {
 
   it('rejects malformed model prose without changing game data', () => {
     expect(parseStoryIngredients('The answer is {not actually json}.').ok).toBe(false);
+  });
+
+  it('rejects an English result so it cannot leak into the Ukrainian interface', () => {
+    const english = { ...valid, place: 'The Glass Orchard', role: 'keeper of small storms', motif: 'copper leaves' };
+
+    expect(parseStoryIngredients(JSON.stringify(english))).toEqual({
+      ok: false,
+      reason: 'Локальний оповідач не повернув текст українською.',
+    });
   });
 });

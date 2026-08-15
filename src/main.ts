@@ -14,7 +14,7 @@ const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas');
 const modal = document.querySelector<HTMLElement>('#modal-root');
 const hud = document.querySelector<HTMLElement>('#hud');
 const toasts = document.querySelector<HTMLElement>('#toast-root');
-if (!canvas || !modal || !hud || !toasts) throw new Error('Application shell is incomplete.');
+if (!canvas || !modal || !hud || !toasts) throw new Error('Оболонка застосунку неповна.');
 
 const store = createSaveStore(localStorage);
 const renderer = createCanvasRenderer(canvas);
@@ -40,7 +40,7 @@ if (loaded.kind === 'newer-version') {
     ? loaded.state
     : prepareNewRun(generateCharacter(seed), seed);
   if (loaded.kind === 'corrupt') {
-    setTimeout(() => alert('Your old local save could not be read, so a fresh meadow was opened.'), 50);
+    setTimeout(() => alert('Не вдалося прочитати старе локальне збереження, тому відкрито нову галявину.'), 50);
   }
   const localWriter = createLocalStoryWriter({
     workerFactory: () => new Worker(new URL('./story/local-story-worker.ts', import.meta.url), { type: 'module' }),

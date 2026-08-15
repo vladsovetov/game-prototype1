@@ -5,14 +5,14 @@ import { hasReachedEnding, memoryChapter, sanctuaryProgress } from './memory-arc
 
 describe('six-memory story arc', () => {
   it.each([
-    ['stone', 'The Song Below'],
-    ['sign', 'The Road Home'],
-    ['pool', 'The Basin at Dawn'],
-    ['root', 'The Door Left Unlocked'],
-    ['bell', 'The Storm Bell'],
-    ['moth', 'Letters with Wings'],
-    ['moon', 'A Name for the Moon'],
-    ['garden', 'The Garden That Waited'],
+    ['stone', 'Пісня під каменем'],
+    ['sign', 'Дорога додому'],
+    ['pool', 'Чаша на світанку'],
+    ['root', 'Незамкнені двері'],
+    ['bell', 'Дзвін бурі'],
+    ['moth', 'Листи з крилами'],
+    ['moon', 'Ім’я для місяця'],
+    ['garden', 'Сад, що чекав'],
   ])('gives %s a named story chapter', (id, title) => {
     const chapter = memoryChapter(id);
 

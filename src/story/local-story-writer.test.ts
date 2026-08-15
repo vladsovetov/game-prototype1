@@ -10,8 +10,8 @@ class FakeWorker implements StoryWorkerLike {
 }
 
 const raw = JSON.stringify({
-  place: 'The Glass Orchard', role: 'keeper of small storms', disaster: 'the northern road disappeared in rain',
-  vow: 'No traveler will be left without a light.', motif: 'copper leaves', truth: 'home was the promise they kept together',
+  place: 'Скляний сад', role: 'хранитель малих буревіїв', disaster: 'північна дорога зникла під дощем',
+  vow: 'Жоден мандрівник не залишиться без світла.', motif: 'мідне листя', truth: 'домом була обіцянка, яку берегли разом',
 });
 
 describe('local story writer', () => {

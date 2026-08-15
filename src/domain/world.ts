@@ -4,18 +4,18 @@ export const WORLD={width:3200,height:1800,sanctuary:{x:80,y:90,w:780,h:620},gat
 export interface Transition{gift:GiftId;to:string;message:string;seed?:string}
 export interface Anomaly{id:string;name:string;position:Point;states:string[];transitions:Record<number,Transition>;color:string}
 export const ANOMALIES:Anomaly[]=[
- {id:'stone',name:'Silent Stone',position:{x:1120,y:390},states:['Silent Stone','Humming Stone','Singing Tree'],transitions:{0:{gift:'echo',to:'Humming Stone',message:'A note older than footsteps wakes inside the stone.'},1:{gift:'grow',to:'Singing Tree',message:'The note takes root and opens into silver leaves.',seed:'singing-tree'}},color:'#8d83a4'},
- {id:'sign',name:'Covered Sign',position:{x:1700,y:280},states:['Covered Sign','Remembered Sign','Restored Waypost'],transitions:{0:{gift:'reveal',to:'Remembered Sign',message:'Names return to the rain-worn wood.'},1:{gift:'mend',to:'Restored Waypost',message:'The old road remembers where it was going.',seed:'waypost'}},color:'#d9a85f'},
- {id:'pool',name:'Dry Pool',position:{x:2300,y:450},states:['Dry Pool','Clear Pool','Whispering Pool'],transitions:{0:{gift:'mend',to:'Clear Pool',message:'Water stitches itself across the empty basin.'},1:{gift:'echo',to:'Whispering Pool',message:'The pool repeats a secret from tomorrow.',seed:'whisper-pool'}},color:'#5aa8a1'},
- {id:'root',name:'Tangled Root',position:{x:2790,y:720},states:['Tangled Root','Root Arch','Hidden Door'],transitions:{0:{gift:'grow',to:'Root Arch',message:'The roots lift, careful as old hands.'},1:{gift:'reveal',to:'Hidden Door',message:'A door appears where the shade was deepest.',seed:'hidden-door'}},color:'#79956b'},
- {id:'bell',name:'Sleepy Bell',position:{x:1350,y:1050},states:['Sleepy Bell','Rain Bell'],transitions:{0:{gift:'echo',to:'Rain Bell',message:'One clear note sends rings through the grass.',seed:'rain-bell'}},color:'#cf8063'},
- {id:'moth',name:'Folded Moth',position:{x:1950,y:1280},states:['Folded Moth','Paper Flock'],transitions:{0:{gift:'mend',to:'Paper Flock',message:'Creases become wings. The page takes flight.',seed:'paper-flock'}},color:'#d6ccb4'},
- {id:'moon',name:'Blank Moon',position:{x:2550,y:1350},states:['Blank Moon','Named Moon'],transitions:{0:{gift:'reveal',to:'Named Moon',message:'A small moon accepts the name you found for it.',seed:'named-moon'}},color:'#e0c47b'},
- {id:'garden',name:'Waiting Garden',position:{x:1120,y:1460},states:['Waiting Garden','Lantern Garden'],transitions:{0:{gift:'grow',to:'Lantern Garden',message:'Warm flowers unfold, each holding a pocket of dusk.',seed:'lantern-garden'}},color:'#b3bf72'}
+ {id:'stone',name:'Мовчазний камінь',position:{x:1120,y:390},states:['Мовчазний камінь','Наспівний камінь','Співоче дерево'],transitions:{0:{gift:'echo',to:'Наспівний камінь',message:'У камені прокидається нота, старіша за кроки.'},1:{gift:'grow',to:'Співоче дерево',message:'Нота пускає коріння й розгортається срібним листям.',seed:'singing-tree'}},color:'#8d83a4'},
+ {id:'sign',name:'Закритий дороговказ',position:{x:1700,y:280},states:['Закритий дороговказ','Пригаданий дороговказ','Відновлений дороговказ'],transitions:{0:{gift:'reveal',to:'Пригаданий дороговказ',message:'Імена повертаються на дерево, стерте дощем.'},1:{gift:'mend',to:'Відновлений дороговказ',message:'Стара дорога згадує, куди вела.',seed:'waypost'}},color:'#d9a85f'},
+ {id:'pool',name:'Сухий ставок',position:{x:2300,y:450},states:['Сухий ставок','Чистий ставок','Шепітливий ставок'],transitions:{0:{gift:'mend',to:'Чистий ставок',message:'Вода зшиває себе над порожньою чашею.'},1:{gift:'echo',to:'Шепітливий ставок',message:'Ставок повторює таємницю із завтрашнього дня.',seed:'whisper-pool'}},color:'#5aa8a1'},
+ {id:'root',name:'Сплутане коріння',position:{x:2790,y:720},states:['Сплутане коріння','Коренева арка','Потаємні двері'],transitions:{0:{gift:'grow',to:'Коренева арка',message:'Коріння піднімається обережно, наче старі руки.'},1:{gift:'reveal',to:'Потаємні двері',message:'Там, де тінь була найглибшою, з’являються двері.',seed:'hidden-door'}},color:'#79956b'},
+ {id:'bell',name:'Сонний дзвін',position:{x:1350,y:1050},states:['Сонний дзвін','Дощовий дзвін'],transitions:{0:{gift:'echo',to:'Дощовий дзвін',message:'Одна чиста нота пускає кола крізь траву.',seed:'rain-bell'}},color:'#cf8063'},
+ {id:'moth',name:'Складена міль',position:{x:1950,y:1280},states:['Складена міль','Паперова зграя'],transitions:{0:{gift:'mend',to:'Паперова зграя',message:'Згини стають крилами. Сторінка злітає.',seed:'paper-flock'}},color:'#d6ccb4'},
+ {id:'moon',name:'Безіменний місяць',position:{x:2550,y:1350},states:['Безіменний місяць','Названий місяць'],transitions:{0:{gift:'reveal',to:'Названий місяць',message:'Маленький місяць приймає знайдене вами ім’я.',seed:'named-moon'}},color:'#e0c47b'},
+ {id:'garden',name:'Сад, що чекає',position:{x:1120,y:1460},states:['Сад, що чекає','Сад ліхтарів'],transitions:{0:{gift:'grow',to:'Сад ліхтарів',message:'Розкриваються теплі квіти, і кожна береже частинку сутінків.',seed:'lantern-garden'}},color:'#b3bf72'}
 ];
 export const SHRINES:{id:string;gift:GiftId;position:Point}[]=[{id:'shrine-grow',gift:'grow',position:{x:1030,y:600}},{id:'shrine-echo',gift:'echo',position:{x:2150,y:650}},{id:'shrine-mend',gift:'mend',position:{x:1840,y:500}},{id:'shrine-reveal',gift:'reveal',position:{x:2630,y:920}}];
 export const PLOTS=Array.from({length:6},(_,i)=>({id:`plot-${i+1}`,position:{x:230+(i%3)*190,y:300+Math.floor(i/3)*190}}));
-export const SEED_NAMES:Record<string,string>={'singing-tree':'Singing Tree','waypost':'Remembered Waypost','whisper-pool':'Whispering Pool','hidden-door':'Little Hidden Door','rain-bell':'Rain Bell','paper-flock':'Paper Flock','named-moon':'Named Moon','lantern-garden':'Lantern Garden'};
+export const SEED_NAMES:Record<string,string>={'singing-tree':'Співоче дерево','waypost':'Пригаданий дороговказ','whisper-pool':'Шепітливий ставок','hidden-door':'Маленькі потаємні двері','rain-bell':'Дощовий дзвін','paper-flock':'Паперова зграя','named-moon':'Названий місяць','lantern-garden':'Сад ліхтарів'};
 export function distance(a:Point,b:Point){return Math.hypot(a.x-b.x,a.y-b.y)}
 
 export const LEGACY_WORLD_SEED = 0;
@@ -43,11 +43,11 @@ export interface WorldLayout {
 }
 
 const THEMES: WorldTheme[] = [
-  { name: 'Rain-glass Meadow', ground: ['#b8d3c1', '#9fc5b6', '#96b4aa'], washes: ['#c6d8b4aa', '#b3cda7a8', '#9ec8c3aa', '#bdafd0a0'], trail: '#efd9aa9c' },
-  { name: 'Bluebell Reach', ground: ['#bbcfd0', '#a8c5c4', '#96b4b8'], washes: ['#c7d7c3a8', '#a9c9b7a8', '#a5bfd4a8', '#c1b5d0a0'], trail: '#f1d7a59c' },
-  { name: 'Mothlight Vale', ground: ['#c7d2b4', '#afc4aa', '#9fb7a4'], washes: ['#d7d8a9a8', '#b9cfa2a8', '#b1c5c1a8', '#d2b4c4a0'], trail: '#f3d39a9c' },
-  { name: 'Silver Rainfield', ground: ['#c1cfca', '#a9c1bc', '#92b2ad'], washes: ['#d0d9bea8', '#aac7aaa8', '#9fc4c7a8', '#c5b2cda0'], trail: '#e8d4ad9c' },
-  { name: 'Duskpetal Moor', ground: ['#c4cdb9', '#a9bda9', '#9cafa7'], washes: ['#d4d3aaa8', '#b6c69da8', '#a4c1bba8', '#c9aec4a0'], trail: '#efcf979c' },
+  { name: 'Галявина дощового скла', ground: ['#b8d3c1', '#9fc5b6', '#96b4aa'], washes: ['#c6d8b4aa', '#b3cda7a8', '#9ec8c3aa', '#bdafd0a0'], trail: '#efd9aa9c' },
+  { name: 'Простір дзвіночків', ground: ['#bbcfd0', '#a8c5c4', '#96b4b8'], washes: ['#c7d7c3a8', '#a9c9b7a8', '#a5bfd4a8', '#c1b5d0a0'], trail: '#f1d7a59c' },
+  { name: 'Долина світла молі', ground: ['#c7d2b4', '#afc4aa', '#9fb7a4'], washes: ['#d7d8a9a8', '#b9cfa2a8', '#b1c5c1a8', '#d2b4c4a0'], trail: '#f3d39a9c' },
+  { name: 'Срібне поле дощу', ground: ['#c1cfca', '#a9c1bc', '#92b2ad'], washes: ['#d0d9bea8', '#aac7aaa8', '#9fc4c7a8', '#c5b2cda0'], trail: '#e8d4ad9c' },
+  { name: 'Пустка сутінкових пелюсток', ground: ['#c4cdb9', '#a9bda9', '#9cafa7'], washes: ['#d4d3aaa8', '#b6c69da8', '#a4c1bba8', '#c9aec4a0'], trail: '#efcf979c' },
 ];
 
 const SLOTS: Point[] = [

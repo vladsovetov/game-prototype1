@@ -1,5 +1,5 @@
 import { AI_CONTEXT_PACKET, validateCharacterCard } from '../domain/character';
-import { BODIES, MARKS, MATERIALS, PALETTES, QUIRKS } from '../domain/catalog';
+import { APPEARANCE_GROUP_NAMES, APPEARANCE_NAMES, BODIES, MARKS, MATERIALS, PALETTES, QUIRKS } from '../domain/catalog';
 import { ROAD_HOME } from '../domain/memory';
 import { LANTERN_HOUSE_ENDING, memoryChapter, type MemoryChapter } from '../domain/memory-arc';
 import { storyFor } from '../domain/story';
@@ -25,7 +25,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = `modal${compact ? ' modal-compact' : ''}`;
-    section.innerHTML = `<div class="modal-body"><div class="modal-head"><div><span class="eyebrow">The Unwritten</span><h2></h2></div><button class="close" aria-label="Close">×</button></div><div data-slot="content"></div></div>`;
+    section.innerHTML = `<div class="modal-body"><div class="modal-head"><div><span class="eyebrow">Ненаписане</span><h2></h2></div><button class="close" aria-label="Закрити">×</button></div><div data-slot="content"></div></div>`;
     (section.querySelector('h2') as HTMLElement).textContent = title;
     section.querySelector('.close')?.addEventListener('click', onClose);
     root.append(section);
@@ -37,20 +37,20 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card wake-card';
-    section.innerHTML = `<span class="eyebrow">Your companion</span><h1 data-testid="tutorial-character-name"></h1><p class="wake-purpose"></p><div class="first-memory"><small>FIRST MEMORY</small><strong></strong><span data-summary></span></div><button class="button primary">Wake up <span aria-hidden="true">→</span></button>`;
+    section.innerHTML = `<span class="eyebrow">Ваш супутник</span><h1 data-testid="tutorial-character-name"></h1><p class="wake-purpose"></p><div class="first-memory"><small>ПЕРШИЙ СПОГАД</small><strong></strong><span data-summary></span></div><button class="button primary">Прокинутися <span aria-hidden="true">→</span></button>`;
     (section.querySelector('h1') as HTMLElement).textContent = character.name;
     (section.querySelector('.wake-purpose') as HTMLElement).textContent = isRoadHome
-      ? `Help ${character.name} recover a lost memory—and discover who they were before this meadow.`
-      : `Help ${character.name} make a first discovery in this strange meadow.`;
-    (section.querySelector('.first-memory strong') as HTMLElement).textContent = isRoadHome ? (story?.chapters.sign?.title ?? 'The Road Home') : 'A First Discovery';
+      ? `Допоможіть ${character.name} повернути втрачений спогад і дізнатися, ким цей персонаж був до появи галявини.`
+      : `Допоможіть ${character.name} зробити перше відкриття на цій дивній галявині.`;
+    (section.querySelector('.first-memory strong') as HTMLElement).textContent = isRoadHome ? (story?.chapters.sign?.title ?? 'Дорога додому') : 'Перше відкриття';
     (section.querySelector('[data-summary]') as HTMLElement).textContent = isRoadHome
-      ? (story?.premise ?? 'Recover two clues to learn who was waiting for them.')
-      : `Follow one glow and see what ${character.gift.name} reveals.`;
+      ? (story?.premise ?? 'Поверніть дві підказки, щоб дізнатися, хто чекав попереду.')
+      : `Ідіть за одним вогником і подивіться, що відкриє Дар «${character.gift.name}».`;
     section.querySelector('button')?.addEventListener('click', onWake);
     root.append(section);
   }
 
-  function showMemoryBeat(title: string, copy: string, action: string, onContinue: () => void, chapterTitle = 'The Road Home') {
+  function showMemoryBeat(title: string, copy: string, action: string, onContinue: () => void, chapterTitle = 'Дорога додому') {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card memory-beat';
@@ -67,7 +67,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card memory-chapter-card';
-    section.innerHTML = `<div class="chapter-number"><span>Memory</span><strong></strong></div><span class="eyebrow">Another page returns</span><h2></h2><div class="chapter-keepsake"></div><p class="soft-copy"></p><button class="button primary">Keep this memory</button>`;
+    section.innerHTML = `<div class="chapter-number"><span>Спогад</span><strong></strong></div><span class="eyebrow">Повертається ще одна сторінка</span><h2></h2><div class="chapter-keepsake"></div><p class="soft-copy"></p><button class="button primary">Зберегти цей спогад</button>`;
     (section.querySelector('.chapter-number strong') as HTMLElement).textContent = String(recovered).padStart(2, '0');
     (section.querySelector('h2') as HTMLElement).textContent = chapter.title;
     (section.querySelector('.chapter-keepsake') as HTMLElement).textContent = chapter.keepsake;
@@ -80,9 +80,9 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card ending-card';
-    section.innerHTML = `<div class="ending-lantern" aria-hidden="true">✦</div><span class="eyebrow">Six memories planted · You remember now</span><h2></h2><p class="ending-name"></p><p class="ending-story"></p><button class="button primary">Carry the light forward</button>`;
+    section.innerHTML = `<div class="ending-lantern" aria-hidden="true">✦</div><span class="eyebrow">Посаджено шість спогадів · Тепер ви пам’ятаєте</span><h2></h2><p class="ending-name"></p><p class="ending-story"></p><button class="button primary">Нести світло далі</button>`;
     (section.querySelector('h2') as HTMLElement).textContent = ending.title;
-    (section.querySelector('.ending-name') as HTMLElement).textContent = `${character.name}, this is what the sanctuary was trying to tell you.`;
+    (section.querySelector('.ending-name') as HTMLElement).textContent = `${character.name}, ось що Притулок намагався вам розповісти.`;
     (section.querySelector('.ending-story') as HTMLElement).textContent = ending.story;
     section.querySelector('button')?.addEventListener('click', onContinue);
     root.append(section);
@@ -92,10 +92,10 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card memory-choice-card';
-    section.innerHTML = `<span class="eyebrow">One truth is still unwritten</span><h2></h2><p class="soft-copy">Planting the Waypost made this memory visible in your sanctuary. The memory cannot answer this last part. Your answer becomes part of who <b data-name></b> is.</p><div class="memory-choices"></div><button class="text-button" data-custom>Write my own answer →</button>`;
+    section.innerHTML = `<span class="eyebrow">Одна правда досі не написана</span><h2></h2><p class="soft-copy">Посаджений дороговказ зробив цей спогад видимим у Притулку. Сам спогад не знає останньої відповіді. Ваша відповідь стане частиною історії <b data-name></b>.</p><div class="memory-choices"></div><button class="text-button" data-custom>Написати власну відповідь →</button>`;
     (section.querySelector('h2') as HTMLElement).textContent = story?.question ?? ROAD_HOME.question;
     (section.querySelector('[data-name]') as HTMLElement).textContent = character.name;
-    const choices = ['A family they chose', 'A patient friend', 'They kept it burning for themself'];
+    const choices = ['Обрана родина', 'Терплячий друг', 'Вогонь підтримували для себе'];
     const list = section.querySelector<HTMLElement>('.memory-choices')!;
     for (const choice of choices) {
       const button = document.createElement('button');
@@ -112,8 +112,8 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card memory-choice-card';
-    section.innerHTML = `<span class="eyebrow"></span><h2></h2><p class="soft-copy">Write one short answer. It will be remembered in <b data-name></b>'s story.</p><label class="field-label">Your answer<input name="memory" maxlength="100" autocomplete="off" placeholder="Someone who..."></label><div class="choice-row"><button class="button primary" data-save disabled>Keep this memory</button><button class="button ghost-light" data-back>Back</button></div>`;
-    (section.querySelector('.eyebrow') as HTMLElement).textContent = story?.chapters.sign?.title ?? 'The Road Home';
+    section.innerHTML = `<span class="eyebrow"></span><h2></h2><p class="soft-copy">Напишіть одну коротку відповідь. Вона залишиться в історії <b data-name></b>.</p><label class="field-label">Ваша відповідь<input name="memory" maxlength="100" autocomplete="off" placeholder="Хтось, хто..."></label><div class="choice-row"><button class="button primary" data-save disabled>Зберегти цей спогад</button><button class="button ghost-light" data-back>Назад</button></div>`;
+    (section.querySelector('.eyebrow') as HTMLElement).textContent = story?.chapters.sign?.title ?? 'Дорога додому';
     (section.querySelector('h2') as HTMLElement).textContent = story?.question ?? ROAD_HOME.question;
     (section.querySelector('[data-name]') as HTMLElement).textContent = character.name;
     const input = section.querySelector<HTMLInputElement>('[name=memory]')!;
@@ -132,7 +132,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card compatibility-card';
-    section.innerHTML = `<span class="eyebrow">Save protected</span><h2>This meadow is from a newer version</h2><p class="soft-copy">This prototype cannot safely open version <b data-version></b>. Your saved data has been left untouched.</p><button class="button primary">Start a fresh meadow</button>`;
+    section.innerHTML = `<span class="eyebrow">Збереження захищене</span><h2>Ця галявина з новішої версії</h2><p class="soft-copy">Цей прототип не може безпечно відкрити версію <b data-version></b>. Ваші збережені дані залишилися без змін.</p><button class="button primary">Почати на новій галявині</button>`;
     (section.querySelector('[data-version]') as HTMLElement).textContent = String(version);
     section.querySelector('button')?.addEventListener('click', actions.onReset);
     root.append(section);
@@ -143,7 +143,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card personalize-card';
-    section.innerHTML = `<span class="eyebrow">First memory made</span><h2>Make them yours</h2><p class="soft-copy">Now that you have met <b data-name></b>, you can add more of yourself—or leave the mystery intact.</p><div class="personalize-actions"><button class="personalize-choice" data-personality><span>01</span><b>Add personality</b><small>Give the world more to notice</small></button><button class="personalize-choice" data-look><span>02</span><b>Shape their look</b><small>Choose body, material, and colors</small></button><button class="personalize-choice" data-ai><span>03</span><b>Create with your AI</b><small>Bring in a richer imagined character</small></button><button class="personalize-choice local-writer-choice" data-local aria-label="Let this device write the tale"><span>04 · LOCAL</span><b>Let this device write the tale</b><small>120–180 MB once · writing stays here</small></button></div><button class="text-button" data-done>Keep exploring <span aria-hidden="true">→</span></button>`;
+    section.innerHTML = `<span class="eyebrow">Перший спогад створено</span><h2>Зробіть персонажа своїм</h2><p class="soft-copy">Тепер, коли ви зустріли <b data-name></b>, можна додати щось від себе або зберегти таємницю.</p><div class="personalize-actions"><button class="personalize-choice" data-personality><span>01</span><b>Додати характер</b><small>Дайте світові більше рис для відгуку</small></button><button class="personalize-choice" data-look><span>02</span><b>Змінити вигляд</b><small>Оберіть тіло, матеріал і кольори</small></button><button class="personalize-choice" data-ai><span>03</span><b>Створити за допомогою ШІ</b><small>Додайте глибше уявленого персонажа</small></button><button class="personalize-choice local-writer-choice" data-local aria-label="Дозволити цьому пристрою написати історію"><span>04 · ЛОКАЛЬНО</span><b>Дозволити пристрою написати історію</b><small>120–180 МБ один раз · текст залишається тут</small></button></div><button class="text-button" data-done>Досліджувати далі <span aria-hidden="true">→</span></button>`;
     (section.querySelector('[data-name]') as HTMLElement).textContent = character.name;
     section.querySelector('[data-personality]')?.addEventListener('click', () => showPersonality(character));
     section.querySelector('[data-look]')?.addEventListener('click', () => showAppearance(character));
@@ -155,8 +155,8 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
 
   function showPersonality(character: Character) {
     const back = () => showPersonalize(currentCharacter ?? character);
-    const c = shell('Tell us one true thing', true, back);
-    c.innerHTML = `<p class="soft-copy">A few words are enough. This changes how the meadow describes your companion, never how powerful they are.</p><label class="field-label">Name<input name="name" maxlength="24"></label><label class="field-label">What are they like?<textarea name="description" maxlength="180"></textarea></label><label class="field-label">A small instinct<select name="quirk"></select></label><div class="choice-row"><button class="button primary" data-save>Keep this</button><button class="button ghost-light" data-back>Not now</button></div>`;
+    const c = shell('Розкажіть одну правдиву річ', true, back);
+    c.innerHTML = `<p class="soft-copy">Кількох слів достатньо. Це змінює лише те, як галявина описує вашого супутника, а не силу персонажа.</p><label class="field-label">Ім’я<input name="name" maxlength="24"></label><label class="field-label">Який це персонаж?<textarea name="description" maxlength="180"></textarea></label><label class="field-label">Маленька звичка<select name="quirk"></select></label><div class="choice-row"><button class="button primary" data-save>Зберегти</button><button class="button ghost-light" data-back>Не зараз</button></div>`;
     const name = c.querySelector<HTMLInputElement>('[name=name]')!;
     const description = c.querySelector<HTMLTextAreaElement>('[name=description]')!;
     const quirk = c.querySelector<HTMLSelectElement>('[name=quirk]')!;
@@ -165,7 +165,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     for (const id of Object.keys(QUIRKS) as QuirkId[]) {
       const option = document.createElement('option');
       option.value = id;
-      option.textContent = id.replace('-', ' ');
+      option.textContent = QUIRKS[id].name;
       option.selected = id === character.quirk.id;
       quirk.append(option);
     }
@@ -179,8 +179,8 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
 
   function showAppearance(character: Character) {
     const back = () => showPersonalize(currentCharacter ?? character);
-    const c = shell('Shape their look', true, back);
-    c.innerHTML = `<p class="soft-copy">Every choice is visual. You can change it whenever you like.</p><div class="appearance-grid"></div><div class="choice-row"><button class="button primary" data-save>Wear this look</button><button class="button ghost-light" data-back>Not now</button></div>`;
+    const c = shell('Змініть вигляд', true, back);
+    c.innerHTML = `<p class="soft-copy">Усі ці зміни лише візуальні. Їх можна змінити будь-коли.</p><div class="appearance-grid"></div><div class="choice-row"><button class="button primary" data-save>Обрати цей вигляд</button><button class="button ghost-light" data-back>Не зараз</button></div>`;
     const grid = c.querySelector<HTMLElement>('.appearance-grid')!;
     const groups: Array<[keyof Appearance, readonly string[]]> = [
       ['body', BODIES], ['material', MATERIALS], ['palette', PALETTES], ['mark', MARKS],
@@ -188,13 +188,13 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     for (const [key, values] of groups) {
       const label = document.createElement('label');
       label.className = 'field-label';
-      label.textContent = key[0]!.toUpperCase() + key.slice(1);
+      label.textContent = APPEARANCE_GROUP_NAMES[key];
       const select = document.createElement('select');
       select.name = key;
       for (const value of values) {
         const option = document.createElement('option');
         option.value = value;
-        option.textContent = value.replace('-', ' ');
+        option.textContent = APPEARANCE_NAMES[key][value as never];
         option.selected = value === character.appearance[key];
         select.append(option);
       }
@@ -209,8 +209,8 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
   }
 
   function showImport(back: () => void = clear) {
-    const c = shell('Bring in a character', false, back);
-    c.innerHTML = `<p class="soft-copy">Paste the JSON card made by your AI. The meadow accepts imagination, but ignores invented stats and powers.</p><textarea aria-label="Character JSON" spellcheck="false"></textarea><div data-errors></div><div class="choice-row"><button class="button primary">Meet this character</button><button class="button ghost-light" data-back>Back</button></div>`;
+    const c = shell('Додайте персонажа', false, back);
+    c.innerHTML = `<p class="soft-copy">Вставте JSON-картку, створену вашим ШІ. Галявина приймає уяву, але ігнорує вигадані характеристики й сили.</p><textarea aria-label="JSON персонажа" spellcheck="false"></textarea><div data-errors></div><div class="choice-row"><button class="button primary">Зустріти персонажа</button><button class="button ghost-light" data-back>Назад</button></div>`;
     const box = c.querySelector('textarea')!;
     const errors = c.querySelector<HTMLElement>('[data-errors]')!;
     c.querySelector('.primary')?.addEventListener('click', () => {
@@ -232,12 +232,12 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
   }
 
   function showAI(back: () => void = clear) {
-    const c = shell('Create with your AI', false, back);
-    c.innerHTML = `<p class="soft-copy">Copy this small world guide into any AI. Ask it to imagine your companion, then bring the JSON result back here.</p><textarea readonly aria-label="AI creation context"></textarea><div class="choice-row"><button class="button primary">Copy world guide</button><button class="button" data-import>Paste the result</button><button class="button ghost-light" data-back>Back</button></div>`;
+    const c = shell('Створіть за допомогою ШІ', false, back);
+    c.innerHTML = `<p class="soft-copy">Скопіюйте короткий опис світу до будь-якого ШІ. Попросіть уявити вашого супутника, а потім поверніть сюди результат у форматі JSON.</p><textarea readonly aria-label="Контекст для створення персонажа ШІ"></textarea><div class="choice-row"><button class="button primary">Скопіювати опис світу</button><button class="button" data-import>Вставити результат</button><button class="button ghost-light" data-back>Назад</button></div>`;
     c.querySelector('textarea')!.value = AI_CONTEXT_PACKET;
     c.querySelector('.primary')?.addEventListener('click', async () => {
       await navigator.clipboard.writeText(AI_CONTEXT_PACKET);
-      c.querySelector('.primary')!.textContent = 'Copied';
+      c.querySelector('.primary')!.textContent = 'Скопійовано';
     });
     c.querySelector('[data-import]')?.addEventListener('click', () => showImport(back));
     c.querySelector('[data-back]')?.addEventListener('click', back);
@@ -258,12 +258,12 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
 
   function showCharacter(character: Character) {
     currentCharacter = character;
-    const c = shell('Your companion');
+    const c = shell('Ваш супутник');
     const pass = document.createElement('div');
     pass.className = 'passport';
     const preview = document.createElement('div');
     preview.className = `avatar-preview palette-${character.appearance.palette}`;
-    preview.textContent = `${character.appearance.material} ${character.appearance.body}`;
+    preview.textContent = `${APPEARANCE_NAMES.material[character.appearance.material]} · ${APPEARANCE_NAMES.body[character.appearance.body]}`;
     const info = document.createElement('div');
     const h = document.createElement('h3');
     const p = document.createElement('p');
@@ -271,10 +271,10 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     p.textContent = character.description;
     const grid = document.createElement('div');
     grid.className = 'trait-grid';
-    grid.append(trait('Gift', character.gift.name, character.gift.description), trait('Burden', character.burden.name, character.burden.description), trait('Quirk', character.quirk.name, character.quirk.description));
+    grid.append(trait('Дар', character.gift.name, character.gift.description), trait('Тягар', character.burden.name, character.burden.description), trait('Особливість', character.quirk.name, character.quirk.description));
     const edit = document.createElement('button');
     edit.className = 'text-button passport-edit';
-    edit.textContent = 'Personalize character →';
+    edit.textContent = 'Налаштувати персонажа →';
     edit.addEventListener('click', () => showPersonalize(character));
     info.append(h, p, grid, edit);
     pass.append(preview, info);
@@ -282,21 +282,21 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
   }
 
   function showJournal(state: GameState) {
-    const c = shell('Field journal');
+    const c = shell('Польовий щоденник');
     const arc = storyFor(state);
     const world = worldFor(state);
     const folio = document.createElement('article');
     folio.className = 'tale-folio';
     folio.dataset.testid = 'tale-folio';
-    folio.innerHTML = `<div class="run-seal"><small>RUN</small><strong data-testid="tale-run-mark"></strong></div><div><span class="eyebrow"></span><h3></h3><p></p></div>`;
+    folio.innerHTML = `<div class="run-seal"><small>ОПОВІДЬ</small><strong data-testid="tale-run-mark"></strong></div><div><span class="eyebrow"></span><h3></h3><p></p></div>`;
     (folio.querySelector('[data-testid=tale-run-mark]') as HTMLElement).textContent = arc.runMark;
-    (folio.querySelector('.eyebrow') as HTMLElement).textContent = arc.source === 'local-model' ? 'Written on this device' : 'Woven from this run';
+    (folio.querySelector('.eyebrow') as HTMLElement).textContent = arc.source === 'local-model' ? 'Написано на цьому пристрої' : 'Виткано з цієї мандрівки';
     (folio.querySelector('h3') as HTMLElement).textContent = world.theme.name;
     (folio.querySelector('p') as HTMLElement).textContent = arc.premise;
     c.append(folio);
     const summary = document.createElement('p');
     summary.className = 'soft-copy';
-    summary.textContent = `${state.discoveries.length} reactions remembered · ${state.seeds.length} seeds waiting · ${Object.keys(state.plantings).length} planted`;
+    summary.textContent = `Відгуків збережено: ${state.discoveries.length} · Зернин чекає: ${state.seeds.length} · Посаджено: ${Object.keys(state.plantings).length}`;
     c.append(summary);
     for (const id of state.rewarded) {
       const chapter = arc.chapters[id] ?? memoryChapter(id);
@@ -305,7 +305,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
       memory.className = 'journal-memory';
       const eyebrow = document.createElement('span');
       eyebrow.className = 'eyebrow';
-      eyebrow.textContent = 'Recovered memory';
+      eyebrow.textContent = 'Відновлений спогад';
       const title = document.createElement('h3');
       title.textContent = chapter.title;
       const story = document.createElement('p');
@@ -324,7 +324,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
       ending.className = 'journal-memory journal-ending';
       const eyebrow = document.createElement('span');
       eyebrow.className = 'eyebrow';
-      eyebrow.textContent = 'Story complete';
+      eyebrow.textContent = 'Історію завершено';
       const title = document.createElement('h3');
       title.textContent = arc.ending.title;
       const story = document.createElement('p');
@@ -336,7 +336,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     list.className = 'journal-list';
     if (!state.discoveries.length) {
       const p = document.createElement('p');
-      p.textContent = 'The first page is waiting. Follow a glow and try your Gift.';
+      p.textContent = 'Перша сторінка чекає. Ідіть за сяйвом і спробуйте свій Дар.';
       list.append(p);
     }
     for (const item of state.discoveries) {
@@ -348,7 +348,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     c.append(list);
     if (state.seeds.length) {
       const h = document.createElement('h3');
-      h.textContent = 'Seed tray';
+      h.textContent = 'Таця спогадів';
       const seeds = document.createElement('div');
       seeds.className = 'seed-grid';
       for (const seed of state.seeds) {
@@ -362,10 +362,10 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
   }
 
   function showHelp() {
-    const c = shell('How to wander', true);
-    c.innerHTML = `<div class="controls keyboard-help"><b>WASD / ARROWS</b><span>Move</span><b>F</b><span>Use your current Gift near a strange object</span><b>E</b><span>Explore, borrow a Gift, or plant</span><b>J</b><span>Open field journal</span><b>C</b><span>Meet your companion</span></div><div class="touch-help"><div class="touch-help-mark">●</div><div><b>Drag the golden ember</b><span>Move in any direction. Let go to stop.</span></div><div class="touch-help-mark">✦</div><div><b>Tap a glowing petal</b><span>Use your Gift or explore whatever is nearby.</span></div></div><p class="soft-copy help-note">The lights are suggestions, not a timer. Wander as long as you like.</p><div class="new-tale-note"><span class="eyebrow">Another beginning</span><p>Your companion stays, but this meadow, its story, and all progress will be replaced by a newly generated tale.</p><button class="button danger">Begin another tale</button></div>`;
+    const c = shell('Як мандрувати', true);
+    c.innerHTML = `<div class="controls keyboard-help"><b>WASD / СТРІЛКИ</b><span>Рух</span><b>F</b><span>Застосувати поточний Дар біля дивного предмета</span><b>E</b><span>Дослідити, позичити Дар або посадити спогад</span><b>J</b><span>Відкрити польовий щоденник</span><b>C</b><span>Зустріти супутника</span></div><div class="touch-help"><div class="touch-help-mark">●</div><div><b>Тягніть золотий вогник</b><span>Рухайтеся в будь-якому напрямку. Відпустіть, щоб зупинитися.</span></div><div class="touch-help-mark">✦</div><div><b>Торкніться сяючої пелюстки</b><span>Застосуйте Дар або дослідіть те, що поруч.</span></div></div><p class="soft-copy help-note">Вогники лише підказують шлях — таймера немає. Мандруйте скільки захочете.</p><div class="new-tale-note"><span class="eyebrow">Інший початок</span><p>Супутник залишиться, але ця галявина, її історія та весь прогрес будуть замінені новою випадково створеною оповіддю.</p><button class="button danger">Почати іншу оповідь</button></div>`;
     c.querySelector('.danger')?.addEventListener('click', () => {
-      if (confirm('Begin another tale? Your companion stays, but this meadow and all of its progress will be replaced.')) actions.onNewTale();
+      if (confirm('Почати іншу оповідь? Супутник залишиться, але ця галявина й увесь її прогрес будуть замінені.')) actions.onNewTale();
     });
   }
 
@@ -375,17 +375,17 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     section.className = 'story-card story-loom-card';
     const percent = Math.round(status.progress * 100);
     if (status.phase === 'complete') {
-      section.innerHTML = `<div class="loom-mark" aria-hidden="true"><i></i><i></i><i></i></div><span class="eyebrow">Written entirely on this device</span><h2>A new tale has taken root</h2><p class="soft-copy" data-story></p><button class="button primary">Keep this tale</button>`;
+      section.innerHTML = `<div class="loom-mark" aria-hidden="true"><i></i><i></i><i></i></div><span class="eyebrow">Повністю написано на цьому пристрої</span><h2>Нова оповідь пустила коріння</h2><p class="soft-copy" data-story></p><button class="button primary">Зберегти цю оповідь</button>`;
       (section.querySelector('[data-story]') as HTMLElement).textContent = status.story.premise;
       section.querySelector('button')?.addEventListener('click', onDismiss);
     } else if (status.phase === 'error') {
-      section.innerHTML = `<div class="loom-mark broken" aria-hidden="true"><i></i><i></i><i></i></div><span class="eyebrow">Your current tale is safe</span><h2>The story thread slipped</h2><p class="soft-copy" data-error></p><div class="choice-row"><button class="button primary" data-retry>Try again</button><button class="button ghost-light" data-dismiss>Use the story already here</button></div>`;
+      section.innerHTML = `<div class="loom-mark broken" aria-hidden="true"><i></i><i></i><i></i></div><span class="eyebrow">Поточна оповідь у безпеці</span><h2>Нитка історії вислизнула</h2><p class="soft-copy" data-error></p><div class="choice-row"><button class="button primary" data-retry>Спробувати ще раз</button><button class="button ghost-light" data-dismiss>Залишити наявну історію</button></div>`;
       (section.querySelector('[data-error]') as HTMLElement).textContent = status.message;
       section.querySelector('[data-retry]')?.addEventListener('click', onRetry);
       section.querySelector('[data-dismiss]')?.addEventListener('click', onDismiss);
     } else {
-      const stage = status.phase === 'download' ? 'Bringing the small writer into this browser' : status.phase === 'read' ? 'Reading your companion and this meadow' : 'Weaving a private story';
-      section.innerHTML = `<div class="loom-mark active" aria-hidden="true"><i></i><i></i><i></i></div><span class="eyebrow">No prompt leaves this device</span><h2>This device is weaving</h2><p class="soft-copy">The first use downloads about 120–180 MB. You can keep playing; the tale already here remains safe.</p><div class="loom-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span></span></div><div class="loom-status"><b></b><strong></strong></div><button class="text-button">Keep exploring while it writes →</button>`;
+      const stage = status.phase === 'download' ? 'Завантажуємо маленького оповідача в браузер' : status.phase === 'read' ? 'Читаємо про супутника й цю галявину' : 'Виткаємо приватну історію';
+      section.innerHTML = `<div class="loom-mark active" aria-hidden="true"><i></i><i></i><i></i></div><span class="eyebrow">Жоден запит не залишає цей пристрій</span><h2>Пристрій виткає оповідь</h2><p class="soft-copy">Під час першого запуску завантажиться близько 120–180 МБ. Можна продовжувати гру: наявна оповідь у безпеці.</p><div class="loom-progress" role="progressbar" aria-label="Прогрес локального оповідача" aria-valuemin="0" aria-valuemax="100"><span></span></div><div class="loom-status"><b></b><strong></strong></div><button class="text-button">Досліджувати далі, поки пишеться історія →</button>`;
       const progress = section.querySelector<HTMLElement>('[role=progressbar]')!;
       progress.setAttribute('aria-valuenow', String(percent));
       (progress.querySelector('span') as HTMLElement).style.width = `${percent}%`;

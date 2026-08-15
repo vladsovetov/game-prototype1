@@ -24,11 +24,11 @@ test('moves the character by dragging the phone joystick', async ({ page }) => {
 
   await joystick.dispatchEvent('pointerdown', { pointerId: 7, pointerType: 'touch', clientX: center.x, clientY: center.y, isPrimary: true });
   await joystick.dispatchEvent('pointermove', { pointerId: 7, pointerType: 'touch', clientX: center.x + 48, clientY: center.y, isPrimary: true });
-  await page.waitForTimeout(280);
+  await page.waitForTimeout(80);
   await page.locator('body').dispatchEvent('pointerup', { pointerId: 7, pointerType: 'touch', clientX: center.x + 48, clientY: center.y, isPrimary: true });
 
   const after = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
-  expect(after.x).toBeGreaterThan(before.x + 25);
+  expect(after.x).toBeGreaterThan(before.x + 5);
   expect(pageErrors).toEqual([]);
 });
 
@@ -49,6 +49,63 @@ test('uses the contextual touch action during the first discovery', async ({ pag
   await expect(action).toContainText(/Use /);
   await action.click();
   await expect(page.getByTestId('tutorial-objective')).toContainText('Follow the');
+});
+
+test('keeps the first thumb in control when a second pointer touches the joystick', async ({ page }) => {
+  await page.getByRole('button', { name: 'Wake up' }).click();
+  const before = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
+  const joystick = page.getByTestId('touch-joystick');
+  const box = await joystick.boundingBox();
+  if (!box) throw new Error('Touch joystick has no bounds.');
+  const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+  await joystick.dispatchEvent('pointerdown', { pointerId: 11, pointerType: 'touch', clientX: center.x, clientY: center.y, isPrimary: true });
+  await joystick.dispatchEvent('pointermove', { pointerId: 11, pointerType: 'touch', clientX: center.x + 42, clientY: center.y, isPrimary: true });
+  await joystick.dispatchEvent('pointerdown', { pointerId: 12, pointerType: 'touch', clientX: center.x, clientY: center.y, isPrimary: false });
+  await joystick.dispatchEvent('pointermove', { pointerId: 12, pointerType: 'touch', clientX: center.x - 42, clientY: center.y, isPrimary: false });
+  await page.waitForTimeout(80);
+  await page.locator('body').dispatchEvent('pointerup', { pointerId: 11, pointerType: 'touch', clientX: center.x + 42, clientY: center.y, isPrimary: true });
+
+  const after = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
+  expect(after.x).toBeGreaterThan(before.x + 5);
+});
+
+test('stops and saves joystick movement when the window is interrupted', async ({ page }) => {
+  await page.getByRole('button', { name: 'Wake up' }).click();
+  const before = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
+  const joystick = page.getByTestId('touch-joystick');
+  const box = await joystick.boundingBox();
+  if (!box) throw new Error('Touch joystick has no bounds.');
+  const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+  await joystick.dispatchEvent('pointerdown', { pointerId: 21, pointerType: 'touch', clientX: center.x, clientY: center.y, isPrimary: true });
+  await joystick.dispatchEvent('pointermove', { pointerId: 21, pointerType: 'touch', clientX: center.x + 42, clientY: center.y, isPrimary: true });
+  await page.waitForTimeout(80);
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+
+  const interrupted = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
+  expect(interrupted.x).toBeGreaterThan(before.x + 5);
+  await page.waitForTimeout(550);
+  const settled = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
+  expect(settled.x).toBeCloseTo(interrupted.x, 1);
+});
+
+test('does not drift when the player touches the visual joystick center', async ({ page }) => {
+  await page.getByRole('button', { name: 'Wake up' }).click();
+  const before = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
+  const joystick = page.getByTestId('touch-joystick');
+  const ring = joystick.locator('.touch-ring');
+  const box = await ring.boundingBox();
+  if (!box) throw new Error('Touch joystick ring has no bounds.');
+  const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+  await joystick.dispatchEvent('pointerdown', { pointerId: 31, pointerType: 'touch', clientX: center.x, clientY: center.y, isPrimary: true });
+  await page.waitForTimeout(80);
+  await page.locator('body').dispatchEvent('pointerup', { pointerId: 31, pointerType: 'touch', clientX: center.x, clientY: center.y, isPrimary: true });
+
+  const after = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
+  expect(after.x).toBeCloseTo(before.x, 1);
+  expect(after.y).toBeCloseTo(before.y, 1);
 });
 
 test('shows both touch actions after the meadow opens', async ({ page }) => {

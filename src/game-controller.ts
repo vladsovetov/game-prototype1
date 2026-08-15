@@ -46,7 +46,16 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   }
 
   function endTouch(event: PointerEvent) {
-    if (event.pointerId === touchPointer) resetTouch();
+    if (event.pointerId === touchPointer) {
+      resetTouch();
+      store.save(state);
+    }
+  }
+
+  function interruptTouch() {
+    if (touchPointer === undefined) return;
+    resetTouch();
+    store.save(state);
   }
 
   function haptic() {
@@ -101,12 +110,14 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     touchKnob = controls.querySelector<HTMLElement>('.touch-knob')!;
     joystick.addEventListener('pointerdown', (event) => {
       event.preventDefault();
-      const bounds = joystick.getBoundingClientRect();
+      if (touchPointer !== undefined && touchPointer !== event.pointerId) return;
+      const bounds = controls.querySelector<HTMLElement>('.touch-ring')!.getBoundingClientRect();
       touchPointer = event.pointerId;
-      touchOrigin = { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 - 9 };
+      touchOrigin = { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 };
       if (event.isTrusted) joystick.setPointerCapture?.(event.pointerId);
       moveTouch(event);
     });
+    joystick.addEventListener('lostpointercapture', interruptTouch);
 
     const actions = controls.querySelector<HTMLElement>('.touch-actions')!;
     const addAction = (label: string, ariaLabel: string, icon: string, onPress: () => void, primary = false) => {
@@ -286,6 +297,9 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   addEventListener('pointermove', moveTouch, { passive: false });
   addEventListener('pointerup', endTouch);
   addEventListener('pointercancel', endTouch);
+  addEventListener('blur', interruptTouch);
+  const visibilityChanged = () => { if (document.hidden) interruptTouch(); };
+  document.addEventListener('visibilitychange', visibilityChanged);
   const resize = () => { renderer.resize(); updateHud(); };
   addEventListener('resize', resize);
   updateHud();
@@ -307,6 +321,8 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       removeEventListener('pointermove', moveTouch);
       removeEventListener('pointerup', endTouch);
       removeEventListener('pointercancel', endTouch);
+      removeEventListener('blur', interruptTouch);
+      document.removeEventListener('visibilitychange', visibilityChanged);
       removeEventListener('resize', resize);
       cancelAnimationFrame(frameId);
     },

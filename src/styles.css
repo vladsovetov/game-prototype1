@@ -165,7 +165,7 @@ textarea { min-height: 180px; resize: vertical; font: 13px/1.55 ui-monospace, SF
 @keyframes rise { from { opacity: 0; transform: translateY(16px) scale(.98); } }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px) scale(.96); } }
 
-@media (max-width: 720px) {
+@media (max-width: 720px), (pointer: coarse) {
   #hud { padding: 14px; }
   .wake-card { align-self: end; justify-self: center; margin: 0 0 3vh; padding: 30px; }
   .personalize-actions { grid-template-columns: 1fr; }

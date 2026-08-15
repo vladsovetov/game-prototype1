@@ -75,6 +75,11 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     toastTimer = window.setTimeout(() => d.remove(), 3600);
   }
 
+  function clearToast() {
+    clearTimeout(toastTimer);
+    toastRoot.replaceChildren();
+  }
+
   function updateHud() {
     if (hasBlockingStory()) {
       hud.replaceChildren();
@@ -214,6 +219,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       finishMemoryChapter();
       return;
     }
+    clearToast();
     panels.showMemoryChapter(chapter, state.rewarded.length, finishMemoryChapter);
   }
 
@@ -226,8 +232,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   function showPendingEnding() {
     if (!hasReachedEnding(state)) return;
-    clearTimeout(toastTimer);
-    toastRoot.replaceChildren();
+    clearToast();
     panels.showEnding(state.character, finishEnding);
   }
 

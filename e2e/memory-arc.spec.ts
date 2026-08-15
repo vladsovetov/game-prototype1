@@ -26,6 +26,7 @@ test('reveals and preserves a story chapter when a later memory is recovered', a
   await page.keyboard.press('f');
 
   await expect(page.getByRole('heading', { name: 'The Song Below' })).toBeVisible();
+  await expect(page.locator('.toast')).toHaveCount(0, { timeout: 250 });
   await expect(page.getByText(/frightened travelers/i)).toBeVisible();
   const before = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
   await page.keyboard.down('d');

@@ -28,13 +28,14 @@ const panels = createPanels(modal, {
 });
 
 const loaded = store.load();
-let state;
-if (loaded.kind === 'loaded') {
-  state = loaded.state;
+if (loaded.kind === 'newer-version') {
+  panels.showNewerSave(loaded.version);
 } else {
-  state = prepareTutorial(createInitialState(generateCharacter(Date.now())));
-  if (loaded.kind === 'corrupt' || loaded.kind === 'newer-version') {
+  const state = loaded.kind === 'loaded'
+    ? loaded.state
+    : prepareTutorial(createInitialState(generateCharacter(Date.now())));
+  if (loaded.kind === 'corrupt') {
     setTimeout(() => alert('Your old local save could not be read, so a fresh meadow was opened.'), 50);
   }
+  controller = createGameController(state, renderer, panels, store, hud, toasts);
 }
-controller = createGameController(state, renderer, panels, store, hud, toasts);

@@ -1,5 +1,5 @@
 import type { GameState, GiftId, Point, TutorialStep } from './types';
-import { ANOMALIES, PLOTS, SHRINES } from './world';
+import { ANOMALIES, distance, PLOTS, SHRINES } from './world';
 
 type TutorialEvent =
   | 'wake'
@@ -51,7 +51,7 @@ export function advanceTutorial(state: GameState, event: TutorialEvent): GameSta
   const next = { ...state, tutorial: { ...state.tutorial, step } };
   if (event === 'chain-completed') {
     const plot = PLOTS[0]!;
-    next.player = { x: plot.position.x + 120, y: plot.position.y + 60 };
+    next.player = { x: plot.position.x + 70, y: plot.position.y + 35 };
   }
   return next;
 }
@@ -68,11 +68,15 @@ export function tutorialObjective(state: GameState): { title: string; action: st
   const step = state.tutorial?.step ?? 'done';
   const gift = state.character.gift.name;
   const borrowed = state.tutorial?.borrowedGift ?? 'echo';
+  const target = tutorialTarget(state);
+  const atResonance = step === 'resonate' && target && distance(state.player, target) <= 160;
   const copy: Record<TutorialStep, { title: string; action: string; key?: string }> = {
     wake: { title: `This is ${state.character.name}.`, action: 'Wake up' },
     move: { title: 'Something is glowing nearby.', action: 'Move toward the light', key: 'WASD' },
     gift: { title: `The world notices ${state.character.name}.`, action: `Use ${gift}`, key: 'F' },
-    resonate: { title: 'It changed—but the memory is unfinished.', action: `Follow the ${borrowed} lights`, key: 'WASD' },
+    resonate: atResonance
+      ? { title: 'The shrine is listening.', action: 'Borrow its Resonance', key: 'E' }
+      : { title: 'It changed—but the memory is unfinished.', action: `Follow the ${borrowed} lights`, key: 'WASD' },
     combine: { title: `You are carrying ${borrowed}.`, action: 'Return and use it', key: 'F' },
     plant: { title: 'A Memory Seed followed you home.', action: 'Plant the memory', key: 'E' },
     personalize: { title: `${state.character.name} has a first memory.`, action: 'Make them yours' },

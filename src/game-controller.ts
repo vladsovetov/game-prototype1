@@ -1,5 +1,5 @@
 import { activateGift, activateShrine, inspectNearest, movePlayer, nearestTarget, plantSeed, removePlanting } from './domain/simulation';
-import { advanceTutorial, tutorialObjective } from './domain/tutorial';
+import { advanceTutorial, tutorialObjective, tutorialTarget } from './domain/tutorial';
 import type { Appearance, CatalogEntry, Character, GameState, InteractionResult, QuirkId } from './domain/types';
 import { SEED_NAMES, distance } from './domain/world';
 import type { createSaveStore } from './persistence/save-store';
@@ -16,6 +16,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   let previous = performance.now();
   let toastTimer = 0;
   let frameId = 0;
+  let wasNearResonance = false;
 
   const isTutorial = () => !!state.tutorial && state.tutorial.step !== 'done';
 
@@ -67,9 +68,12 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   function useGift() {
     const before = state.tutorial?.step;
+    const targetId = state.tutorial?.targetAnomalyId;
+    const targetStage = targetId ? state.anomalies[targetId] ?? 0 : undefined;
     const result = activateGift(state, performance.now());
-    if (result.changed && before === 'gift') result.state = advanceTutorial(result.state, 'gift-used');
-    if (result.changed && before === 'combine' && result.kind === 'seed') result.state = advanceTutorial(result.state, 'chain-completed');
+    const nextTargetStage = targetId ? result.state.anomalies[targetId] ?? 0 : undefined;
+    if (result.changed && before === 'gift' && targetStage === 0 && nextTargetStage === 1) result.state = advanceTutorial(result.state, 'gift-used');
+    if (result.changed && before === 'combine' && targetStage === 1 && nextTargetStage === 2 && result.kind === 'seed') result.state = advanceTutorial(result.state, 'chain-completed');
     apply(result);
   }
 
@@ -142,6 +146,14 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
         saveAndRefresh();
       } else if (Math.floor(now / 500) !== Math.floor((now - dt) / 500)) {
         store.save(state);
+      }
+      if (state.tutorial?.step === 'resonate') {
+        const target = tutorialTarget(state);
+        const isNear = !!target && distance(state.player, target) <= 160;
+        if (isNear !== wasNearResonance) {
+          wasNearResonance = isNear;
+          updateHud();
+        }
       }
     }
     renderer.render(state, now);

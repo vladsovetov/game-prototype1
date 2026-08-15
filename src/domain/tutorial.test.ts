@@ -8,6 +8,7 @@ import {
   tutorialTarget,
 } from './tutorial';
 import { ANOMALIES, SHRINES } from './world';
+import { nearestTarget } from './simulation';
 
 describe('progressive tutorial', () => {
   it.each([
@@ -55,5 +56,15 @@ describe('progressive tutorial', () => {
     expect(tutorialTarget(state)).toEqual(
       SHRINES.find((item) => item.gift === state.tutorial?.borrowedGift)?.position,
     );
+  });
+
+  it('places the player nearest the first sanctuary plot after completing a chain', () => {
+    let state = prepareTutorial(createInitialState(generateCharacter(9)));
+    state.tutorial!.step = 'combine';
+    state = advanceTutorial(state, 'chain-completed');
+
+    const nearest = nearestTarget(state);
+    expect(nearest?.type).toBe('plot');
+    expect(nearest?.value.id).toBe('plot-1');
   });
 });

@@ -15,13 +15,13 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
   let currentCharacter: Character | undefined;
   const clear = () => root.replaceChildren();
 
-  const shell = (title: string, compact = false) => {
+  const shell = (title: string, compact = false, onClose: () => void = clear) => {
     clear();
     const section = document.createElement('section');
     section.className = `modal${compact ? ' modal-compact' : ''}`;
     section.innerHTML = `<div class="modal-body"><div class="modal-head"><div><span class="eyebrow">The Unwritten</span><h2></h2></div><button class="close" aria-label="Close">×</button></div><div data-slot="content"></div></div>`;
     (section.querySelector('h2') as HTMLElement).textContent = title;
-    section.querySelector('.close')?.addEventListener('click', clear);
+    section.querySelector('.close')?.addEventListener('click', onClose);
     root.append(section);
     return section.querySelector<HTMLElement>('[data-slot=content]')!;
   };
@@ -35,6 +35,16 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     (section.querySelector('h1') as HTMLElement).textContent = character.name;
     (section.querySelector('p') as HTMLElement).textContent = character.description;
     section.querySelector('button')?.addEventListener('click', onWake);
+    root.append(section);
+  }
+
+  function showNewerSave(version: number) {
+    clear();
+    const section = document.createElement('section');
+    section.className = 'story-card compatibility-card';
+    section.innerHTML = `<span class="eyebrow">Save protected</span><h2>This meadow is from a newer version</h2><p class="soft-copy">This prototype cannot safely open version <b data-version></b>. Your saved data has been left untouched.</p><button class="button primary">Start a fresh meadow</button>`;
+    (section.querySelector('[data-version]') as HTMLElement).textContent = String(version);
+    section.querySelector('button')?.addEventListener('click', actions.onReset);
     root.append(section);
   }
 
@@ -53,7 +63,8 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
   }
 
   function showPersonality(character: Character) {
-    const c = shell('Tell us one true thing', true);
+    const back = () => showPersonalize(currentCharacter ?? character);
+    const c = shell('Tell us one true thing', true, back);
     c.innerHTML = `<p class="soft-copy">A few words are enough. This changes how the meadow describes your companion, never how powerful they are.</p><label class="field-label">Name<input name="name" maxlength="24"></label><label class="field-label">What are they like?<textarea name="description" maxlength="180"></textarea></label><label class="field-label">A small instinct<select name="quirk"></select></label><div class="choice-row"><button class="button primary" data-save>Keep this</button><button class="button ghost-light" data-back>Not now</button></div>`;
     const name = c.querySelector<HTMLInputElement>('[name=name]')!;
     const description = c.querySelector<HTMLTextAreaElement>('[name=description]')!;
@@ -72,11 +83,12 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
       const nextDescription = description.value.trim().slice(0, 180) || character.description;
       actions.onPersonality(nextName, nextDescription, quirk.value as QuirkId);
     });
-    c.querySelector('[data-back]')?.addEventListener('click', () => showPersonalize(currentCharacter ?? character));
+    c.querySelector('[data-back]')?.addEventListener('click', back);
   }
 
   function showAppearance(character: Character) {
-    const c = shell('Shape their look', true);
+    const back = () => showPersonalize(currentCharacter ?? character);
+    const c = shell('Shape their look', true, back);
     c.innerHTML = `<p class="soft-copy">Every choice is visual. You can change it whenever you like.</p><div class="appearance-grid"></div><div class="choice-row"><button class="button primary" data-save>Wear this look</button><button class="button ghost-light" data-back>Not now</button></div>`;
     const grid = c.querySelector<HTMLElement>('.appearance-grid')!;
     const groups: Array<[keyof Appearance, readonly string[]]> = [
@@ -102,11 +114,11 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
       const select = (name: string) => c.querySelector<HTMLSelectElement>(`[name=${name}]`)!.value;
       actions.onAppearance({ body: select('body') as Appearance['body'], material: select('material') as Appearance['material'], palette: select('palette') as Appearance['palette'], mark: select('mark') as Appearance['mark'] });
     });
-    c.querySelector('[data-back]')?.addEventListener('click', () => showPersonalize(currentCharacter ?? character));
+    c.querySelector('[data-back]')?.addEventListener('click', back);
   }
 
   function showImport(back: () => void = clear) {
-    const c = shell('Bring in a character');
+    const c = shell('Bring in a character', false, back);
     c.innerHTML = `<p class="soft-copy">Paste the JSON card made by your AI. The meadow accepts imagination, but ignores invented stats and powers.</p><textarea aria-label="Character JSON" spellcheck="false"></textarea><div data-errors></div><div class="choice-row"><button class="button primary">Meet this character</button><button class="button ghost-light" data-back>Back</button></div>`;
     const box = c.querySelector('textarea')!;
     const errors = c.querySelector<HTMLElement>('[data-errors]')!;
@@ -129,7 +141,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
   }
 
   function showAI(back: () => void = clear) {
-    const c = shell('Create with your AI');
+    const c = shell('Create with your AI', false, back);
     c.innerHTML = `<p class="soft-copy">Copy this small world guide into any AI. Ask it to imagine your companion, then bring the JSON result back here.</p><textarea readonly aria-label="AI creation context"></textarea><div class="choice-row"><button class="button primary">Copy world guide</button><button class="button" data-import>Paste the result</button><button class="button ghost-light" data-back>Back</button></div>`;
     c.querySelector('textarea')!.value = AI_CONTEXT_PACKET;
     c.querySelector('.primary')?.addEventListener('click', async () => {
@@ -221,5 +233,5 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     });
   }
 
-  return { clear, showWake, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp };
+  return { clear, showWake, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp };
 }

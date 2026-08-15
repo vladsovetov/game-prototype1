@@ -54,6 +54,6 @@ test('generates the story, world direction, palette, and equipment before play',
   await page.reload();
   await page.getByTestId('journal-button').click();
   await expect(page.getByTestId('tale-folio')).toContainText('Написано на цьому пристрої');
-  await expect(page.getByTestId('tale-folio')).toContainText(/Сад|Берег|Болот|Нагір/);
+  await expect(page.getByTestId('tale-folio')).toContainText(/сад|берег|болот|нагір/i);
   expect(await page.evaluate((key) => localStorage.getItem(key), 'unwritten.prototype.local-writer.v1')).toBe('enabled');
 });

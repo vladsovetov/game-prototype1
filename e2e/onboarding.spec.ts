@@ -75,7 +75,7 @@ test('introduces the E key when the player reaches a Resonance Shrine', async ({
   });
   await page.reload();
 
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Позичити «Відновлення»');
+  await expect(page.getByTestId('tutorial-objective')).toContainText('Взяти ремонтний набір');
   await expect(page.getByTestId('tutorial-objective')).toContainText('E');
 });
 
@@ -94,7 +94,7 @@ test('does not advance the tutorial after changing an off-route anomaly', async 
   await page.reload();
   await page.keyboard.press('f');
 
-  await expect(page.getByTestId('tutorial-objective')).toContainText(/Застосуйте Дар/);
+  await expect(page.getByTestId('tutorial-objective')).toContainText(/Посвітіть інструментом/);
 });
 
 test('continues an older unfinished route without switching it to The Road Home', async ({ page }) => {
@@ -111,7 +111,7 @@ test('continues an older unfinished route without switching it to The Road Home'
   await page.keyboard.press('f');
 
   await expect(page.getByRole('heading', { name: 'Підказка повернулася' })).toHaveCount(0);
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Ідіть за вогнями Дару «Зростання»');
+  await expect(page.getByTestId('tutorial-objective')).toContainText('Знайдіть польовий стіл: «Садовий секатор»');
   await expect(page.getByTestId('tutorial-objective')).toContainText('ПЕРШИЙ СПОГАД');
 });
 

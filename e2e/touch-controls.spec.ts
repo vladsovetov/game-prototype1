@@ -53,14 +53,14 @@ test('uses the contextual touch action during the first discovery', async ({ pag
   await page.reload();
 
   const action = page.getByTestId('touch-primary-action');
-  await expect(action).toContainText(/Дар «/);
+  await expect(action).toContainText('Ручний ліхтар');
   await action.click();
   await expect(page.getByRole('heading', { name: 'Підказка повернулася' })).toBeVisible();
   await page.getByRole('button', { name: 'Завершити спогад' }).click();
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Знайдіть Дар «Відновлення»');
+  await expect(page.getByTestId('tutorial-objective')).toContainText('ремонтним набором');
 });
 
-test('names the correct borrowed Gift for an older touch save', async ({ page }) => {
+test('names the correct borrowed tool for an older touch save', async ({ page }) => {
   await page.getByRole('button', { name: 'Прокинутися' }).click();
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
@@ -71,8 +71,8 @@ test('names the correct borrowed Gift for an older touch save', async ({ page })
   }, SAVE_KEY);
   await page.reload();
 
-  await expect(page.getByRole('button', { name: 'Позичити «Зростання»' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Позичити «Відновлення»' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Взяти «Садовий секатор»' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Взяти «Ремонтний набір»' })).toHaveCount(0);
 });
 
 test('keeps the first thumb in control when a second pointer touches the joystick', async ({ page }) => {
@@ -142,7 +142,7 @@ test('shows both touch actions after the meadow opens', async ({ page }) => {
   await page.reload();
 
   await expect(page.getByTestId('touch-joystick')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Застосувати Дар' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Застосувати інструмент' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Дослідити поруч' })).toBeVisible();
   await page.getByTestId('help-button').click();
   await expect(page.getByText('Тягніть золотий вогник')).toBeVisible();

@@ -44,11 +44,12 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     (section.querySelector('.eyebrow') as HTMLElement).textContent = localReady ? 'Світ створено локально на цьому пристрої' : 'Ваш випадковий супутник';
     (section.querySelector('h1') as HTMLElement).textContent = character.name;
     (section.querySelector('.wake-purpose') as HTMLElement).textContent = isRoadHome
-      ? `Допоможіть ${character.name} повернути втрачений спогад і дізнатися, ким цей персонаж був до появи галявини.`
-      : `Допоможіть ${character.name} зробити перше відкриття на цій дивній галявині.`;
+      ? `Допоможіть персонажу ${character.name} повернути втрачений спогад і завершити першу польову місію.`
+      : `Допоможіть персонажу ${character.name} зробити перше відкриття.`;
     (section.querySelector('.first-memory strong') as HTMLElement).textContent = isRoadHome ? (story?.chapters.sign?.title ?? 'Дорога додому') : 'Перше відкриття';
+    const shortPremise = story?.premise.split('. ').slice(0, 2).join('. ');
     (section.querySelector('[data-summary]') as HTMLElement).textContent = isRoadHome
-      ? (story?.premise ?? 'Поверніть дві підказки, щоб дізнатися, хто чекав попереду.')
+      ? (shortPremise ? `${shortPremise}${shortPremise.endsWith('.') ? '' : '.'}` : 'Поверніть дві підказки, щоб дізнатися, хто чекав попереду.')
       : `Ідіть за одним вогником і випробуйте інструмент «${character.gift.name}».`;
     const actionsRoot = section.querySelector<HTMLElement>('.wake-actions')!;
     if (!localReady) {

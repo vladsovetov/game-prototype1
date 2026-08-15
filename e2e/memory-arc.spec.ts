@@ -21,7 +21,7 @@ test('reveals and preserves a story chapter when a later memory is recovered', a
     const state = JSON.parse(localStorage.getItem(key)!);
     state.tutorial.step = 'done';
     state.character.gift = { id: 'echo', name: 'Echo', description: 'Repeats a hidden sound.' };
-    state.borrowedGift = 'grow';
+    state.borrowedGift = 'mend';
     state.anomalies.stone = 1;
     state.player = { x: 1120, y: 390 };
     state.rewarded = [];

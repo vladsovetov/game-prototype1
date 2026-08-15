@@ -51,7 +51,7 @@ test('explains what Reveal changed and gives the first story clue', async ({ pag
   await expect(beat).toContainText(/ця дорога вже вела вперед/i);
   await page.getByRole('button', { name: 'Завершити спогад' }).click();
   await expect(page.getByTestId('tutorial-objective')).toContainText('1 / 2 ПІДКАЗКИ');
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Знайдіть Дар «Відновлення»');
+  await expect(page.getByTestId('tutorial-objective')).toContainText('ремонтним набором');
 });
 
 test('explains why restoring the sign completes the memory', async ({ page }) => {

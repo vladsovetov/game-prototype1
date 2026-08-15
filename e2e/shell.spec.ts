@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('opens directly in the world with a single invitation', async ({ page }) => {
+test('opens directly in the world with AI and instant-start choices', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
@@ -8,7 +8,8 @@ test('opens directly in the world with a single invitation', async ({ page }) =>
   await expect(page).toHaveTitle('Ненаписане');
   await expect(page.getByTestId('game-canvas')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Прокинутися' })).toBeVisible();
-  await expect(page.getByRole('button')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Створити новий світ локально з ШІ' })).toBeVisible();
+  await expect(page.getByRole('button')).toHaveCount(2);
 });
 
 test('keeps a generated opening usable on a short phone', async ({ page }) => {

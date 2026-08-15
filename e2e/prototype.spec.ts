@@ -20,7 +20,7 @@ test('completes the guided first memory and opens the free meadow', async ({ pag
   await page.keyboard.down('d');
   await page.waitForTimeout(240);
   await page.keyboard.up('d');
-  await expect(page.getByTestId('tutorial-objective')).toContainText(/Застосуйте Дар/);
+  await expect(page.getByTestId('tutorial-objective')).toContainText(/Посвітіть інструментом/);
 
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
@@ -34,7 +34,7 @@ test('completes the guided first memory and opens the free meadow', async ({ pag
   await page.keyboard.press('f');
   await expect(page.getByRole('heading', { name: 'Підказка повернулася' })).toBeVisible();
   await page.getByRole('button', { name: 'Завершити спогад' }).click();
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Знайдіть Дар «Відновлення»');
+  await expect(page.getByTestId('tutorial-objective')).toContainText('ремонтним набором');
 
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
@@ -46,7 +46,7 @@ test('completes the guided first memory and opens the free meadow', async ({ pag
   }, SAVE_KEY);
   await page.reload();
   await page.keyboard.press('e');
-  await expect(page.getByTestId('tutorial-objective')).toContainText('Поверніться й відновіть дороговказ');
+  await expect(page.getByTestId('tutorial-objective')).toContainText('Поверніться й полагодьте покажчик');
 
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);

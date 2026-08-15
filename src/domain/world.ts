@@ -12,7 +12,7 @@ export const ANOMALIES:Anomaly[]=[
  {id:'moon',name:'Blank Moon',position:{x:2550,y:1350},states:['Blank Moon','Named Moon'],transitions:{0:{gift:'reveal',to:'Named Moon',message:'A small moon accepts the name you found for it.',seed:'named-moon'}},color:'#e0c47b'},
  {id:'garden',name:'Waiting Garden',position:{x:1120,y:1460},states:['Waiting Garden','Lantern Garden'],transitions:{0:{gift:'grow',to:'Lantern Garden',message:'Warm flowers unfold, each holding a pocket of dusk.',seed:'lantern-garden'}},color:'#b3bf72'}
 ];
-export const SHRINES:{id:string;gift:GiftId;position:Point}[]=[{id:'shrine-grow',gift:'grow',position:{x:1030,y:600}},{id:'shrine-echo',gift:'echo',position:{x:2050,y:570}},{id:'shrine-mend',gift:'mend',position:{x:2460,y:900}},{id:'shrine-reveal',gift:'reveal',position:{x:1680,y:1150}}];
+export const SHRINES:{id:string;gift:GiftId;position:Point}[]=[{id:'shrine-grow',gift:'grow',position:{x:1030,y:600}},{id:'shrine-echo',gift:'echo',position:{x:2150,y:650}},{id:'shrine-mend',gift:'mend',position:{x:1840,y:500}},{id:'shrine-reveal',gift:'reveal',position:{x:2630,y:920}}];
 export const PLOTS=Array.from({length:6},(_,i)=>({id:`plot-${i+1}`,position:{x:230+(i%3)*190,y:300+Math.floor(i/3)*190}}));
 export const SEED_NAMES:Record<string,string>={'singing-tree':'Singing Tree','waypost':'Remembered Waypost','whisper-pool':'Whispering Pool','hidden-door':'Little Hidden Door','rain-bell':'Rain Bell','paper-flock':'Paper Flock','named-moon':'Named Moon','lantern-garden':'Lantern Garden'};
 export function distance(a:Point,b:Point){return Math.hypot(a.x-b.x,a.y-b.y)}

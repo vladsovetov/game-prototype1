@@ -16,7 +16,8 @@ export function createSaveStore(storage:StorageLike){return{
       const parsed:unknown=JSON.parse(raw);
       if(parsed&&typeof parsed==='object'&&'version'in parsed&&typeof parsed.version==='number'&&parsed.version>1){storage.setItem(DIAGNOSTIC,raw);return{kind:'newer-version',version:parsed.version}}
       if(!isState(parsed))throw new Error('У збереженні бракує обов’язкових полів.');
-      return{kind:'loaded',state:localizeState(parsed)};
+      const state=localizeState(parsed);
+      return{kind:'loaded',state:{...state,effects:{...state.effects,rootedUntil:0,fragileUntil:0,fadingUntil:0}}};
     }catch(error){storage.setItem(DIAGNOSTIC,raw);return{kind:'corrupt',message:error instanceof Error?error.message:'Не вдалося прочитати збереження.'}}
   },
   save(state:GameState){storage.setItem(SAVE,JSON.stringify({...state,version:1,lastUpdated:Date.now()}))},

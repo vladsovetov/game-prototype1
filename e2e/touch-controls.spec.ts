@@ -36,6 +36,8 @@ test('moves the character by dragging the phone joystick', async ({ page }) => {
 
   const after = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
   expect(after.x).toBeGreaterThan(before.x + 5);
+  await expect(page.locator('#game-canvas')).toHaveAttribute('data-facing','right');
+  await expect(page.locator('#game-canvas')).toHaveAttribute('data-avatar-parts',/signature-(fox|moth|bird|wisp)/);
   expect(pageErrors).toEqual([]);
 });
 

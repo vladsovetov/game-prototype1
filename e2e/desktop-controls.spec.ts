@@ -62,3 +62,19 @@ test('uses the physical WASD keys when the Ukrainian keyboard layout is active',
   const after = await savedPlayer(page);
   expect(after.x).toBeGreaterThan(before.x + 20);
 });
+
+test('keeps every body type and equipped item present through all four turns',async({page})=>{
+  const bodies=['fox','moth','bird','wisp'] as const;
+  const directions=[['ArrowUp','up'],['ArrowDown','down'],['ArrowLeft','left'],['ArrowRight','right']] as const;
+  for(const body of bodies){
+    await page.evaluate(({key,body})=>{const state=JSON.parse(localStorage.getItem(key)!);state.character.appearance.body=body;state.effects.fadingUntil=0;state.wardrobe=['rain-hat','wool-scarf','canvas-pack','rubber-boots'];state.equipped={head:'rain-hat',neck:'wool-scarf',back:'canvas-pack',feet:'rubber-boots'};localStorage.setItem(key,JSON.stringify(state))},{key:SAVE_KEY,body});
+    await page.reload();
+    for(const [key,facing] of directions){
+      await page.keyboard.down(key);await expect(page.locator('#game-canvas')).toHaveAttribute('data-facing',facing);await page.waitForTimeout(70);
+      if(process.env.AVATAR_SCREENSHOTS==='1')await page.screenshot({path:`/private/tmp/avatar-${body}-${facing}.png`,clip:{x:565,y:245,width:150,height:165}});
+      await page.keyboard.up(key);
+      const parts=(await page.locator('#game-canvas').getAttribute('data-avatar-parts'))?.split(',')??[];
+      expect(parts).toEqual(expect.arrayContaining(['head','torso','hands','feet',`signature-${body}`,'wearable-rain-hat','wearable-wool-scarf','wearable-canvas-pack','wearable-rubber-boots',facing==='up'?'back-of-head':'face']));
+    }
+  }
+});

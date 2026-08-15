@@ -24,11 +24,32 @@ test('moves with arrow keys on a laptop', async ({ page }) => {
   const before = await savedPlayer(page);
 
   await page.keyboard.down('ArrowRight');
+  await expect(page.locator('#game-canvas')).toHaveAttribute('data-facing', 'right');
+  await expect(page.locator('#game-canvas')).toHaveAttribute('data-walking', 'true');
   await page.waitForTimeout(650);
   await page.keyboard.up('ArrowRight');
+  await expect(page.locator('#game-canvas')).toHaveAttribute('data-facing', 'right');
+  await expect(page.locator('#game-canvas')).toHaveAttribute('data-walking', 'false');
 
   const after = await savedPlayer(page);
   expect(after.x).toBeGreaterThan(before.x + 20);
+});
+
+test('equips visible clothing and persists it', async ({ page }) => {
+  await page.getByTestId('character-button').click();
+  const item = page.locator('[data-testid^="equipment-"]').first();
+  const id = (await item.getAttribute('data-testid'))!.replace('equipment-', '');
+  const wasEquipped = await item.getAttribute('aria-pressed') === 'true';
+
+  await item.click();
+  await expect(page.locator(`[data-testid="equipment-${id}"]`)).toHaveAttribute('aria-pressed', String(!wasEquipped));
+  await page.getByRole('button', { name: 'Закрити' }).click();
+  const equipment = await page.locator('#game-canvas').getAttribute('data-equipment');
+  expect(equipment?.includes(id)).toBe(!wasEquipped);
+
+  await page.reload();
+  const persisted = await page.locator('#game-canvas').getAttribute('data-equipment');
+  expect(persisted?.includes(id)).toBe(!wasEquipped);
 });
 
 test('uses the physical WASD keys when the Ukrainian keyboard layout is active', async ({ page }) => {

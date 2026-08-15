@@ -13,6 +13,7 @@ import type { createLocalStoryWriter, WriterStatus } from './story/local-story-w
 import { GIFTS } from './domain/catalog';
 import { equipWearable } from './domain/equipment';
 import type { WearableId } from './domain/types';
+import { movementPose } from './ui/canvas-renderer';
 
 type Renderer = ReturnType<typeof createCanvasRenderer>;
 type Panels = ReturnType<typeof createPanels>;
@@ -41,6 +42,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   let touchVector = { x: 0, y: 0 };
   let touchKnob: HTMLElement | undefined;
   let writerPanelVisible = false;
+  let pose = movementPose(0, 0, 'down');
 
   const isTutorial = () => !!state.tutorial && state.tutorial.step !== 'done';
   const hasBlockingStory = () => !!state.pendingChapter || hasReachedEnding(state);
@@ -379,7 +381,8 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
         }
       }
     }
-    renderer.render(state, now);
+    pose = movementPose(dx, dy, pose.facing);
+    renderer.render(state, now, pose);
     frameId = requestAnimationFrame(frame);
   }
 

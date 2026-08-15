@@ -31,6 +31,14 @@ test('explains what Reveal changed and gives the first story clue', async ({ pag
   await page.keyboard.press('f');
 
   await expect(page.getByRole('heading', { name: 'A clue returned' })).toBeVisible();
+  const playerBeforeBlockedInput = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
+  await page.keyboard.down('d');
+  await page.waitForTimeout(650);
+  await page.keyboard.up('d');
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'A clue returned' })).toBeVisible();
+  const playerAfterBlockedInput = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
+  expect(playerAfterBlockedInput).toEqual(playerBeforeBlockedInput);
   const beat = page.locator('.memory-beat');
   await expect(beat).toContainText('Lantern House');
   await expect(beat).toContainText(/road they once followed/i);
@@ -52,6 +60,8 @@ test('explains why restoring the sign completes the memory', async ({ page }) =>
   await page.reload();
   await page.keyboard.press('f');
 
+  await expect(page.getByRole('heading', { name: 'Memory recovered' })).toBeVisible();
+  await page.reload();
   await expect(page.getByRole('heading', { name: 'Memory recovered' })).toBeVisible();
   await expect(page.getByText(/walking through a storm/i)).toBeVisible();
   await expect(page.getByText(/kept burning/i)).toBeVisible();
@@ -85,4 +95,27 @@ test('lets the player decide what the memory means and keeps it in the journal',
   await expect(page.getByRole('heading', { name: 'The Road Home' })).toBeVisible();
   await expect(page.getByText('A family they chose')).toBeVisible();
   await expect(page.getByText(/Lantern House/)).toBeVisible();
+});
+
+test('keeps authored and custom memory choices usable on a short phone', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 480 });
+  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.evaluate((key) => {
+    const state = JSON.parse(localStorage.getItem(key)!);
+    state.tutorial.step = 'remember';
+    state.rewarded = ['sign'];
+    state.plantings = { 'plot-1': 'waypost' };
+    localStorage.setItem(key, JSON.stringify(state));
+  }, SAVE_KEY);
+  await page.reload();
+
+  const choiceCard = page.locator('.memory-choice-card');
+  expect(await choiceCard.evaluate((element) => element.clientHeight <= window.innerHeight - 24)).toBe(true);
+  await page.getByRole('button', { name: 'Write my own answer' }).click();
+  const input = page.getByRole('textbox', { name: 'Your answer' });
+  await input.fill('A neighbor who never stopped believing the road would bring them back home again.');
+  await expect(page.getByRole('button', { name: 'Keep this memory' })).toBeVisible();
+  expect(await choiceCard.evaluate((element) => element.clientHeight <= window.innerHeight - 24)).toBe(true);
+  await page.getByRole('button', { name: 'Keep this memory' }).click();
+  await expect(page.getByRole('heading', { name: 'Make them yours' })).toBeVisible();
 });

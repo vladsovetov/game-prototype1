@@ -48,6 +48,8 @@ test('uses the contextual touch action during the first discovery', async ({ pag
   const action = page.getByTestId('touch-primary-action');
   await expect(action).toContainText(/Use /);
   await action.click();
+  await expect(page.getByRole('heading', { name: 'A clue returned' })).toBeVisible();
+  await page.getByRole('button', { name: 'Finish the memory' }).click();
   await expect(page.getByTestId('tutorial-objective')).toContainText('Find Mend');
 });
 

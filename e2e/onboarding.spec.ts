@@ -89,6 +89,24 @@ test('does not advance the tutorial after changing an off-route anomaly', async 
   await expect(page.getByTestId('tutorial-objective')).toContainText(/Use /);
 });
 
+test('continues an older unfinished route without switching it to The Road Home', async ({ page }) => {
+  await page.getByRole('button', { name: 'Wake up' }).click();
+  await page.evaluate(() => {
+    const key = 'unwritten.prototype.save.v1';
+    const state = JSON.parse(localStorage.getItem(key)!);
+    state.character.gift = { id: 'echo', name: 'Echo', description: 'Repeats a hidden sound.' };
+    state.tutorial = { ...state.tutorial, step: 'gift', targetAnomalyId: 'stone', borrowedGift: 'grow' };
+    state.player = { x: 1120, y: 390 };
+    localStorage.setItem(key, JSON.stringify(state));
+  });
+  await page.reload();
+  await page.keyboard.press('f');
+
+  await expect(page.getByRole('heading', { name: 'A clue returned' })).toHaveCount(0);
+  await expect(page.getByTestId('tutorial-objective')).toContainText('Follow the grow lights');
+  await expect(page.getByTestId('tutorial-objective')).toContainText('FIRST MEMORY');
+});
+
 test('preserves a save from a newer build instead of overwriting it', async ({ page }) => {
   const raw = JSON.stringify({ version: 2, memories: ['from the future'] });
   await page.evaluate(({ key, rawValue }) => localStorage.setItem(key, rawValue), { key: 'unwritten.prototype.save.v1', rawValue: raw });

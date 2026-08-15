@@ -35,10 +35,14 @@ describe('progressive tutorial', () => {
     state = advanceTutorial(state, 'moved');
     expect(tutorialObjective(state).action).toContain(state.character.gift.name);
     state = advanceTutorial(state, 'gift-used');
+    expect(state.tutorial?.step).toBe('clue');
+    state = advanceTutorial(state, 'clue-read');
     expect(tutorialObjective(state).action).toContain('Find Mend');
     state = advanceTutorial(state, 'resonance-borrowed');
     expect(tutorialObjective(state).action).toContain('Return');
     state = advanceTutorial(state, 'chain-completed');
+    expect(state.tutorial?.step).toBe('recovered');
+    state = advanceTutorial(state, 'memory-read');
     expect(tutorialObjective(state).action).toContain('Plant');
     state = advanceTutorial(state, 'seed-planted');
     expect(state.tutorial?.step).toBe('remember');
@@ -55,8 +59,25 @@ describe('progressive tutorial', () => {
     state = advanceTutorial(advanceTutorial(advanceTutorial(state, 'wake'), 'moved'), 'gift-used');
     expect(memoryProgress(state)).toEqual({ title: 'THE ROAD HOME', found: 1, total: 2 });
 
+    state = advanceTutorial(state, 'clue-read');
     state = advanceTutorial(advanceTutorial(state, 'resonance-borrowed'), 'chain-completed');
     expect(memoryProgress(state)).toEqual({ title: 'THE ROAD HOME', found: 2, total: 2 });
+  });
+
+  it.each([
+    ['stone', 'echo', 'grow'],
+    ['pool', 'mend', 'echo'],
+    ['root', 'grow', 'reveal'],
+  ] as const)('keeps an unfinished legacy %s route understandable after an update', (targetAnomalyId, gift, borrowedGift) => {
+    const state = prepareTutorial(createInitialState(generateCharacter(7)));
+    const giftName = `${gift[0]!.toUpperCase()}${gift.slice(1)}`;
+    state.character.gift = { id: gift, name: giftName, description: '' };
+    state.tutorial = { ...state.tutorial!, step: 'move', targetAnomalyId, borrowedGift };
+
+    expect(memoryProgress(state).title).toBe('FIRST MEMORY');
+    expect(tutorialObjective(state).action).toBe('Move toward the light');
+    state.tutorial.step = 'gift';
+    expect(tutorialObjective(state).action).toBe(`Use ${giftName}`);
   });
 
   it('points to the relevant world object for each step', () => {
@@ -66,6 +87,7 @@ describe('progressive tutorial', () => {
       ANOMALIES.find((item) => item.id === state.tutorial?.targetAnomalyId)?.position,
     );
     state = advanceTutorial(advanceTutorial(state, 'moved'), 'gift-used');
+    state = advanceTutorial(state, 'clue-read');
     expect(tutorialTarget(state)).toEqual(
       SHRINES.find((item) => item.gift === state.tutorial?.borrowedGift)?.position,
     );

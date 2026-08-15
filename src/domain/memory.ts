@@ -14,8 +14,10 @@ const FOUND_BY_STEP: Record<TutorialStep, number> = {
   wake: 0,
   move: 0,
   gift: 0,
+  clue: 1,
   resonate: 1,
   combine: 1,
+  recovered: 2,
   plant: 2,
   remember: 2,
   personalize: 2,
@@ -24,7 +26,7 @@ const FOUND_BY_STEP: Record<TutorialStep, number> = {
 
 export function memoryProgress(state: GameState) {
   return {
-    title: ROAD_HOME.title,
+    title: state.tutorial?.targetAnomalyId === 'sign' ? ROAD_HOME.title : 'FIRST MEMORY',
     found: FOUND_BY_STEP[state.tutorial?.step ?? 'done'],
     total: 2,
   };

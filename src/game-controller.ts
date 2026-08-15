@@ -75,7 +75,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   function updateHud() {
     if (isTutorial()) {
-      if (state.tutorial?.step === 'wake' || state.tutorial?.step === 'remember' || state.tutorial?.step === 'personalize') {
+      if (state.tutorial?.step === 'wake' || state.tutorial?.step === 'clue' || state.tutorial?.step === 'recovered' || state.tutorial?.step === 'remember' || state.tutorial?.step === 'personalize') {
         hud.replaceChildren();
         resetTouch();
         return;
@@ -170,22 +170,43 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     toast(result.message);
   }
 
+  function finishClue() {
+    state = advanceTutorial(state, 'clue-read');
+    panels.clear();
+    saveAndRefresh();
+  }
+
+  function finishRecoveredMemory() {
+    state = advanceTutorial(state, 'memory-read');
+    panels.clear();
+    saveAndRefresh();
+  }
+
+  function showCurrentStoryStep() {
+    if (state.tutorial?.step === 'clue') {
+      panels.showMemoryBeat('A clue returned', ROAD_HOME.firstClue(state.character.name), 'Finish the memory', finishClue);
+    } else if (state.tutorial?.step === 'recovered') {
+      panels.showMemoryBeat('Memory recovered', ROAD_HOME.recovered(state.character.name), 'Bring it home', finishRecoveredMemory);
+    }
+  }
+
   function useGift() {
     const before = state.tutorial?.step;
     const targetId = state.tutorial?.targetAnomalyId;
     const targetStage = targetId ? state.anomalies[targetId] ?? 0 : undefined;
     const result = activateGift(state, performance.now());
     const nextTargetStage = targetId ? result.state.anomalies[targetId] ?? 0 : undefined;
-    if (result.changed && before === 'gift' && targetStage === 0 && nextTargetStage === 1) result.state = advanceTutorial(result.state, 'gift-used');
-    if (result.changed && before === 'combine' && targetStage === 1 && nextTargetStage === 2 && result.kind === 'seed') result.state = advanceTutorial(result.state, 'chain-completed');
-    const foundFirstClue = result.changed && before === 'gift' && targetStage === 0 && nextTargetStage === 1;
-    const completedMemory = result.changed && before === 'combine' && targetStage === 1 && nextTargetStage === 2 && result.kind === 'seed';
-    apply(result);
-    if (foundFirstClue) {
-      panels.showMemoryBeat('A clue returned', ROAD_HOME.firstClue(state.character.name), 'Finish the memory', panels.clear);
-    } else if (completedMemory) {
-      panels.showMemoryBeat('Memory recovered', ROAD_HOME.recovered(state.character.name), 'Bring it home', panels.clear);
+    const isRoadHomeRoute = targetId === 'sign';
+    if (result.changed && before === 'gift' && targetStage === 0 && nextTargetStage === 1) {
+      result.state = advanceTutorial(result.state, 'gift-used');
+      if (!isRoadHomeRoute) result.state = advanceTutorial(result.state, 'clue-read');
     }
+    if (result.changed && before === 'combine' && targetStage === 1 && nextTargetStage === 2 && result.kind === 'seed') {
+      result.state = advanceTutorial(result.state, 'chain-completed');
+      if (!isRoadHomeRoute) result.state = advanceTutorial(result.state, 'memory-read');
+    }
+    apply(result);
+    showCurrentStoryStep();
   }
 
   function interact() {
@@ -212,10 +233,17 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       const seed = state.seeds[0];
       if (seed) {
         const before = state.tutorial?.step;
+        const isRoadHomeRoute = state.tutorial?.targetAnomalyId === 'sign';
         const result = plantSeed(state, target.value.id, seed);
-        if (result.changed && before === 'plant') result.state = advanceTutorial(result.state, 'seed-planted');
+        if (result.changed && before === 'plant') {
+          result.state = advanceTutorial(result.state, 'seed-planted');
+          if (!isRoadHomeRoute) result.state = advanceTutorial(result.state, 'memory-shaped');
+        }
         apply(result);
-        if (result.changed && before === 'plant') panels.showMemoryChoice(state.character, rememberMemory);
+        if (result.changed && before === 'plant') {
+          if (isRoadHomeRoute) panels.showMemoryChoice(state.character, rememberMemory);
+          else panels.showPersonalize(state.character);
+        }
         return;
       }
     }
@@ -251,6 +279,11 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     if (keys.has('d') || keys.has('arrowright')) dx++;
     dx += touchVector.x;
     dy += touchVector.y;
+    const step = state.tutorial?.step;
+    if (step === 'wake' || step === 'clue' || step === 'recovered' || step === 'remember' || step === 'personalize') {
+      dx = 0;
+      dy = 0;
+    }
     if (dx || dy) {
       const length = Math.hypot(dx, dy);
       const keyboardMoving = keys.has('w') || keys.has('arrowup') || keys.has('s') || keys.has('arrowdown') || keys.has('a') || keys.has('arrowleft') || keys.has('d') || keys.has('arrowright');
@@ -278,7 +311,8 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   function replaceCharacter(character: Character) {
     state = { ...state, character };
     saveAndRefresh();
-    if (state.tutorial?.step === 'remember') panels.showMemoryChoice(character, rememberMemory);
+    if (state.tutorial?.step === 'clue' || state.tutorial?.step === 'recovered') showCurrentStoryStep();
+    else if (state.tutorial?.step === 'remember') panels.showMemoryChoice(character, rememberMemory);
     else if (state.tutorial?.step === 'personalize') panels.showPersonalize(character);
     else panels.clear();
     toast(`${character.name} steps into this memory.`);
@@ -331,6 +365,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   updateHud();
   store.save(state);
   if (state.tutorial?.step === 'wake') panels.showWake(state.character, wake);
+  else if (state.tutorial?.step === 'clue' || state.tutorial?.step === 'recovered') showCurrentStoryStep();
   else if (state.tutorial?.step === 'remember') panels.showMemoryChoice(state.character, rememberMemory);
   else if (state.tutorial?.step === 'personalize') panels.showPersonalize(state.character);
   else panels.clear();

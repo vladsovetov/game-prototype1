@@ -25,6 +25,8 @@ test('completes the guided first memory and opens the free meadow', async ({ pag
   }, SAVE_KEY);
   await page.reload();
   await page.keyboard.press('f');
+  await expect(page.getByRole('heading', { name: 'A clue returned' })).toBeVisible();
+  await page.getByRole('button', { name: 'Finish the memory' }).click();
   await expect(page.getByTestId('tutorial-objective')).toContainText('Find Mend');
 
   await page.evaluate((key) => {

@@ -83,6 +83,7 @@ test('turns the sixth planted memory into a persistent story ending', async ({ p
   await expect(page.getByText('5 / 6 memories planted')).toBeVisible();
   await page.keyboard.press('e');
   await expect(page.getByRole('heading', { name: 'The Keeper of Lantern House' })).toBeVisible();
+  await expect(page.locator('.toast')).toHaveCount(0, { timeout: 250 });
   await expect(page.getByText(/home you made for everyone still on the road/i)).toBeVisible();
   const before = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).player, SAVE_KEY);
   await page.keyboard.down('d');

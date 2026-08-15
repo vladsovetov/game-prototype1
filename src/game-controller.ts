@@ -225,7 +225,10 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   }
 
   function showPendingEnding() {
-    if (hasReachedEnding(state)) panels.showEnding(state.character, finishEnding);
+    if (!hasReachedEnding(state)) return;
+    clearTimeout(toastTimer);
+    toastRoot.replaceChildren();
+    panels.showEnding(state.character, finishEnding);
   }
 
   function useGift() {

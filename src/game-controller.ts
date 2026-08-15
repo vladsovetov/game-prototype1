@@ -1,5 +1,5 @@
 import { activateGift, activateShrine, inspectNearest, movePlayer, nearestTarget, plantSeed, removePlanting } from './domain/simulation';
-import { advanceTutorial, tutorialObjective, tutorialTarget } from './domain/tutorial';
+import { advanceTutorial, prepareTutorial, tutorialObjective, tutorialTarget } from './domain/tutorial';
 import { memoryProgress, ROAD_HOME } from './domain/memory';
 import { hasReachedEnding, memoryChapter, sanctuaryProgress } from './domain/memory-arc';
 import { storyFor } from './domain/story';
@@ -12,6 +12,7 @@ import type { createPanels } from './ui/panels';
 import type { createLocalStoryWriter, WriterStatus } from './story/local-story-writer';
 import { GIFTS } from './domain/catalog';
 import { equipWearable } from './domain/equipment';
+import { gearForDirection } from './domain/equipment';
 import type { WearableId } from './domain/types';
 import { movementPose } from './ui/canvas-renderer';
 
@@ -457,9 +458,11 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   function applyLocalStory(story: NonNullable<GameState['storyArc']>) {
     if (story.seed !== (state.worldSeed ?? 0)) return;
-    state = { ...state, storyArc: story };
+    state = { ...state, storyArc: story, ...gearForDirection(story.direction!) };
+    if (state.tutorial?.step === 'wake') state = prepareTutorial(state);
     writerPreference?.enable();
     saveAndRefresh();
+    if (!writerPanelVisible && state.tutorial?.step === 'wake') panels.showWake(state.character, wake, true, storyFor(state));
   }
 
   function startLocalStory() {
@@ -474,12 +477,13 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   function dismissLocalStory() {
     writerPanelVisible = false;
-    if (state.tutorial?.step === 'personalize') panels.showPersonalize(state.character);
+    if (state.tutorial?.step === 'wake') panels.showWake(state.character, wake, true, storyFor(state));
+    else if (state.tutorial?.step === 'personalize') panels.showPersonalize(state.character);
     else panels.clear();
   }
 
   function autoLocalStory() {
-    writerPanelVisible = false;
+    writerPanelVisible = state.tutorial?.step === 'wake';
     if (writerPreference?.isEnabled() && state.storyArc?.source !== 'local-model') localWriter?.start(state.character, state.worldSeed ?? 0);
   }
 

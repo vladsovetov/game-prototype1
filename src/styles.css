@@ -62,6 +62,10 @@ h1, h2, h3, p { margin-top: 0; }
 .first-memory small { color: #708b83; font: 750 9px/1.2 ui-monospace, monospace; letter-spacing: .14em; }
 .first-memory strong { font: 600 20px/1.2 "Iowan Old Style", Georgia, serif; }
 .first-memory span { color: var(--ink-soft); font-size: 12px; line-height: 1.4; }
+.wake-actions { display: grid; gap: 13px; }
+.wake-actions .text-button { justify-self: start; }
+.wake-local { display: grid; grid-template-columns: 1fr auto; gap: 3px 15px; align-items: center; }
+.wake-local small { grid-column: 1 / -1; color: #684f28; font-size: 9px; font-weight: 650; }
 .memory-beat { width: min(560px, calc(100vw - 40px)); max-height: calc(100dvh - 24px); overflow: auto; }
 .memory-beat h2 { margin: 14px 0 12px; font: 500 clamp(38px, 5vw, 56px)/1 "Iowan Old Style", Georgia, serif; letter-spacing: -.045em; }
 .memory-beat p { font-size: 16px; }

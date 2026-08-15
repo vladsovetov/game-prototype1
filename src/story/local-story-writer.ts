@@ -1,4 +1,5 @@
 import { composeStory, modelDirectedIngredients, type StoryIngredients } from '../domain/story';
+import { createRunDirection } from '../domain/run-direction';
 import type { Character, StoryArc } from '../domain/types';
 import { parseStoryIngredients, type StoryWorkerMessage, type StoryWorkerRequest } from './local-story-protocol';
 
@@ -52,7 +53,8 @@ export function createLocalStoryWriter(options: WriterOptions) {
       updateStatus({ phase: 'error', progress: 0, message: parsed.reason });
       return;
     }
-    const story = composeStory(active.character, active.seed, ingredients, 'local-model');
+    const direction = createRunDirection(active.seed, raw);
+    const story = composeStory(active.character, active.seed, ingredients, 'local-model', direction);
     active = undefined;
     options.onStory(story);
     updateStatus({ phase: 'complete', progress: 1, story });

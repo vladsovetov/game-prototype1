@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { generateCharacter } from '../domain/character';
 import { createLocalStoryWriter, type StoryWorkerLike, type WriterStatus } from './local-story-writer';
+import { createRunDirection } from '../domain/run-direction';
 
 class FakeWorker implements StoryWorkerLike {
   onmessage: ((event: MessageEvent) => void) | null = null;
@@ -47,14 +48,16 @@ describe('local story writer', () => {
   it('turns a real non-JSON model response into a coherent Ukrainian story', () => {
     const worker = new FakeWorker();
     const statuses: WriterStatus[] = [];
-    const stories: Array<{ source: string; premise: string }> = [];
+    const stories: Array<{ source: string; premise: string; direction?: ReturnType<typeof createRunDirection> }> = [];
     const writer = createLocalStoryWriter({ workerFactory: () => worker, onStatus: (status) => statuses.push(status), onStory: (story) => stories.push(story) });
     const jobId = writer.start(generateCharacter(4), 99);
 
+    const modelSignal =
+      'З ти пишуще 15 й лагідні і складникі історіёрівилістіри, і 4 клабіки, 15 острікі васірі віт';
     worker.emit({
       type: 'complete',
       jobId,
-      raw: 'З ти пишуще 15 й лагідні і складникі історіёрівилістіри, і 4 клабіки, 15 острікі васірі віт',
+      raw: modelSignal,
     });
 
     expect(statuses.at(-1)).toMatchObject({ phase: 'complete' });
@@ -62,6 +65,7 @@ describe('local story writer', () => {
     expect(stories[0]!.source).toBe('local-model');
     expect(stories[0]!.premise).toMatch(/[А-ЯІЇЄҐа-яіїєґ]/);
     expect(stories[0]!.premise).not.toMatch(/[A-Za-z]/);
+    expect(stories[0]!.direction).toEqual(createRunDirection(99, modelSignal));
   });
 
   it('ignores a stale result after the run changes', () => {

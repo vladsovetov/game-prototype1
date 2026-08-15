@@ -23,17 +23,8 @@ test.beforeEach(async ({ page }) => {
   await page.reload();
 });
 
-test('offers and applies the on-device writer only after the first memory', async ({ page }) => {
-  await expect(page.getByRole('button', { name: 'Дозволити цьому пристрою написати історію' })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Прокинутися' }).click();
-  await page.evaluate((key) => {
-    const state = JSON.parse(localStorage.getItem(key)!);
-    state.tutorial.step = 'personalize';
-    localStorage.setItem(key, JSON.stringify(state));
-  }, SAVE);
-  await page.reload();
-
-  const option = page.getByRole('button', { name: 'Дозволити цьому пристрою написати історію' });
+test('generates the story, world direction, palette, and equipment before play', async ({ page }) => {
+  const option = page.getByRole('button', { name: 'Створити новий світ локально з ШІ' });
   await expect(option).toContainText(/120–180 МБ/i);
   await page.setViewportSize({ width: 390, height: 480 });
   await option.click();
@@ -47,6 +38,14 @@ test('offers and applies the on-device writer only after the first memory', asyn
   await expect(page.getByRole('heading', { name: 'Нова оповідь пустила коріння' })).toBeVisible();
   await page.getByRole('button', { name: 'Зберегти цю оповідь' }).click();
 
+  await expect(page.getByText('Світ створено локально на цьому пристрої')).toBeVisible();
+  const generated = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), SAVE);
+  expect(generated.storyArc.source).toBe('local-model');
+  expect(generated.storyArc.worldName).toBe('Скляний сад');
+  expect(generated.storyArc.direction.colors).toHaveLength(5);
+  expect(generated.wardrobe).toEqual(generated.storyArc.direction.starterWearables);
+  await page.getByRole('button', { name: 'Увійти у створений світ' }).click();
+
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!);
     state.tutorial.step = 'done';
@@ -55,6 +54,6 @@ test('offers and applies the on-device writer only after the first memory', asyn
   await page.reload();
   await page.getByTestId('journal-button').click();
   await expect(page.getByTestId('tale-folio')).toContainText('Написано на цьому пристрої');
-  await expect(page.getByTestId('tale-folio')).toContainText('Скляний сад');
+  await expect(page.getByTestId('tale-folio')).toContainText(/Сад|Берег|Болот|Нагір/);
   expect(await page.evaluate((key) => localStorage.getItem(key), 'unwritten.prototype.local-writer.v1')).toBe('enabled');
 });

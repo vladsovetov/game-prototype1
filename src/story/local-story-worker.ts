@@ -58,11 +58,11 @@ self.onmessage = async (event: MessageEvent<StoryWorkerRequest>) => {
     if (latestJobId !== jobId) return;
     send({ type: 'progress', jobId, stage: 'read', progress: 1 });
     const prompt = [
-      { role: 'system', content: 'You are a compact fantasy story director. Reply with only six evocative English words separated by commas. No sentences, JSON, markdown, or explanations.' },
-      { role: 'user', content: `Direct a gentle lost-memory tale for ${character.name}. Companion: ${character.description}. Gift: ${character.gift}. Burden: ${character.burden}. Quirk: ${character.quirk}. Random seed: ${seed}. Choose six motifs for place, role, disaster, vow, image, and truth.` },
+      { role: 'system', content: 'You direct a grounded field-expedition game. Reply with only twelve vivid English keywords separated by commas. No sentences, JSON, markdown, or explanations.' },
+      { role: 'user', content: `Create one distinct run for ${character.name}. Companion: ${character.description}. Tool: ${character.gift}. Work style: ${character.burden}. Quirk: ${character.quirk}. Random seed: ${seed}. Choose: region, weather, practical mission, mystery, two field objects, two wearable items, and four environment colors.` },
     ];
     send({ type: 'progress', jobId, stage: 'weave', progress: .1 });
-    const output = await localGenerator(prompt, { max_new_tokens: 48, do_sample: true, temperature: .8, top_p: .9 });
+    const output = await localGenerator(prompt, { max_new_tokens: 64, do_sample: true, temperature: .95, top_p: .92 });
     if (latestJobId !== jobId) return;
     send({ type: 'progress', jobId, stage: 'weave', progress: 1 });
     send({ type: 'complete', jobId, raw: generatedText(output) });

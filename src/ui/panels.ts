@@ -39,7 +39,9 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card wake-card';
-    section.innerHTML = `<span class="eyebrow">Ваш супутник</span><h1 data-testid="tutorial-character-name"></h1><p class="wake-purpose"></p><div class="first-memory"><small>ПЕРШИЙ СПОГАД</small><strong></strong><span data-summary></span></div><button class="button primary">Прокинутися <span aria-hidden="true">→</span></button>`;
+    const localReady = story?.source === 'local-model';
+    section.innerHTML = `<span class="eyebrow"></span><h1 data-testid="tutorial-character-name"></h1><p class="wake-purpose"></p><div class="first-memory"><small>ПЕРША МІСІЯ</small><strong></strong><span data-summary></span></div><div class="wake-actions"></div>`;
+    (section.querySelector('.eyebrow') as HTMLElement).textContent = localReady ? 'Світ створено локально на цьому пристрої' : 'Ваш випадковий супутник';
     (section.querySelector('h1') as HTMLElement).textContent = character.name;
     (section.querySelector('.wake-purpose') as HTMLElement).textContent = isRoadHome
       ? `Допоможіть ${character.name} повернути втрачений спогад і дізнатися, ким цей персонаж був до появи галявини.`
@@ -48,7 +50,20 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     (section.querySelector('[data-summary]') as HTMLElement).textContent = isRoadHome
       ? (story?.premise ?? 'Поверніть дві підказки, щоб дізнатися, хто чекав попереду.')
       : `Ідіть за одним вогником і випробуйте інструмент «${character.gift.name}».`;
-    section.querySelector('button')?.addEventListener('click', onWake);
+    const actionsRoot = section.querySelector<HTMLElement>('.wake-actions')!;
+    if (!localReady) {
+      const local = document.createElement('button');
+      local.className = 'button primary wake-local';
+      local.setAttribute('aria-label', 'Створити новий світ локально з ШІ');
+      local.innerHTML = `Створити мій світ локально <span aria-hidden="true">✦</span><small>≈120–180 МБ уперше · усе лишається у браузері</small>`;
+      local.addEventListener('click', actions.onLocalStory);
+      actionsRoot.append(local);
+    }
+    const wake = document.createElement('button');
+    wake.className = localReady ? 'button primary' : 'text-button';
+    wake.innerHTML = localReady ? 'Увійти у створений світ <span aria-hidden="true">→</span>' : 'Прокинутися без очікування <span aria-hidden="true">→</span>';
+    wake.addEventListener('click', onWake);
+    actionsRoot.append(wake);
     root.append(section);
   }
 
@@ -145,12 +160,11 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card personalize-card';
-    section.innerHTML = `<span class="eyebrow">Перший спогад створено</span><h2>Зробіть персонажа своїм</h2><p class="soft-copy">Тепер, коли ви зустріли <b data-name></b>, можна додати щось від себе або зберегти таємницю.</p><div class="personalize-actions"><button class="personalize-choice" data-personality><span>01</span><b>Додати характер</b><small>Дайте світові більше рис для відгуку</small></button><button class="personalize-choice" data-look><span>02</span><b>Змінити вигляд</b><small>Оберіть тіло, матеріал і кольори</small></button><button class="personalize-choice" data-ai><span>03</span><b>Створити за допомогою ШІ</b><small>Додайте глибше уявленого персонажа</small></button><button class="personalize-choice local-writer-choice" data-local aria-label="Дозволити цьому пристрою написати історію"><span>04 · ЛОКАЛЬНО</span><b>Дозволити пристрою написати історію</b><small>120–180 МБ один раз · текст залишається тут</small></button></div><button class="text-button" data-done>Досліджувати далі <span aria-hidden="true">→</span></button>`;
+    section.innerHTML = `<span class="eyebrow">Перший спогад створено</span><h2>Зробіть персонажа своїм</h2><p class="soft-copy">Тепер, коли ви зустріли <b data-name></b>, можна додати щось від себе або зберегти таємницю.</p><div class="personalize-actions"><button class="personalize-choice" data-personality><span>01</span><b>Додати характер</b><small>Дайте світові більше рис для відгуку</small></button><button class="personalize-choice" data-look><span>02</span><b>Змінити вигляд</b><small>Оберіть тіло, матеріал і кольори</small></button><button class="personalize-choice" data-ai><span>03</span><b>Створити за допомогою ШІ</b><small>Додайте глибше уявленого персонажа</small></button></div><button class="text-button" data-done>Досліджувати далі <span aria-hidden="true">→</span></button>`;
     (section.querySelector('[data-name]') as HTMLElement).textContent = character.name;
     section.querySelector('[data-personality]')?.addEventListener('click', () => showPersonality(character));
     section.querySelector('[data-look]')?.addEventListener('click', () => showAppearance(character));
     section.querySelector('[data-ai]')?.addEventListener('click', () => showAI(() => showPersonalize(currentCharacter ?? character)));
-    section.querySelector('[data-local]')?.addEventListener('click', actions.onLocalStory);
     section.querySelector('[data-done]')?.addEventListener('click', actions.onPersonalizationDone);
     root.append(section);
   }

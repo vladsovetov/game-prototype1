@@ -1,4 +1,5 @@
-import type { GameState, GiftId, Point, TutorialStep } from './types';
+import type { GameState, Point, TutorialStep } from './types';
+import { GIFTS } from './catalog';
 import { ANOMALIES, distance, PLOTS, SHRINES } from './world';
 
 type TutorialEvent =
@@ -8,14 +9,8 @@ type TutorialEvent =
   | 'resonance-borrowed'
   | 'chain-completed'
   | 'seed-planted'
+  | 'memory-shaped'
   | 'personalization-dismissed';
-
-const ROUTES: Record<GiftId, { anomalyId: string; borrowedGift: GiftId }> = {
-  echo: { anomalyId: 'stone', borrowedGift: 'grow' },
-  reveal: { anomalyId: 'sign', borrowedGift: 'mend' },
-  mend: { anomalyId: 'pool', borrowedGift: 'echo' },
-  grow: { anomalyId: 'root', borrowedGift: 'reveal' },
-};
 
 const NEXT: Record<TutorialStep, Partial<Record<TutorialEvent, TutorialStep>>> = {
   wake: { wake: 'move' },
@@ -23,17 +18,19 @@ const NEXT: Record<TutorialStep, Partial<Record<TutorialEvent, TutorialStep>>> =
   gift: { 'gift-used': 'resonate' },
   resonate: { 'resonance-borrowed': 'combine' },
   combine: { 'chain-completed': 'plant' },
-  plant: { 'seed-planted': 'personalize' },
+  plant: { 'seed-planted': 'remember' },
+  remember: { 'memory-shaped': 'personalize' },
   personalize: { 'personalization-dismissed': 'done' },
   done: {},
 };
 
 export function prepareTutorial(state: GameState): GameState {
-  const route = ROUTES[state.character.gift.id];
+  const route = { anomalyId: 'sign', borrowedGift: 'mend' as const };
   const anomaly = ANOMALIES.find((item) => item.id === route.anomalyId)!;
   const player = { x: anomaly.position.x - 250, y: anomaly.position.y + 70 };
   return {
     ...state,
+    character: { ...state.character, gift: GIFTS.reveal },
     player,
     tutorial: {
       step: 'wake',
@@ -58,7 +55,7 @@ export function advanceTutorial(state: GameState, event: TutorialEvent): GameSta
 
 export function tutorialTarget(state: GameState): Point | undefined {
   const tutorial = state.tutorial;
-  if (!tutorial || tutorial.step === 'wake' || tutorial.step === 'personalize' || tutorial.step === 'done') return;
+  if (!tutorial || tutorial.step === 'wake' || tutorial.step === 'remember' || tutorial.step === 'personalize' || tutorial.step === 'done') return;
   if (tutorial.step === 'resonate') return SHRINES.find((item) => item.gift === tutorial.borrowedGift)?.position;
   if (tutorial.step === 'plant') return PLOTS[0]?.position;
   return ANOMALIES.find((item) => item.id === tutorial.targetAnomalyId)?.position;
@@ -79,6 +76,7 @@ export function tutorialObjective(state: GameState): { title: string; action: st
       : { title: 'It changed—but the memory is unfinished.', action: `Follow the ${borrowed} lights`, key: 'WASD' },
     combine: { title: `You are carrying ${borrowed}.`, action: 'Return and use it', key: 'F' },
     plant: { title: 'A Memory Seed followed you home.', action: 'Plant the memory', key: 'E' },
+    remember: { title: 'The memory is whole.', action: 'Decide what it means' },
     personalize: { title: `${state.character.name} has a first memory.`, action: 'Make them yours' },
     done: { title: 'The meadow is open.', action: 'Follow whatever calls to you' },
   };

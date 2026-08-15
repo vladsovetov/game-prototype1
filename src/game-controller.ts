@@ -214,7 +214,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
         const result = plantSeed(state, target.value.id, seed);
         if (result.changed && before === 'plant') result.state = advanceTutorial(result.state, 'seed-planted');
         apply(result);
-        if (result.changed && before === 'plant') panels.showPersonalize(state.character);
+        if (result.changed && before === 'plant') panels.showMemoryChoice(state.character, rememberMemory);
         return;
       }
     }
@@ -277,7 +277,8 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   function replaceCharacter(character: Character) {
     state = { ...state, character };
     saveAndRefresh();
-    if (state.tutorial?.step === 'personalize') panels.showPersonalize(character);
+    if (state.tutorial?.step === 'remember') panels.showMemoryChoice(character, rememberMemory);
+    else if (state.tutorial?.step === 'personalize') panels.showPersonalize(character);
     else panels.clear();
     toast(`${character.name} steps into this memory.`);
   }
@@ -303,6 +304,19 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     toast('The whole meadow is open. There is no timer.');
   }
 
+  function rememberMemory(answer: string) {
+    const detail = answer.trim().slice(0, 100);
+    if (!detail || state.tutorial?.step !== 'remember') return;
+    state = {
+      ...state,
+      memoryDetails: { ...state.memoryDetails, [ROAD_HOME.id]: detail },
+    };
+    state = advanceTutorial(state, 'memory-shaped');
+    saveAndRefresh();
+    panels.showPersonalize(state.character);
+    toast('That truth is now part of The Road Home.');
+  }
+
   addEventListener('keydown', keydown);
   addEventListener('keyup', keyup);
   addEventListener('pointermove', moveTouch, { passive: false });
@@ -316,6 +330,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   updateHud();
   store.save(state);
   if (state.tutorial?.step === 'wake') panels.showWake(state.character, wake);
+  else if (state.tutorial?.step === 'remember') panels.showMemoryChoice(state.character, rememberMemory);
   else if (state.tutorial?.step === 'personalize') panels.showPersonalize(state.character);
   else panels.clear();
   frameId = requestAnimationFrame(frame);

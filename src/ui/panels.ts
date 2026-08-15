@@ -1,5 +1,6 @@
 import { AI_CONTEXT_PACKET, validateCharacterCard } from '../domain/character';
 import { BODIES, MARKS, MATERIALS, PALETTES, QUIRKS } from '../domain/catalog';
+import { ROAD_HOME } from '../domain/memory';
 import { SEED_NAMES } from '../domain/world';
 import type { Appearance, Character, GameState, QuirkId } from '../domain/types';
 
@@ -48,6 +49,44 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     (section.querySelector('button') as HTMLElement).textContent = action;
     section.querySelector('button')?.addEventListener('click', onContinue);
     root.append(section);
+  }
+
+  function showMemoryChoice(character: Character, onChoose: (answer: string) => void) {
+    clear();
+    const section = document.createElement('section');
+    section.className = 'story-card memory-choice-card';
+    section.innerHTML = `<span class="eyebrow">One truth is still unwritten</span><h2></h2><p class="soft-copy">The memory cannot answer this part. Your answer becomes part of who <b data-name></b> is.</p><div class="memory-choices"></div><button class="text-button" data-custom>Write my own answer →</button>`;
+    (section.querySelector('h2') as HTMLElement).textContent = ROAD_HOME.question;
+    (section.querySelector('[data-name]') as HTMLElement).textContent = character.name;
+    const choices = ['A family they chose', 'A patient friend', 'They kept it burning for themself'];
+    const list = section.querySelector<HTMLElement>('.memory-choices')!;
+    for (const choice of choices) {
+      const button = document.createElement('button');
+      button.className = 'memory-choice';
+      button.textContent = choice;
+      button.addEventListener('click', () => onChoose(choice));
+      list.append(button);
+    }
+    section.querySelector('[data-custom]')?.addEventListener('click', () => showCustomMemory(character, onChoose));
+    root.append(section);
+  }
+
+  function showCustomMemory(character: Character, onChoose: (answer: string) => void) {
+    clear();
+    const section = document.createElement('section');
+    section.className = 'story-card memory-choice-card';
+    section.innerHTML = `<span class="eyebrow">The Road Home</span><h2>Who kept the light burning?</h2><p class="soft-copy">Write one short answer. It will be remembered in <b data-name></b>'s story.</p><label class="field-label">Your answer<input name="memory" maxlength="100" autocomplete="off" placeholder="Someone who..."></label><div class="choice-row"><button class="button primary" data-save disabled>Keep this memory</button><button class="button ghost-light" data-back>Back</button></div>`;
+    (section.querySelector('[data-name]') as HTMLElement).textContent = character.name;
+    const input = section.querySelector<HTMLInputElement>('[name=memory]')!;
+    const save = section.querySelector<HTMLButtonElement>('[data-save]')!;
+    input.addEventListener('input', () => { save.disabled = !input.value.trim(); });
+    save.addEventListener('click', () => {
+      const answer = input.value.trim().slice(0, 100);
+      if (answer) onChoose(answer);
+    });
+    section.querySelector('[data-back]')?.addEventListener('click', () => showMemoryChoice(character, onChoose));
+    root.append(section);
+    input.focus();
   }
 
   function showNewerSave(version: number) {
@@ -208,6 +247,25 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     summary.className = 'soft-copy';
     summary.textContent = `${state.discoveries.length} reactions remembered · ${state.seeds.length} seeds waiting · ${Object.keys(state.plantings).length} planted`;
     c.append(summary);
+    if (state.rewarded.includes('sign') || state.memoryDetails?.[ROAD_HOME.id]) {
+      const memory = document.createElement('article');
+      memory.className = 'journal-memory';
+      const eyebrow = document.createElement('span');
+      eyebrow.className = 'eyebrow';
+      eyebrow.textContent = 'Recovered memory';
+      const title = document.createElement('h3');
+      title.textContent = 'The Road Home';
+      const story = document.createElement('p');
+      story.textContent = `A sign for Lantern House led ${state.character.name} through a storm toward a light somebody kept burning.`;
+      memory.append(eyebrow, title, story);
+      const meaning = state.memoryDetails?.[ROAD_HOME.id];
+      if (meaning) {
+        const answer = document.createElement('blockquote');
+        answer.textContent = meaning;
+        memory.append(answer);
+      }
+      c.append(memory);
+    }
     const list = document.createElement('div');
     list.className = 'journal-list';
     if (!state.discoveries.length) {
@@ -245,5 +303,5 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     });
   }
 
-  return { clear, showWake, showMemoryBeat, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp };
+  return { clear, showWake, showMemoryBeat, showMemoryChoice, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp };
 }

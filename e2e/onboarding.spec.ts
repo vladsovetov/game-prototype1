@@ -4,6 +4,14 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
+  await page.evaluate(() => {
+    const key = 'unwritten.prototype.save.v1';
+    const state = JSON.parse(localStorage.getItem(key)!);
+    delete state.worldSeed;
+    delete state.storyArc;
+    localStorage.setItem(key, JSON.stringify(state));
+  });
+  await page.reload();
 });
 
 test('starts with a random creature and one clear action', async ({ page }) => {

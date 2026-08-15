@@ -34,6 +34,10 @@ function chapter(id: string, title: string, keepsake: string, story: string): St
   return { id, title, keepsake, story };
 }
 
+function titleCase(value: string) {
+  return value.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 export function composeStory(character: Character, seed: number, ingredients: StoryIngredients, source: StoryArc['source']): StoryArc {
   const name = character.name;
   const place = ingredients.place;
@@ -44,7 +48,7 @@ export function composeStory(character: Character, seed: number, ingredients: St
     source,
     worldName: place.replace(/^the /i, ''),
     runMark: (seed >>> 0).toString(16).toUpperCase().padStart(8, '0').slice(-6),
-    premise: `${name} wakes in a meadow that remembers ${motif}. Once, they were the ${role} of ${place}; then ${ingredients.disaster}, and their past broke into living keepsakes.`,
+    premise: `${name} wakes in a meadow that remembers ${motif}. Once, they tended ${place} as its ${role}; then ${ingredients.disaster}, and their past broke into living keepsakes.`,
     question: `Who helped ${name} keep their vow?`,
     firstClue: `The erased letters return: “${place}.” ${name} feels the shape of an old promise: ${ingredients.vow}`,
     recovered: `${name} remembers walking through ${ingredients.disaster}. A trail of ${motif} led toward ${place}, where someone was still waiting.`,
@@ -59,7 +63,7 @@ export function composeStory(character: Character, seed: number, ingredients: St
       garden: chapter('garden', 'The Garden That Answered', 'Lantern Garden', `When the lamps failed, ${name} planted warm flowers beside the road. Each bloom held a trace of ${motif}, enough to show one traveler the next step.`),
     },
     ending: {
-      title: `The ${role.replace(/^(.)/, (letter) => letter.toUpperCase())}`,
+      title: `The ${titleCase(role)}`,
       story: `${name} was not trying to return to ${place}. They made it for everyone still on the road. When ${ingredients.disaster}, they spent their memories guiding others through the dark. ${ingredients.truth[0]!.toUpperCase()}${ingredients.truth.slice(1)}. This meadow grew from what they gave away, and every recovered keepsake carries the old vow: ${ingredients.vow}`,
     },
   };

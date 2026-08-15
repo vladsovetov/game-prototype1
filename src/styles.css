@@ -226,7 +226,10 @@ textarea { min-height: 180px; resize: vertical; font: 13px/1.55 ui-monospace, SF
 
 @media (max-width: 720px), (pointer: coarse) {
   #hud { padding: 14px; }
-  .wake-card { align-self: end; justify-self: center; margin: 0 0 3vh; padding: 30px; }
+  .wake-card { align-self: end; justify-self: center; max-height: calc(100dvh - 20px); overflow: auto; margin: 0 0 10px; padding: 24px; }
+  .wake-card h1 { margin: 10px 0 8px; font-size: 44px; }
+  .wake-card p { margin-bottom: 17px; font-size: 15px; line-height: 1.45; }
+  .wake-card .first-memory { margin-bottom: 17px; padding: 11px 13px; }
   .memory-beat, .memory-choice-card, .memory-chapter-card, .story-loom-card { padding: 24px; }
   .memory-chapter-card h2 { max-width: calc(100% - 64px); font-size: clamp(36px, 11vw, 48px); }
   .chapter-number { right: 20px; top: 54px; width: 58px; height: 58px; }

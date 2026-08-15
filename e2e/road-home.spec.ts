@@ -6,6 +6,13 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
+  await page.evaluate((key) => {
+    const state = JSON.parse(localStorage.getItem(key)!);
+    delete state.worldSeed;
+    delete state.storyArc;
+    localStorage.setItem(key, JSON.stringify(state));
+  }, SAVE_KEY);
+  await page.reload();
 });
 
 test('opens with a purpose and introduces The Road Home without game jargon', async ({ page }) => {
@@ -94,7 +101,7 @@ test('lets the player decide what the memory means and keeps it in the journal',
   await expect(page.getByRole('heading', { name: 'Field journal' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'The Road Home' })).toBeVisible();
   await expect(page.getByText('A family they chose')).toBeVisible();
-  await expect(page.getByText(/Lantern House/)).toBeVisible();
+  await expect(page.locator('.journal-memory').getByText(/Lantern House/)).toBeVisible();
 });
 
 test('keeps authored and custom memory choices usable on a short phone', async ({ page }) => {

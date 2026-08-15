@@ -6,6 +6,13 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
+  await page.evaluate((key) => {
+    const state = JSON.parse(localStorage.getItem(key)!);
+    delete state.worldSeed;
+    delete state.storyArc;
+    localStorage.setItem(key, JSON.stringify(state));
+  }, SAVE_KEY);
+  await page.reload();
 });
 
 test('reveals and preserves a story chapter when a later memory is recovered', async ({ page }) => {

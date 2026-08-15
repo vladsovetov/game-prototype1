@@ -17,8 +17,41 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   let toastTimer = 0;
   let frameId = 0;
   let wasNearResonance = false;
+  let touchPointer: number | undefined;
+  let touchOrigin = { x: 0, y: 0 };
+  let touchVector = { x: 0, y: 0 };
+  let touchKnob: HTMLElement | undefined;
 
   const isTutorial = () => !!state.tutorial && state.tutorial.step !== 'done';
+  const isTouchLayout = () => matchMedia('(max-width: 720px), (pointer: coarse)').matches;
+
+  function resetTouch() {
+    touchPointer = undefined;
+    touchVector = { x: 0, y: 0 };
+    if (touchKnob) touchKnob.style.transform = 'translate3d(0, 0, 0)';
+  }
+
+  function moveTouch(event: PointerEvent) {
+    if (event.pointerId !== touchPointer) return;
+    event.preventDefault();
+    const radius = 42;
+    const dx = event.clientX - touchOrigin.x;
+    const dy = event.clientY - touchOrigin.y;
+    const length = Math.hypot(dx, dy);
+    const scale = length > radius ? radius / length : 1;
+    const x = dx * scale;
+    const y = dy * scale;
+    touchVector = { x: x / radius, y: y / radius };
+    if (touchKnob) touchKnob.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  }
+
+  function endTouch(event: PointerEvent) {
+    if (event.pointerId === touchPointer) resetTouch();
+  }
+
+  function haptic() {
+    if ('vibrate' in navigator) navigator.vibrate(12);
+  }
 
   function toast(message: string) {
     toastRoot.replaceChildren();
@@ -32,8 +65,9 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   function updateHud() {
     if (isTutorial()) {
-      if (state.tutorial?.step === 'wake') {
+      if (state.tutorial?.step === 'wake' || state.tutorial?.step === 'personalize') {
         hud.replaceChildren();
+        resetTouch();
         return;
       }
       const objective = tutorialObjective(state);
@@ -41,8 +75,9 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       (hud.querySelector('.tutorial-hud strong') as HTMLElement).textContent = objective.title;
       (hud.querySelector('.objective-copy') as HTMLElement).textContent = objective.action;
       const key = hud.querySelector<HTMLElement>('.objective-key')!;
-      if (objective.key) key.textContent = objective.key;
+      if (objective.key) key.textContent = isTouchLayout() ? (objective.key === 'WASD' ? 'DRAG' : 'TAP') : objective.key;
       else key.remove();
+      if (isTouchLayout()) renderTouchControls(objective.key === 'E');
       return;
     }
 
@@ -53,6 +88,59 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     hud.querySelector('[data-testid=character-button]')?.addEventListener('click', () => panels.showCharacter(state.character));
     hud.querySelector('[data-testid=journal-button]')?.addEventListener('click', () => panels.showJournal(state));
     hud.querySelector('[data-testid=help-button]')?.addEventListener('click', panels.showHelp);
+    if (isTouchLayout()) renderTouchControls(false);
+  }
+
+  function renderTouchControls(atResonance: boolean) {
+    resetTouch();
+    const controls = document.createElement('div');
+    controls.className = 'touch-controls';
+    controls.dataset.testid = 'touch-controls';
+    controls.innerHTML = `<div class="touch-joystick" data-testid="touch-joystick" role="application" aria-label="Move character"><span class="touch-ring"><i class="touch-knob"></i></span><small>Move</small></div><div class="touch-actions"></div>`;
+    const joystick = controls.querySelector<HTMLElement>('.touch-joystick')!;
+    touchKnob = controls.querySelector<HTMLElement>('.touch-knob')!;
+    joystick.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      const bounds = joystick.getBoundingClientRect();
+      touchPointer = event.pointerId;
+      touchOrigin = { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 - 9 };
+      if (event.isTrusted) joystick.setPointerCapture?.(event.pointerId);
+      moveTouch(event);
+    });
+
+    const actions = controls.querySelector<HTMLElement>('.touch-actions')!;
+    const addAction = (label: string, ariaLabel: string, icon: string, onPress: () => void, primary = false) => {
+      const button = document.createElement('button');
+      button.className = `touch-action${primary ? ' primary' : ''}`;
+      button.setAttribute('aria-label', ariaLabel);
+      button.innerHTML = `<span aria-hidden="true">${icon}</span><small></small>`;
+      (button.querySelector('small') as HTMLElement).textContent = label;
+      button.addEventListener('click', () => { haptic(); onPress(); });
+      actions.append(button);
+      return button;
+    };
+
+    const step = state.tutorial?.step;
+    if (!isTutorial()) {
+      const gift = addAction('Gift', 'Use Gift', '✦', useGift, true);
+      gift.dataset.testid = 'touch-primary-action';
+      addAction('Explore', 'Explore nearby', '◌', interact);
+    } else if (step === 'gift') {
+      const button = addAction(`Use ${state.character.gift.name}`, `Use ${state.character.gift.name}`, '✦', useGift, true);
+      button.dataset.testid = 'touch-primary-action';
+    } else if (step === 'combine') {
+      const borrowed = state.tutorial?.borrowedGift ?? state.character.gift.id;
+      const label = `Use ${borrowed[0]!.toUpperCase()}${borrowed.slice(1)}`;
+      const button = addAction(label, label, '✦', useGift, true);
+      button.dataset.testid = 'touch-primary-action';
+    } else if (step === 'plant') {
+      const button = addAction('Plant memory', 'Plant memory', '⌁', interact, true);
+      button.dataset.testid = 'touch-primary-action';
+    } else if (step === 'resonate' && atResonance) {
+      const button = addAction('Borrow Resonance', 'Borrow Resonance', '◇', interact, true);
+      button.dataset.testid = 'touch-primary-action';
+    }
+    hud.append(controls);
   }
 
   function saveAndRefresh() {
@@ -138,9 +226,13 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     if (keys.has('s') || keys.has('arrowdown')) dy++;
     if (keys.has('a') || keys.has('arrowleft')) dx--;
     if (keys.has('d') || keys.has('arrowright')) dx++;
+    dx += touchVector.x;
+    dy += touchVector.y;
     if (dx || dy) {
       const length = Math.hypot(dx, dy);
-      state = movePlayer(state, { x: dx / length * dt * .24, y: dy / length * dt * .24 }, now);
+      const keyboardMoving = keys.has('w') || keys.has('arrowup') || keys.has('s') || keys.has('arrowdown') || keys.has('a') || keys.has('arrowleft') || keys.has('d') || keys.has('arrowright');
+      const strength = keyboardMoving ? 1 : Math.min(1, length);
+      state = movePlayer(state, { x: dx / length * strength * dt * .24, y: dy / length * strength * dt * .24 }, now);
       if (state.tutorial?.step === 'move' && distance(state.player, state.tutorial.start) > 35) {
         state = advanceTutorial(state, 'moved');
         saveAndRefresh();
@@ -191,7 +283,11 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   addEventListener('keydown', keydown);
   addEventListener('keyup', keyup);
-  addEventListener('resize', renderer.resize);
+  addEventListener('pointermove', moveTouch, { passive: false });
+  addEventListener('pointerup', endTouch);
+  addEventListener('pointercancel', endTouch);
+  const resize = () => { renderer.resize(); updateHud(); };
+  addEventListener('resize', resize);
   updateHud();
   store.save(state);
   if (state.tutorial?.step === 'wake') panels.showWake(state.character, wake);
@@ -208,7 +304,10 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     destroy: () => {
       removeEventListener('keydown', keydown);
       removeEventListener('keyup', keyup);
-      removeEventListener('resize', renderer.resize);
+      removeEventListener('pointermove', moveTouch);
+      removeEventListener('pointerup', endTouch);
+      removeEventListener('pointercancel', endTouch);
+      removeEventListener('resize', resize);
       cancelAnimationFrame(frameId);
     },
   };

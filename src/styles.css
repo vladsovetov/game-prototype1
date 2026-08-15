@@ -20,7 +20,7 @@ h1, h2, h3, p { margin-top: 0; }
 
 #game-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: #9bbcaf; }
 #game-canvas::after { content: ''; position: absolute; inset: 0; pointer-events: none; }
-#hud { position: absolute; inset: 0; padding: 22px; pointer-events: none; }
+#hud { position: absolute; inset: 0; padding: 22px; pointer-events: none; touch-action: none; }
 #modal-root { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; pointer-events: none; z-index: 5; }
 #modal-root > * { pointer-events: auto; }
 #toast-root { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 9; }
@@ -150,6 +150,8 @@ textarea { min-height: 180px; resize: vertical; font: 13px/1.55 ui-monospace, SF
 .prompt i { width: 1px; height: 17px; margin: 0 4px; background: #315e5430; }
 .hud-meta { margin-left: 7px; color: var(--ink-soft); }
 
+.touch-controls { display: none; }
+
 .toast { max-width: min(620px, calc(100vw - 32px)); padding: 11px 17px; border: 1px solid #ffffff3b; border-radius: 999px; color: #fffcec; background: #173f3aeb; box-shadow: 0 12px 40px var(--shadow); text-align: center; animation: toast-in .25s ease-out; }
 .journal-list { display: grid; gap: 9px; }
 .journal-item { padding: 12px 14px; border-left: 3px solid #6fa18c; background: #eef5e9; }
@@ -157,6 +159,7 @@ textarea { min-height: 180px; resize: vertical; font: 13px/1.55 ui-monospace, SF
 .seed { padding: 13px; border: 1px solid #54766c42; border-radius: 13px 4px; background: #fffdf7; }
 .controls { display: grid; grid-template-columns: 140px 1fr; gap: 12px 20px; color: var(--ink-soft); }
 .controls b { color: var(--ink); font: 700 11px ui-monospace, monospace; }
+.touch-help { display: none; }
 .help-note { margin-top: 24px; }
 
 @keyframes rise { from { opacity: 0; transform: translateY(16px) scale(.98); } }
@@ -173,7 +176,28 @@ textarea { min-height: 180px; resize: vertical; font: 13px/1.55 ui-monospace, SF
   .hud-actions small { display: none; }
   .hud-actions button { min-width: 43px; height: 43px; }
   .identity { min-width: 0; }
-  .prompt { bottom: 14px; }
+  .prompt { display: none; }
+  #toast-root { bottom: 166px; width: calc(100vw - 28px); }
+  .touch-controls { position: absolute; inset: 0; display: block; pointer-events: none; }
+  .touch-joystick { position: absolute; left: max(17px, env(safe-area-inset-left)); bottom: max(19px, env(safe-area-inset-bottom)); width: 118px; height: 137px; display: grid; justify-items: center; align-content: start; pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .touch-ring { position: relative; width: 112px; height: 112px; display: grid; place-items: center; border: 1px solid #fffbdab8; border-radius: 50%; background: radial-gradient(circle, #fff9e926 0 31%, #315e5412 32% 34%, #fff9e947 35% 100%); box-shadow: inset 0 0 0 9px #ffffff12, 0 12px 34px #244b4138; backdrop-filter: blur(5px); }
+  .touch-ring::before, .touch-ring::after { content: ''; position: absolute; background: #fffbe06b; }
+  .touch-ring::before { width: 1px; height: 82px; }
+  .touch-ring::after { width: 82px; height: 1px; }
+  .touch-knob { position: relative; z-index: 1; width: 50px; height: 50px; border: 2px solid #fff5c9; border-radius: 50% 46% 52% 44%; background: #eeb959; box-shadow: 0 8px 18px #315e5455, inset 0 3px 0 #fff1b890; transition: transform 70ms linear; will-change: transform; }
+  .touch-joystick small { margin-top: 8px; color: #234b43; font: 800 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .13em; text-transform: uppercase; text-shadow: 0 1px 0 #ffffff90; }
+  .touch-actions { position: absolute; right: max(17px, env(safe-area-inset-right)); bottom: max(23px, env(safe-area-inset-bottom)); display: flex; flex-direction: row-reverse; align-items: end; gap: 11px; pointer-events: auto; }
+  .touch-action { width: 68px; height: 68px; display: grid; place-items: center; align-content: center; gap: 2px; padding: 0; border: 1px solid #fffbe0c7; border-radius: 50% 46% 52% 44%; color: var(--ink); background: #fff9e9d9; box-shadow: 0 10px 28px #244b4140, inset 0 3px 0 #ffffffa6; backdrop-filter: blur(8px); touch-action: manipulation; }
+  .touch-action.primary { width: 86px; height: 86px; color: #4b3b1f; background: #f1bd5ee8; }
+  .touch-action span { font: 700 25px/1 "Iowan Old Style", Georgia, serif; }
+  .touch-action small { max-width: 66px; font-size: 9px; font-weight: 800; line-height: 1.1; }
+  .touch-action:active { transform: scale(.94); filter: brightness(1.03); }
+  .keyboard-help { display: none; }
+  .touch-help { display: grid; grid-template-columns: 42px 1fr; gap: 17px 12px; align-items: center; }
+  .touch-help-mark { width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid #315e5435; border-radius: 50%; color: #684d22; background: var(--gold); }
+  .touch-help b, .touch-help span { display: block; }
+  .touch-help b { color: var(--ink); font-family: "Iowan Old Style", Georgia, serif; }
+  .touch-help span { margin-top: 3px; color: var(--ink-soft); font-size: 12px; line-height: 1.35; }
 }
 
 @media (prefers-reduced-motion: reduce) {

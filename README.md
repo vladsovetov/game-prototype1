@@ -21,6 +21,8 @@ Open [http://127.0.0.1:4173](http://127.0.0.1:4173). After dependencies are inst
 - `J`: open the field journal
 - `C`: open the character passport
 
+On a phone, drag the golden joystick at the lower left to move. Contextual action petals appear at the lower right for using a Gift, borrowing Resonance, exploring, and planting memories.
+
 The first guided memory introduces these controls gradually. There is no timer: the lights suggest a destination, but you can wander at your own pace. After finishing the first reaction and planting its Memory Seed, the full journal and character tools become available.
 
 The northwest enclosure is your sanctuary. Colored diamonds are Resonance Shrines: approach one and press `E` to borrow its Gift. Some anomalies need your own Gift and a borrowed Gift in sequence.
@@ -45,4 +47,4 @@ npm run build
 
 ## Prototype limits
 
-This build is single-player and keyboard-first, with a responsive UI. It has no accounts, cloud saves, multiplayer, chat, payments, combat, trading, live AI calls, generated media, uploaded content, procedural quests, or touch controls. It tests progressive onboarding, character import, balanced semantic traits, compound world reactions, collection, sanctuary expression, and persistence only.
+This build is single-player with keyboard and phone touch controls. It has no accounts, cloud saves, multiplayer, chat, payments, combat, trading, live AI calls, generated media, uploaded content, or procedural quests. It tests progressive onboarding, character import, balanced semantic traits, compound world reactions, collection, sanctuary expression, and persistence only.

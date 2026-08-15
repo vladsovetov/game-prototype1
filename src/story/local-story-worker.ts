@@ -58,11 +58,11 @@ self.onmessage = async (event: MessageEvent<StoryWorkerRequest>) => {
     if (latestJobId !== jobId) return;
     send({ type: 'progress', jobId, stage: 'read', progress: 1 });
     const prompt = [
-      { role: 'system', content: 'Ти пишеш лаконічні й лагідні складники фантастичних історій українською мовою. Поверни лише JSON. Не додавай сил, правил, HTML, markdown чи зайвих ключів. Усі значення мають бути українською.' },
-      { role: 'user', content: `Створи цілісну українську історію про втрачену пам’ять для ${character.name}. Опис: ${character.description}. Дар: ${character.gift}. Тягар: ${character.burden}. Особливість: ${character.quirk}. Випадкове зерно історії: ${seed}. Поверни рівно такі короткі текстові поля українською: place, role, disaster, vow, motif, truth. Поля place, role і motif — до 8 слів, інші — до 18 слів.` },
+      { role: 'system', content: 'You are a compact fantasy story director. Reply with only six evocative English words separated by commas. No sentences, JSON, markdown, or explanations.' },
+      { role: 'user', content: `Direct a gentle lost-memory tale for ${character.name}. Companion: ${character.description}. Gift: ${character.gift}. Burden: ${character.burden}. Quirk: ${character.quirk}. Random seed: ${seed}. Choose six motifs for place, role, disaster, vow, image, and truth.` },
     ];
     send({ type: 'progress', jobId, stage: 'weave', progress: .1 });
-    const output = await localGenerator(prompt, { max_new_tokens: 180, do_sample: true, temperature: .8, top_p: .9 });
+    const output = await localGenerator(prompt, { max_new_tokens: 48, do_sample: true, temperature: .8, top_p: .9 });
     if (latestJobId !== jobId) return;
     send({ type: 'progress', jobId, stage: 'weave', progress: 1 });
     send({ type: 'complete', jobId, raw: generatedText(output) });

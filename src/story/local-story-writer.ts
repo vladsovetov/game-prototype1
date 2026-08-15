@@ -1,4 +1,4 @@
-import { composeStory } from '../domain/story';
+import { composeStory, modelDirectedIngredients, type StoryIngredients } from '../domain/story';
 import type { Character, StoryArc } from '../domain/types';
 import { parseStoryIngredients, type StoryWorkerMessage, type StoryWorkerRequest } from './local-story-protocol';
 
@@ -42,13 +42,17 @@ export function createLocalStoryWriter(options: WriterOptions) {
       updateStatus({ phase: 'error', progress: 0, message: message.message || 'Локальний оповідач не зміг завершити роботу.' });
       return;
     }
-    const parsed = parseStoryIngredients(message.raw);
-    if (!parsed.ok) {
+    const raw = message.raw.trim();
+    const parsed = parseStoryIngredients(raw);
+    let ingredients: StoryIngredients;
+    if (parsed.ok) ingredients = parsed.value;
+    else if (raw && !raw.includes('{') && !raw.includes('}')) ingredients = modelDirectedIngredients(raw, active.seed);
+    else {
       active = undefined;
       updateStatus({ phase: 'error', progress: 0, message: parsed.reason });
       return;
     }
-    const story = composeStory(active.character, active.seed, parsed.value, 'local-model');
+    const story = composeStory(active.character, active.seed, ingredients, 'local-model');
     active = undefined;
     options.onStory(story);
     updateStatus({ phase: 'complete', progress: 1, story });

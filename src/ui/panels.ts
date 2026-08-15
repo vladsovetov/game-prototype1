@@ -370,10 +370,20 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
   }
 
   function showStoryLoom(status: WriterStatus, onDismiss: () => void, onRetry: () => void) {
+    const percent = Math.round(status.progress * 100);
+    const stage = status.phase === 'download' ? 'Завантажуємо маленького оповідача в браузер' : status.phase === 'read' ? 'Читаємо про супутника й цю галявину' : 'Виткаємо приватну історію';
+    const currentProgress = root.querySelector<HTMLElement>('.story-loom-card[data-progress]');
+    if (currentProgress && status.phase !== 'complete' && status.phase !== 'error') {
+      const progress = currentProgress.querySelector<HTMLElement>('[role=progressbar]')!;
+      progress.setAttribute('aria-valuenow', String(percent));
+      (progress.querySelector('span') as HTMLElement).style.width = `${percent}%`;
+      (currentProgress.querySelector('.loom-status b') as HTMLElement).textContent = stage;
+      (currentProgress.querySelector('.loom-status strong') as HTMLElement).textContent = `${percent}%`;
+      return;
+    }
     clear();
     const section = document.createElement('section');
     section.className = 'story-card story-loom-card';
-    const percent = Math.round(status.progress * 100);
     if (status.phase === 'complete') {
       section.innerHTML = `<div class="loom-mark" aria-hidden="true"><i></i><i></i><i></i></div><span class="eyebrow">Повністю написано на цьому пристрої</span><h2>Нова оповідь пустила коріння</h2><p class="soft-copy" data-story></p><button class="button primary">Зберегти цю оповідь</button>`;
       (section.querySelector('[data-story]') as HTMLElement).textContent = status.story.premise;
@@ -384,7 +394,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
       section.querySelector('[data-retry]')?.addEventListener('click', onRetry);
       section.querySelector('[data-dismiss]')?.addEventListener('click', onDismiss);
     } else {
-      const stage = status.phase === 'download' ? 'Завантажуємо маленького оповідача в браузер' : status.phase === 'read' ? 'Читаємо про супутника й цю галявину' : 'Виткаємо приватну історію';
+      section.dataset.progress = '';
       section.innerHTML = `<div class="loom-mark active" aria-hidden="true"><i></i><i></i><i></i></div><span class="eyebrow">Жоден запит не залишає цей пристрій</span><h2>Пристрій виткає оповідь</h2><p class="soft-copy">Під час першого запуску завантажиться близько 120–180 МБ. Можна продовжувати гру: наявна оповідь у безпеці.</p><div class="loom-progress" role="progressbar" aria-label="Прогрес локального оповідача" aria-valuemin="0" aria-valuemax="100"><span></span></div><div class="loom-status"><b></b><strong></strong></div><button class="text-button">Досліджувати далі, поки пишеться історія →</button>`;
       const progress = section.querySelector<HTMLElement>('[role=progressbar]')!;
       progress.setAttribute('aria-valuenow', String(percent));

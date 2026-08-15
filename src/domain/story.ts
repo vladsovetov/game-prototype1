@@ -18,6 +18,15 @@ export function wovenIngredients(seed: number): StoryIngredients {
   return { place: pick(PLACES, random), role: pick(ROLES, random), disaster: pick(DISASTERS, random), vow: pick(VOWS, random), motif: pick(MOTIFS, random), truth: pick(TRUTHS, random) };
 }
 
+export function modelDirectedIngredients(direction: string, seed: number): StoryIngredients {
+  let directedSeed = (seed ^ 0x811c9dc5) >>> 0;
+  for (const symbol of direction) {
+    directedSeed ^= symbol.codePointAt(0) ?? 0;
+    directedSeed = Math.imul(directedSeed, 0x01000193) >>> 0;
+  }
+  return wovenIngredients(directedSeed);
+}
+
 function chapter(id: string, title: string, keepsake: string, story: string): StoryChapter { return { id, title, keepsake, story }; }
 function firstUpper(value: string) { return value[0]?.toLocaleUpperCase('uk-UA') + value.slice(1); }
 

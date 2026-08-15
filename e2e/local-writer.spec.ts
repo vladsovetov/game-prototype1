@@ -39,8 +39,10 @@ test('offers and applies the on-device writer only after the first memory', asyn
   await option.click();
 
   const loom = page.locator('.story-loom-card');
+  const initialLoom = await loom.elementHandle();
   await expect(page.getByRole('heading', { name: 'Пристрій виткає оповідь' })).toBeVisible();
   await expect(loom).toContainText('42%');
+  expect(await initialLoom?.evaluate((element) => element === document.querySelector('.story-loom-card'))).toBe(true);
   expect(await loom.evaluate((element) => element.clientHeight <= window.innerHeight - 24)).toBe(true);
   await expect(page.getByRole('heading', { name: 'Нова оповідь пустила коріння' })).toBeVisible();
   await page.getByRole('button', { name: 'Зберегти цю оповідь' }).click();

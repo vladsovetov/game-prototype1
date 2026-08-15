@@ -1,6 +1,6 @@
 import type { GameState, Point, TutorialStep } from './types';
 import { GIFTS } from './catalog';
-import { ANOMALIES, distance, PLOTS, SHRINES } from './world';
+import { distance, worldFor } from './world';
 
 type TutorialEvent =
   | 'wake'
@@ -30,7 +30,7 @@ const NEXT: Record<TutorialStep, Partial<Record<TutorialEvent, TutorialStep>>> =
 
 export function prepareTutorial(state: GameState): GameState {
   const route = { anomalyId: 'sign', borrowedGift: 'mend' as const };
-  const anomaly = ANOMALIES.find((item) => item.id === route.anomalyId)!;
+  const anomaly = worldFor(state).anomalies.find((item) => item.id === route.anomalyId)!;
   const player = { x: anomaly.position.x - 250, y: anomaly.position.y + 70 };
   return {
     ...state,
@@ -51,7 +51,7 @@ export function advanceTutorial(state: GameState, event: TutorialEvent): GameSta
   if (!step) return state;
   const next = { ...state, tutorial: { ...state.tutorial, step } };
   if (event === 'chain-completed') {
-    const plot = PLOTS[0]!;
+    const plot = worldFor(state).plots[0]!;
     next.player = { x: plot.position.x + 70, y: plot.position.y + 35 };
   }
   return next;
@@ -60,9 +60,10 @@ export function advanceTutorial(state: GameState, event: TutorialEvent): GameSta
 export function tutorialTarget(state: GameState): Point | undefined {
   const tutorial = state.tutorial;
   if (!tutorial || tutorial.step === 'wake' || tutorial.step === 'clue' || tutorial.step === 'recovered' || tutorial.step === 'remember' || tutorial.step === 'personalize' || tutorial.step === 'done') return;
-  if (tutorial.step === 'resonate') return SHRINES.find((item) => item.gift === tutorial.borrowedGift)?.position;
-  if (tutorial.step === 'plant') return PLOTS[0]?.position;
-  return ANOMALIES.find((item) => item.id === tutorial.targetAnomalyId)?.position;
+  const world = worldFor(state);
+  if (tutorial.step === 'resonate') return world.shrines.find((item) => item.gift === tutorial.borrowedGift)?.position;
+  if (tutorial.step === 'plant') return world.plots[0]?.position;
+  return world.anomalies.find((item) => item.id === tutorial.targetAnomalyId)?.position;
 }
 
 export function tutorialObjective(state: GameState): { title: string; action: string; key?: string } {

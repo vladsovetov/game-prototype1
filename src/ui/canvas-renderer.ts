@@ -1,7 +1,7 @@
 import { PALETTE_COLORS } from '../domain/catalog';
 import { tutorialTarget } from '../domain/tutorial';
 import type { GameState, Point } from '../domain/types';
-import { ANOMALIES, PLOTS, SEED_NAMES, SHRINES, WORLD } from '../domain/world';
+import { SEED_NAMES, WORLD, worldFor, type WorldLayout } from '../domain/world';
 
 export function cameraFor(player: Point, width: number, height: number) {
   return {
@@ -49,36 +49,32 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
     ctx.fill();
   }
 
-  function drawMeadow(now: number) {
-    const wash = ctx.createLinearGradient(0, 0, WORLD.width, WORLD.height);
-    wash.addColorStop(0, '#b8d3c1');
-    wash.addColorStop(.48, '#9fc5b6');
-    wash.addColorStop(1, '#96b4aa');
+  function drawMeadow(now: number, world: WorldLayout) {
+    const wash = ctx.createLinearGradient(0, 0, world.width, world.height);
+    wash.addColorStop(0, world.theme.ground[0]);
+    wash.addColorStop(.48, world.theme.ground[1]);
+    wash.addColorStop(1, world.theme.ground[2]);
     ctx.fillStyle = wash;
-    ctx.fillRect(0, 0, WORLD.width, WORLD.height);
+    ctx.fillRect(0, 0, world.width, world.height);
 
-    blob(460, 940, 620, '#c6d8b4aa', 18, .04);
-    blob(1580, 1220, 720, '#b3cda7a8', 18, .04);
-    blob(2650, 400, 620, '#9ec8c3aa', 18, .04);
-    blob(2800, 1480, 530, '#bdafd0a0', 18, .04);
+    const washCenters = [{ x: 460, y: 940, r: 620 }, { x: 1580, y: 1220, r: 720 }, { x: 2650, y: 400, r: 620 }, { x: 2800, y: 1480, r: 530 }];
+    washCenters.forEach((center, index) => blob(center.x, center.y, center.r, world.theme.washes[index]!, 18, .04));
 
     ctx.save();
-    ctx.strokeStyle = '#efd9aa9c';
+    ctx.strokeStyle = world.theme.trail;
     ctx.lineWidth = 118;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(640, 430);
-    ctx.bezierCurveTo(1120, 360, 1320, 900, 1870, 850);
-    ctx.bezierCurveTo(2390, 790, 2480, 1160, 3000, 1060);
+    ctx.moveTo(world.trail[0].x, world.trail[0].y);
+    ctx.bezierCurveTo(world.trail[1].x, world.trail[1].y, world.trail[2].x, world.trail[2].y, world.trail[3].x, world.trail[3].y);
     ctx.stroke();
     ctx.strokeStyle = '#fff2cf3f';
     ctx.lineWidth = 72;
     ctx.stroke();
     ctx.restore();
 
-    for (let i = 0; i < 180; i++) {
-      const x = (i * 307 + 83) % WORLD.width;
-      const y = (i * 173 + 119) % WORLD.height;
+    for (let i = 0; i < world.grass.length; i++) {
+      const { x, y } = world.grass[i]!;
       const sway = Math.sin(now / 900 + i) * 2;
       ctx.strokeStyle = i % 4 === 0 ? '#496f6290' : '#668c7490';
       ctx.lineWidth = 1.5;
@@ -95,11 +91,11 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
     }
   }
 
-  function drawSanctuary() {
+  function drawSanctuary(world: WorldLayout) {
     ctx.save();
     ctx.fillStyle = '#f4e5bf7d';
     ctx.beginPath();
-    ctx.roundRect(WORLD.sanctuary.x, WORLD.sanctuary.y, WORLD.sanctuary.w, WORLD.sanctuary.h, 70);
+    ctx.roundRect(world.sanctuary.x, world.sanctuary.y, world.sanctuary.w, world.sanctuary.h, 70);
     ctx.fill();
     ctx.strokeStyle = '#fff4d090';
     ctx.lineWidth = 3;
@@ -112,7 +108,7 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
     ctx.fillText('YOUR QUIET PATCH', 132, 156);
     ctx.restore();
 
-    for (const plot of PLOTS) {
+    for (const plot of world.plots) {
       ctx.save();
       ctx.translate(plot.position.x, plot.position.y);
       ctx.fillStyle = '#6d8871';
@@ -143,9 +139,9 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
     }
   }
 
-  function drawShrines(state: GameState, now: number) {
+  function drawShrines(state: GameState, now: number, world: WorldLayout) {
     const colors = { reveal: '#f0a574', grow: '#76a96f', echo: '#9b82c1', mend: '#63aaa7' };
-    for (const shrine of SHRINES) {
+    for (const shrine of world.shrines) {
       const active = state.borrowedGift === shrine.gift;
       const pulse = Math.sin(now / 420 + shrine.position.x) * 4;
       ctx.save();
@@ -170,9 +166,9 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
     }
   }
 
-  function drawAnomalies(state: GameState, now: number) {
-    for (let index = 0; index < ANOMALIES.length; index++) {
-      const anomaly = ANOMALIES[index]!;
+  function drawAnomalies(state: GameState, now: number, world: WorldLayout) {
+    for (let index = 0; index < world.anomalies.length; index++) {
+      const anomaly = world.anomalies[index]!;
       const stage = state.anomalies[anomaly.id] ?? 0;
       const pulse = Math.sin(now / 520 + index * 1.7) * 3;
       ctx.save();
@@ -283,10 +279,11 @@ export function createCanvasRenderer(canvas: HTMLCanvasElement) {
     ctx.fillRect(0, 0, width, height);
     ctx.save();
     ctx.translate(-camera.x, -camera.y);
-    drawMeadow(now);
-    drawSanctuary();
-    drawShrines(state, now);
-    drawAnomalies(state, now);
+    const world = worldFor(state);
+    drawMeadow(now, world);
+    drawSanctuary(world);
+    drawShrines(state, now, world);
+    drawAnomalies(state, now, world);
     drawTrail(state, now);
     ctx.restore();
     drawAvatar(state, now);

@@ -48,7 +48,9 @@ test('equips visible clothing and persists it', async ({ page }) => {
   expect(equipment?.includes(id)).toBe(!wasEquipped);
 
   await page.reload();
-  const persisted = await page.locator('#game-canvas').getAttribute('data-equipment');
+  const canvas = page.locator('#game-canvas');
+  await expect(canvas).toHaveAttribute('data-equipment', /.+/);
+  const persisted = await canvas.getAttribute('data-equipment');
   expect(persisted?.includes(id)).toBe(!wasEquipped);
 });
 

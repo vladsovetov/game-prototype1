@@ -12,7 +12,7 @@ test.beforeEach(async ({ page }) => {
       onmessage: ((event: MessageEvent) => void) | null = null;
       postMessage(message: { jobId: string }) {
         setTimeout(() => this.onmessage?.({ data: { type: 'progress', jobId: message.jobId, stage: 'download', progress: .42 } } as MessageEvent), 20);
-        setTimeout(() => this.onmessage?.({ data: { type: 'complete', jobId: message.jobId, raw } } as MessageEvent), 350);
+        setTimeout(() => this.onmessage?.({ data: { type: 'complete', jobId: message.jobId, raw } } as MessageEvent), 900);
       }
       terminate() {}
     }

@@ -13,6 +13,11 @@ export type EquipmentSlot='head'|'neck'|'back'|'feet';
 export type Facing='up'|'down'|'left'|'right';
 export type ContractId='water-route'|'signal-line'|'storm-shelter';
 export type RefugeProjectId='workshop'|'archive'|'guest-canopy';
+export type ExpeditionSituation='зникнення'|'поломка'|'хибний-сигнал'|'слід-мандрівника'|'природна-зміна';
+export type ExpeditionMood='тиха-тривога'|'тепла-надія'|'польова-таємниця'|'наближення-бурі';
+export type ExpeditionPalette='мідь-мох'|'синій-дощ'|'бурштин-туман'|'крейда-хвоя';
+export interface ExpeditionSiteNote{siteId:string;observation:string}
+export interface ExpeditionNarrative{title:string;situation:ExpeditionSituation;mood:ExpeditionMood;palette:ExpeditionPalette;cause:string;siteNotes:ExpeditionSiteNote[];optionalLead:string;warning:string;rareFind:string;visualTags:string[];fingerprint:string;source:'fallback'|'local-model'}
 export interface RunDirection{region:RegionId;weather:WeatherId;frame:StoryFrameId;colorway:number;colors:[string,string,string,string,string];starterWearables:[WearableId,WearableId]}
 export interface CatalogEntry<I extends string>{id:I;name:string;description:string}
 export interface Appearance{body:BodyId;material:MaterialId;palette:PaletteId;mark:MarkId}
@@ -23,8 +28,8 @@ export interface StoryArc{seed:number;source:'woven'|'local-model';worldName:str
 export type TutorialStep='wake'|'move'|'gift'|'clue'|'resonate'|'combine'|'recovered'|'plant'|'remember'|'personalize'|'done';
 export interface TutorialState{step:TutorialStep;targetAnomalyId:string;borrowedGift:GiftId;start:Point}
 export interface ExpeditionActionRecord{siteId:string;tool:GiftId;title:string;outcome:string}
-export interface ExpeditionProgress{id:string;contractId:ContractId;seed:number;loadout:[GiftId,GiftId];siteIds:string[];requiredTotal:3;completed:ExpeditionActionRecord[];optionalSiteId:string;optionalAccepted?:boolean;optionalCompleted?:boolean;pressure:number;supplies:number;insight:number;rareFinds:string[];status:'active'|'decision'|'returning'}
-export interface ExpeditionReport{id:string;contractId:ContractId;title:string;summary:string;actions:ExpeditionActionRecord[];securedSupplies:number;securedInsight:number;rareFinds:string[];pressure:number;completedAt:number}
+export interface ExpeditionProgress{id:string;contractId:ContractId;seed:number;loadout:[GiftId,GiftId];siteIds:string[];requiredTotal:3;completed:ExpeditionActionRecord[];optionalSiteId:string;optionalAccepted?:boolean;optionalCompleted?:boolean;pressure:number;supplies:number;insight:number;rareFinds:string[];status:'active'|'decision'|'returning';narrative:ExpeditionNarrative}
+export interface ExpeditionReport{id:string;contractId:ContractId;title:string;summary:string;actions:ExpeditionActionRecord[];securedSupplies:number;securedInsight:number;rareFinds:string[];pressure:number;completedAt:number;memory?:string;narrativeFingerprint?:string}
 export interface ExpeditionMeta{completedContracts:number;supplies:number;insight:number;rareFinds:string[];builtProjects:RefugeProjectId[];reports:ExpeditionReport[]}
 export interface GameState{version:1;character:Character;player:Point;worldSeed?:number;storyArc?:StoryArc;anomalies:Record<string,number>;discoveries:string[];seeds:string[];plantings:Record<string,string>;rewarded:string[];wardrobe:WearableId[];equipped:Partial<Record<EquipmentSlot,WearableId>>;borrowedGift?:GiftId;tutorial?:TutorialState;memoryDetails?:Record<string,string>;pendingChapter?:string;endingSeen?:boolean;expedition?:ExpeditionProgress;expeditionMeta?:ExpeditionMeta;effects:{rootedUntil:number;fragileUntil:number;fadingUntil:number;awakeProps:string[]};lastUpdated:number}
 export type InteractionResult={state:GameState;message:string;changed:boolean;kind?:'discovery'|'seed'|'info'};

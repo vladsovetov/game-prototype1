@@ -94,4 +94,37 @@ describe('local story writer', () => {
     expect(statuses).toHaveLength(before + 1);
     expect(statuses.at(-1)).toMatchObject({ phase: 'download', progress: .6 });
   });
+
+  it('generates a validated expedition card without replacing the opening story', () => {
+    const worker = new FakeWorker();
+    const expeditions: Array<{ expeditionId: string; title: string }> = [];
+    const writer = createLocalStoryWriter({
+      workerFactory: () => worker,
+      onStatus: () => {},
+      onStory: () => {},
+      onExpedition: (expeditionId, narrative) => expeditions.push({ expeditionId, title: narrative.title }),
+    });
+    const jobId = writer.startExpedition({
+      expeditionId: 'water-route-7', seed: 7, character: generateCharacter(4),
+      contractName: 'Відновити водний маршрут', siteIds: ['pool', 'root', 'sign', 'garden'],
+      recentMemories: ['Минулого разу помпу полагодили набором.'], recentFingerprints: [],
+    });
+    worker.emit({
+      type: 'complete-expedition', jobId,
+      raw: JSON.stringify({
+        title: 'Шепіт у водогоні', situation: 'зникнення', mood: 'тиха-тривога', palette: 'мідь-мох',
+        cause: 'Хтось щоночі перенаправляє воду до старого саду.',
+        siteNotes: [
+          { siteId: 'pool', observation: 'Помпа тепла, хоча давно не працює.' },
+          { siteId: 'root', observation: 'Під корінням чути рівний потік.' },
+          { siteId: 'sign', observation: 'На покажчику з’явилася свіжа риска.' },
+          { siteId: 'garden', observation: 'Одна грядка вкрита росою.' },
+        ],
+        optionalLead: 'За садом видно відблиск прихованого бака.', warning: 'Негода швидко наближається.',
+        rareFind: 'мідний жетон водника', visualTags: ['мідь', 'мох', 'вода'],
+      }),
+    });
+
+    expect(expeditions).toEqual([{ expeditionId: 'water-route-7', title: 'Шепіт у водогоні' }]);
+  });
 });

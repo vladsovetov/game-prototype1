@@ -57,15 +57,19 @@ self.onmessage = async (event: MessageEvent<StoryWorkerRequest>) => {
     const localGenerator = await load(jobId);
     if (latestJobId !== jobId) return;
     send({ type: 'progress', jobId, stage: 'read', progress: 1 });
-    const prompt = [
-      { role: 'system', content: 'You direct a grounded field-expedition game. Reply with only twelve vivid English keywords separated by commas. No sentences, JSON, markdown, or explanations.' },
-      { role: 'user', content: `Create one distinct run for ${character.name}. Companion: ${character.description}. Tool: ${character.gift}. Work style: ${character.burden}. Quirk: ${character.quirk}. Random seed: ${seed}. Choose: region, weather, practical mission, mystery, two field objects, two wearable items, and four environment colors.` },
+    const isExpedition=event.data.type==='generate-expedition';
+    const prompt = isExpedition ? [
+      {role:'system',content:'Ти локальний режисер затишної польової пригоди. Пиши лише українською. Поверни тільки один валідний JSON без markdown. Не змінюй siteId, правила, нагороди або маршрут. Уникай абстрактної магії: використовуй реальні помпи, кабелі, укриття, сліди, погоду та інструменти.'},
+      {role:'user',content:`Створи виразно нову картку експедиції для ${character.name}. Персонаж: ${character.description}. Інструмент: ${character.gift}. Стиль роботи: ${character.burden}. Риса: ${character.quirk}. Контракт: ${event.data.contractName}. Seed: ${seed}. Маршрут у точному порядку: ${event.data.siteIds.join(', ')}. Доречні спогади: ${event.data.recentMemories.join(' | ')||'ще немає'}. Недавні fingerprints, які не можна повторювати: ${event.data.recentFingerprints.join(' | ')||'ще немає'}. Схема: {"title":"до 72 символів","situation":"одне з: зникнення | поломка | хибний-сигнал | слід-мандрівника | природна-зміна","mood":"одне з: тиха-тривога | тепла-надія | польова-таємниця | наближення-бурі","palette":"одне з: мідь-мох | синій-дощ | бурштин-туман | крейда-хвоя","cause":"конкретна причина до 180 символів","siteNotes":[по одному {"siteId":"точно з маршруту","observation":"конкретний фізичний доказ"} у тому самому порядку],"optionalLead":"конкретний дальній слід","warning":"чесне попередження","rareFind":"реальний невеликий предмет","visualTags":[2-4 короткі українські ознаки]}`},
+    ] : [
+      { role: 'system', content: 'Ти пишеш затишну польову історію українською. Поверни лише валідний JSON без markdown, пояснень чи англійських слів.' },
+      { role: 'user', content: `Створи відмінний початок світу для ${character.name}. Супутник: ${character.description}. Інструмент: ${character.gift}. Стиль роботи: ${character.burden}. Риса: ${character.quirk}. Випадкове зерно: ${seed}. Схема: {"place":"назва місця до 64 символів","role":"земна роль персонажа","disaster":"конкретна минула подія","vow":"коротка обіцянка","motif":"фізичний мотив","truth":"прихована особиста правда"}.` },
     ];
     send({ type: 'progress', jobId, stage: 'weave', progress: .1 });
-    const output = await localGenerator(prompt, { max_new_tokens: 64, do_sample: true, temperature: .95, top_p: .92 });
+    const output = await localGenerator(prompt, { max_new_tokens: isExpedition?420:220, do_sample: true, temperature: .88, top_p: .92, repetition_penalty:1.12 });
     if (latestJobId !== jobId) return;
     send({ type: 'progress', jobId, stage: 'weave', progress: 1 });
-    send({ type: 'complete', jobId, raw: generatedText(output) });
+    send({ type: isExpedition?'complete-expedition':'complete', jobId, raw: generatedText(output) });
   } catch (error) {
     if (latestJobId !== jobId) return;
     send({ type: 'error', jobId, message: 'Локальний оповідач не зміг завершити роботу. Перевірте підтримку WebGPU або спробуйте ще раз.' });

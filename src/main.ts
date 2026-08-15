@@ -49,6 +49,7 @@ if (loaded.kind === 'newer-version') {
     workerFactory: () => new Worker(new URL('./story/local-story-worker.ts', import.meta.url), { type: 'module' }),
     onStatus: (status) => controller?.showWriterStatus(status),
     onStory: (story) => controller?.applyLocalStory(story),
+    onExpedition: (expeditionId,narrative) => controller?.applyLocalExpedition(expeditionId,narrative),
   });
   controller = createGameController(state, renderer, panels, store, hud, toasts, localWriter, {
     enable: () => localStorage.setItem(WRITER_PREFERENCE, 'enabled'),

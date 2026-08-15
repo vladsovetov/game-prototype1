@@ -18,7 +18,7 @@ test.beforeEach(async ({ page }) => {
 test('completes the guided first memory and opens the free meadow', async ({ page }) => {
   await page.getByRole('button', { name: 'Прокинутися' }).click();
   await page.keyboard.down('d');
-  await page.waitForTimeout(240);
+  await expect.poll(() => page.getByTestId('tutorial-objective').textContent()).toMatch(/Посвітіть інструментом/);
   await page.keyboard.up('d');
   await expect(page.getByTestId('tutorial-objective')).toContainText(/Посвітіть інструментом/);
 

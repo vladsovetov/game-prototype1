@@ -54,6 +54,24 @@ describe('expedition director', () => {
     expect(first.siteIds).toEqual(['sign', 'garden', 'stone']);
     expect(first.optionalSiteId).toBe('pool');
     expect(second).toEqual(first);
+    expect(first.narrative.siteNotes.map((note) => note.siteId)).toEqual([...first.siteIds, first.optionalSiteId]);
+    expect(first.narrative.source).toBe('fallback');
+  });
+
+  it('avoids the most recent narrative fingerprint when building a fallback', () => {
+    const firstState = startExpedition(initial(), 'water-route', ['mend', 'reveal'], 7).state;
+    const fingerprint = firstState.expedition!.narrative.fingerprint;
+    const withHistory = {
+      ...initial(),
+      expeditionMeta: {
+        completedContracts: 1, supplies: 0, insight: 0, rareFinds: [], builtProjects: [],
+        reports: [{ id: 'old', contractId: 'water-route' as const, title: 'Старий маршрут', summary: 'Старий звіт.', actions: [], securedSupplies: 1, securedInsight: 0, rareFinds: [], pressure: 0, completedAt: 1, memory: 'Помпу полагоджено.', narrativeFingerprint: fingerprint }],
+      },
+    };
+
+    const repeatedSeed = startExpedition(withHistory, 'water-route', ['mend', 'reveal'], 7).state.expedition!;
+
+    expect(repeatedSeed.narrative.fingerprint).not.toBe(fingerprint);
   });
 
   it('offers only equipped actions at the current nearby site and advances it once', () => {
@@ -100,6 +118,8 @@ describe('expedition director', () => {
     expect(result.report?.securedSupplies).toBeGreaterThanOrEqual(1);
     expect(result.state.expedition).toBeUndefined();
     expect(expeditionMetaFor(result.state).completedContracts).toBe(1);
+    expect(result.report?.memory).toContain('водний маршрут');
+    expect(result.report?.narrativeFingerprint).toBeTruthy();
   });
 
   it('builds a cosmetic refuge project once and spends literal resources', () => {

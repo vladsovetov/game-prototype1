@@ -1,6 +1,6 @@
 import { GIFTS } from './catalog';
 import { directionFor, REGION_NAMES } from './run-direction';
-import type { ContractId, ExpeditionMeta, ExpeditionProgress, ExpeditionReport, GameState, GiftId, Point, RefugeProjectId } from './types';
+import type { ContractId, ExpeditionMeta, ExpeditionNarrative, ExpeditionProgress, ExpeditionReport, ExpeditionSituation, GameState, GiftId, Point, RefugeProjectId } from './types';
 import { distance, worldFor } from './world';
 
 export interface ContractDefinition{id:ContractId;name:string;brief:string;sitePool:string[]}
@@ -30,6 +30,50 @@ const RESULTS:Record<GiftId,{outcome:string;supplies:number;insight:number;press
   mend:{outcome:'Вузол укріплено надійно, а придатні деталі складено до наплічника.',supplies:2,insight:1,pressure:1},
 };
 
+const SITUATIONS:ExpeditionSituation[]=['зникнення','поломка','хибний-сигнал','слід-мандрівника','природна-зміна'];
+const MOODS:ExpeditionNarrative['mood'][]=['тиха-тривога','тепла-надія','польова-таємниця','наближення-бурі'];
+const PALETTES:ExpeditionNarrative['palette'][]=['мідь-мох','синій-дощ','бурштин-туман','крейда-хвоя'];
+const CAUSES:Record<ContractId,string[]>={
+  'water-route':['Нічний клапан відводить воду до покинутої теплиці.','Коріння повільно стискає старі керамічні труби.','Хтось залишив відкритим резервний канал після останньої зливи.','У водогоні оселилася колонія світних равликів.','Стара помпа реагує на сигнальні вогні замість рівня води.'],
+  'signal-line':['Вітер розвернув відбивачі до моря.','Один із маяків повторює давно записаний сигнал.','Птахи звили гніздо навколо теплого передавача.','Польовий кабель перетиснуло камінням після зсуву.','Невідомий мандрівник відповідає з покинутого поста.'],
+  'storm-shelter':['Підземна вода розмила опори навісів.','Старі кріплення не витримують нового напрямку вітру.','Хтось уже підготував одне зі сховищ, але не залишив імені.','Сигнальні полотнища збивають мешканців із безпечного маршруту.','Тепле повітря з тунелю притягує бурю до схилу.'],
+};
+const TITLES:Record<ContractId,string[]>={
+  'water-route':['Вода, що йде вночі','Сліди біля старої помпи','Теплиця під сухим дощем','Клапан для забутого саду','Світло у водогоні'],
+  'signal-line':['Відповідь із порожнього поста','Маяк, що пам’ятає голос','Лінія над вітряним схилом','Теплий передавач','Сигнал після тиші'],
+  'storm-shelter':['Навіси перед північним вітром','Сховище без імені','Опори під мокрим каменем','Буря й теплий тунель','Полотнища хибного шляху'],
+};
+const OBSERVATIONS:Record<string,string[]>={
+  stone:['На камені видно свіжу крейдяну мітку.','Під плитою рівномірно гуде механізм.','У тріщині застряг клаптик польової мапи.'],
+  sign:['Стрілку нещодавно повернули на схід.','На звороті покажчика записано рівень води.','Біля основи лежить нова мотузка.'],
+  pool:['Корпус помпи теплий, хоча мотор мовчить.','На краю резервуара лишилися мокрі сліди.','Вода пахне міддю та свіжим листям.'],
+  root:['Коріння обплело справний з’єднувач.','З-під арки чути рівний потік повітря.','Між корінням затиснуто робочу рукавицю.'],
+  bell:['Дзвін відповідає коротким подвійним відлунням.','Мотузка натягнута в бік старого поста.','На металі проступив новий візерунок.'],
+  moth:['Польові записи складено за напрямком вітру.','На папері є незнайома схема укриття.','Останній рядок написано сьогодні.'],
+  moon:['Лампа блимає у ритмі далекого сигналу.','Скло повернуте до покинутого маршруту.','У корпусі бракує лише одного контакту.'],
+  garden:['Одна грядка вкрита росою серед сухої землі.','Під ґрунтом чути порожнистий метал.','Садові кілки утворюють стрілку до схилу.'],
+};
+
+function fallbackNarrative(contractId:ContractId,siteIds:string[],seed:number,recentFingerprints:string[]):ExpeditionNarrative{
+  const recent=new Set(recentFingerprints.slice(0,10));
+  for(let attempt=0;attempt<20;attempt++){
+    const value=((seed>>>0)+attempt*2654435761)>>>0;
+    const situation=SITUATIONS[value%SITUATIONS.length]!;
+    const mood=MOODS[Math.floor(value/5)%MOODS.length]!;
+    const palette=PALETTES[Math.floor(value/20)%PALETTES.length]!;
+    const causeIndex=Math.floor(value/80)%CAUSES[contractId].length;
+    const fingerprint=`${situation}|${mood}|${palette}`;
+    if(recent.has(fingerprint))continue;
+    return {title:TITLES[contractId][causeIndex]!,situation,mood,palette,cause:CAUSES[contractId][causeIndex]!,siteNotes:siteIds.map((siteId,index)=>({siteId,observation:(OBSERVATIONS[siteId]??['Тут лишився свіжий слід польової роботи.'])[(value+index)%((OBSERVATIONS[siteId]??[]).length||1)]!})),optionalLead:'За останньою точкою помітно слабкий слід, якого немає на мапі.',warning:'Дальній маршрут посилить негоду й може коштувати частини припасів.',rareFind:{'water-route':'жетон старого водника','signal-line':'скло польового маяка','storm-shelter':'пряжка невідомого мандрівника'}[contractId],visualTags:palette.split('-'),fingerprint,source:'fallback'};
+  }
+  return fallbackNarrative(contractId,siteIds,seed+1,[]);
+}
+
+export function expeditionNarrativeFor(state:GameState):ExpeditionNarrative|undefined{
+  const run=state.expedition;if(!run)return undefined;
+  return run.narrative??fallbackNarrative(run.contractId,[...run.siteIds,run.optionalSiteId],run.seed,expeditionMetaFor(state).reports.flatMap((report)=>report.narrativeFingerprint?[report.narrativeFingerprint]:[]));
+}
+
 const clone=(state:GameState):GameState=>structuredClone(state);
 const result=(state:GameState,ok:boolean,message:string,report?:ExpeditionReport):ExpeditionResult=>({state,ok,message,...(report?{report}:{})});
 
@@ -45,7 +89,8 @@ export function startExpedition(state:GameState,contractId:ContractId,loadout:Gi
   if(!contract)return result(state,false,'Цей контракт недоступний.');
   const offset=(seed>>>0)%contract.sitePool.length;
   const route=Array.from({length:4},(_,index)=>contract.sitePool[(offset+index)%contract.sitePool.length]!);
-  const expedition:ExpeditionProgress={id:`${contractId}-${seed>>>0}`,contractId,seed:seed>>>0,loadout:[loadout[0]!,loadout[1]!],siteIds:route.slice(0,3),requiredTotal:3,completed:[],optionalSiteId:route[3]!,pressure:0,supplies:0,insight:0,rareFinds:[],status:'active'};
+  const recent=expeditionMetaFor(state).reports.flatMap((report)=>report.narrativeFingerprint?[report.narrativeFingerprint]:[]);
+  const expedition:ExpeditionProgress={id:`${contractId}-${seed>>>0}`,contractId,seed:seed>>>0,loadout:[loadout[0]!,loadout[1]!],siteIds:route.slice(0,3),requiredTotal:3,completed:[],optionalSiteId:route[3]!,pressure:0,supplies:0,insight:0,rareFinds:[],status:'active',narrative:fallbackNarrative(contractId,route,seed,recent)};
   return result({...clone(state),expedition},true,`Контракт «${contract.name}» розпочато. Перша точка позначена на маршруті.`);
 }
 
@@ -80,7 +125,7 @@ export function applyWorkAction(state:GameState,tool:GiftId):ExpeditionResult{
   active.completed.push({siteId,tool,title:action.title,outcome:action.outcome});
   active.supplies+=action.supplies; active.insight+=action.insight; active.pressure+=action.pressure;
   if(required&&active.completed.length===active.requiredTotal)active.status='decision';
-  else if(!required){active.optionalCompleted=true;active.status='returning';active.pressure+=2;active.rareFinds.push(rareFindFor(state));}
+  else if(!required){active.optionalCompleted=true;active.status='returning';active.pressure+=2;active.rareFinds.push(expeditionNarrativeFor(next)?.rareFind??rareFindFor(state));}
   return result(next,true,required?`${action.outcome} Виконано ${active.completed.length} з ${active.requiredTotal}.`:`${action.outcome} Рідкісну знахідку закріплено; час повертатися.`);
 }
 
@@ -92,6 +137,11 @@ export function chooseOptionalLead(state:GameState,accept:boolean):ExpeditionRes
   return result(next,true,accept?'Ви йдете далі. Погода посилиться, але там є рідкісна знахідка.':'Зібраного достатньо. Повертайтеся до воріт Притулку.');
 }
 
+export function applyExpeditionNarrative(state:GameState,expeditionId:string,narrative:ExpeditionNarrative):GameState{
+  if(state.expedition?.id!==expeditionId)return state;
+  const next=clone(state);next.expedition!.narrative=narrative;return next;
+}
+
 function rareFindFor(state:GameState){const region=directionFor(state).region;return{orchard:'бурштин старого саду',marsh:'очеретяна мапа',highland:'гірське скло',coast:'сигнальне скло'}[region]}
 
 export function completeExpedition(state:GameState,now=Date.now()):ExpeditionResult{
@@ -101,7 +151,9 @@ export function completeExpedition(state:GameState,now=Date.now()):ExpeditionRes
   const securedSupplies=Math.max(1,run.supplies-Math.max(0,run.pressure-3));
   const securedInsight=run.insight;
   const contract=CONTRACTS[run.contractId];
-  const report:ExpeditionReport={id:`report-${run.id}-${now}`,contractId:run.contractId,title:contract.name,summary:`${state.character.name} повертається з маршруту «${contract.name}». ${run.completed.map((action)=>action.outcome).join(' ')}`,actions:[...run.completed],securedSupplies,securedInsight,rareFinds:[...run.rareFinds],pressure:run.pressure,completedAt:now};
+  const narrative=expeditionNarrativeFor(state)!;
+  const memory=`${state.character.name}: завершено ${contract.name.toLocaleLowerCase('uk-UA')} «${narrative.title}»; ${run.completed.map((action)=>action.title.toLocaleLowerCase('uk-UA')).join(', ')}.`;
+  const report:ExpeditionReport={id:`report-${run.id}-${now}`,contractId:run.contractId,title:narrative.title,summary:`${narrative.cause} ${state.character.name} повертається з маршруту. ${run.completed.map((action)=>action.outcome).join(' ')}`,actions:[...run.completed],securedSupplies,securedInsight,rareFinds:[...run.rareFinds],pressure:run.pressure,completedAt:now,memory,narrativeFingerprint:narrative.fingerprint};
   const next=clone(state),meta=expeditionMetaFor(next);
   next.expeditionMeta={completedContracts:meta.completedContracts+1,supplies:meta.supplies+securedSupplies,insight:meta.insight+securedInsight,rareFinds:[...meta.rareFinds,...run.rareFinds],builtProjects:meta.builtProjects,reports:[report,...meta.reports].slice(0,20)};
   delete next.expedition;

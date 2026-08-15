@@ -15,7 +15,7 @@ import { equipWearable } from './domain/equipment';
 import { gearForDirection } from './domain/equipment';
 import type { WearableId } from './domain/types';
 import { movementPose } from './ui/canvas-renderer';
-import { applyWorkAction, buildRefugeProject, chooseOptionalLead, completeExpedition, expeditionMetaFor, expeditionTarget, startExpedition } from './domain/expedition';
+import { CONTRACTS, applyExpeditionNarrative, applyWorkAction, buildRefugeProject, chooseOptionalLead, completeExpedition, expeditionMetaFor, expeditionNarrativeFor, expeditionTarget, startExpedition } from './domain/expedition';
 import { randomSeed } from './domain/random';
 
 type Renderer = ReturnType<typeof createCanvasRenderer>;
@@ -138,10 +138,11 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     (hud.querySelector('.hud-meta') as HTMLElement).textContent = state.seeds.length ? `Спогадів у таці: ${state.seeds.length}` : '';
     const meta=expeditionMetaFor(state);
     if(run){
+      const narrative=expeditionNarrativeFor(state)!;
       const requiredDone=Math.min(run.completed.length,run.requiredTotal);const objective=hud.querySelector<HTMLElement>('[data-expedition-objective]')!;
       objective.innerHTML=`<span class="eyebrow">ЕКСПЕДИЦІЯ · ${requiredDone}/${run.requiredTotal}</span><strong></strong><small></small><div class="pressure-meter"><i></i></div>`;
-      objective.querySelector('strong')!.textContent=run.status==='returning'?'Поверніться до воріт Притулку':run.status==='decision'?'Вирішіть, чи йти далі':`Прямуйте до наступної робочої точки`;
-      objective.querySelector('small')!.textContent=`У наплічнику: ${run.supplies} припасів · ${run.insight} знань · погода ${run.pressure}`;
+      objective.querySelector('strong')!.textContent=narrative.title;
+      objective.querySelector('small')!.textContent=`${run.status==='returning'?'Поверніться до воріт':run.status==='decision'?'Вирішіть, чи йти далі':'Ідіть до вогників'} · ${run.supplies} припасів · ${run.insight} знань · погода ${run.pressure}`;
       (objective.querySelector('.pressure-meter i') as HTMLElement).style.width=`${Math.min(100,run.pressure*12)}%`;
       (hud.querySelector('[data-primary-label]') as HTMLElement).textContent=run.status==='active'?'Виконати роботу':'Інструмент';
       (hud.querySelector('[data-secondary-label]') as HTMLElement).textContent=run.status==='returning'?'Завершити експедицію':'Дослідити';
@@ -373,7 +374,11 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     if (!isTutorial() && key === 'k') panels.showContractBoard(state);
   }
 
-  function keyup(event: KeyboardEvent) { keys.delete(gameKey(event)); }
+  function keyup(event: KeyboardEvent) {
+    const key=gameKey(event),wasMoving=MOVEMENT_KEYS.has(key)&&keys.has(key);
+    keys.delete(key);
+    if(wasMoving)store.save(state);
+  }
 
   function wake() {
     state = advanceTutorial(state, 'wake');
@@ -463,7 +468,23 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   function startContract(contractId:ContractId,loadout:[GiftId,GiftId]){
     const started=startExpedition(state,contractId,loadout,randomSeed()||1);state=started.state;
-    if(started.ok)panels.clear();saveAndRefresh();toast(started.message);
+    if(started.ok){
+      panels.clear();
+      startExpeditionDirector();
+    }
+    saveAndRefresh();toast(started.message);
+  }
+
+  function startExpeditionDirector(){
+    const run=state.expedition;if(!run||!writerPreference?.isEnabled())return;
+    const meta=expeditionMetaFor(state);
+    localWriter?.startExpedition({expeditionId:run.id,seed:run.seed,character:state.character,contractName:CONTRACTS[run.contractId].name,siteIds:[...run.siteIds,run.optionalSiteId],recentMemories:meta.reports.flatMap((report)=>report.memory?[report.memory]:[]).slice(0,5),recentFingerprints:meta.reports.flatMap((report)=>report.narrativeFingerprint?[report.narrativeFingerprint]:[]).slice(0,10)});
+  }
+
+  function applyLocalExpedition(expeditionId:string,narrative:Parameters<typeof applyExpeditionNarrative>[2]){
+    const next=applyExpeditionNarrative(state,expeditionId,narrative);
+    if(next===state)return;
+    state=next;saveAndRefresh();panels.refreshExpeditionNarrative(state);toast(`Локальний режисер завершив пригоду «${narrative.title}».`);
   }
 
   function buildProject(projectId:RefugeProjectId){
@@ -528,7 +549,9 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   function autoLocalStory() {
     writerPanelVisible = state.tutorial?.step === 'wake';
-    if (writerPreference?.isEnabled() && state.storyArc?.source !== 'local-model') localWriter?.start(state.character, state.worldSeed ?? 0);
+    if(!writerPreference?.isEnabled())return;
+    if(state.expedition&&expeditionNarrativeFor(state)?.source!=='local-model')startExpeditionDirector();
+    else if(state.storyArc?.source!=='local-model')localWriter?.start(state.character,state.worldSeed??0);
   }
 
   addEventListener('keydown', keydown);
@@ -564,6 +587,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     beginNewTale,
     showWriterStatus,
     applyLocalStory,
+    applyLocalExpedition,
     startLocalStory,
     autoLocalStory,
     destroy: () => {

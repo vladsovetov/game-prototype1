@@ -7,7 +7,7 @@ import { storyFor } from '../domain/story';
 import { SEED_NAMES, worldFor } from '../domain/world';
 import type { Appearance, Character, GameState, QuirkId, StoryArc, WearableId } from '../domain/types';
 import type { WriterStatus } from '../story/local-story-writer';
-import { CONTRACTS, REFUGE_PROJECTS, availableWorkActions, expeditionMetaFor, expeditionRegionName } from '../domain/expedition';
+import { CONTRACTS, REFUGE_PROJECTS, availableWorkActions, expeditionMetaFor, expeditionNarrativeFor, expeditionRegionName } from '../domain/expedition';
 import { GIFTS } from '../domain/catalog';
 import type { ContractId, ExpeditionReport, GiftId, RefugeProjectId } from '../domain/types';
 
@@ -459,16 +459,26 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
   }
 
   function showWorkChoices(state:GameState,onChoose:(tool:GiftId)=>void){
-    const actionsAvailable=availableWorkActions(state);const c=shell('Як виконати роботу?',true);
-    c.innerHTML=`<p class="soft-copy">Обидва способи працюють. Вибір змінює здобич, знання й тиск погоди.</p><div class="work-choice-grid"></div>`;
+    const actionsAvailable=availableWorkActions(state);const c=shell('Як виконати роботу?',true);const run=state.expedition!;const narrative=expeditionNarrativeFor(state)!;const siteId=run.completed.length<run.requiredTotal?run.siteIds[run.completed.length]:run.optionalSiteId;const note=narrative.siteNotes.find((item)=>item.siteId===siteId)?.observation;
+    c.innerHTML=`<div class="field-evidence"><span class="eyebrow">ПОЛЬОВИЙ ДОКАЗ</span><strong></strong><p></p></div><p class="soft-copy">Обидва способи працюють. Вибір змінює здобич, знання й тиск погоди.</p><div class="work-choice-grid"></div>`;
+    c.querySelector('.field-evidence strong')!.textContent=narrative.title;c.querySelector('.field-evidence p')!.textContent=note??narrative.cause;
     const grid=c.querySelector<HTMLElement>('.work-choice-grid')!;
     for(const action of actionsAvailable){const button=document.createElement('button');button.className='work-choice';button.innerHTML=`<span class="work-tool"></span><strong></strong><p></p><small></small>`;button.querySelector('.work-tool')!.textContent=GIFTS[action.tool].name;button.querySelector('strong')!.textContent=action.title;button.querySelector('p')!.textContent=action.outcome;button.querySelector('small')!.textContent=`+${action.supplies} припасів · +${action.insight} знань · погода +${action.pressure}`;button.addEventListener('click',()=>onChoose(action.tool));grid.append(button)}
   }
 
   function showExpeditionDecision(state:GameState,onChoose:(accept:boolean)=>void){
-    const run=state.expedition!;clear();const section=document.createElement('section');section.className='story-card expedition-decision';
-    section.innerHTML=`<span class="eyebrow">ОБОВ’ЯЗКОВУ РОБОТУ ЗАВЕРШЕНО</span><h2>Повертатися чи піти за слабким сигналом?</h2><p>Зараз здобич у безпеці. Дальня точка гарантує рідкісну знахідку, але погода стане сильнішою й може забрати частину припасів.</p><div class="decision-stakes"><span><b>${run.supplies}</b> припасів у наплічнику</span><span><b>${run.pressure}</b> тиск погоди</span></div><div class="choice-row"><button class="button primary" data-push>Піти далі за знахідкою →</button><button class="button ghost-light" data-return>Повернутися зараз</button></div>`;
+    const run=state.expedition!,narrative=expeditionNarrativeFor(state)!;clear();const section=document.createElement('section');section.className='story-card expedition-decision';
+    section.innerHTML=`<span class="eyebrow">ОБОВ’ЯЗКОВУ РОБОТУ ЗАВЕРШЕНО</span><h2>Повертатися чи піти за слабким сигналом?</h2><p></p><small class="decision-warning"></small><div class="decision-stakes"><span><b>${run.supplies}</b> припасів у наплічнику</span><span><b>${run.pressure}</b> тиск погоди</span></div><div class="choice-row"><button class="button primary" data-push>Піти далі за знахідкою →</button><button class="button ghost-light" data-return>Повернутися зараз</button></div>`;
+    section.querySelector('p')!.textContent=`${narrative.optionalLead} Можлива знахідка: ${narrative.rareFind}.`;section.querySelector('.decision-warning')!.textContent=narrative.warning;
     section.querySelector('[data-push]')!.addEventListener('click',()=>onChoose(true));section.querySelector('[data-return]')!.addEventListener('click',()=>onChoose(false));root.append(section);
+  }
+
+  function refreshExpeditionNarrative(state:GameState){
+    const run=state.expedition,narrative=expeditionNarrativeFor(state);if(!run||!narrative)return;
+    const evidence=root.querySelector<HTMLElement>('.field-evidence');
+    if(evidence){const siteId=run.completed.length<run.requiredTotal?run.siteIds[run.completed.length]:run.optionalSiteId;evidence.querySelector('strong')!.textContent=narrative.title;evidence.querySelector('p')!.textContent=narrative.siteNotes.find((item)=>item.siteId===siteId)?.observation??narrative.cause}
+    const decision=root.querySelector<HTMLElement>('.expedition-decision');
+    if(decision){decision.querySelector('p')!.textContent=`${narrative.optionalLead} Можлива знахідка: ${narrative.rareFind}.`;decision.querySelector('.decision-warning')!.textContent=narrative.warning}
   }
 
   function showExpeditionDebrief(report:ExpeditionReport,onContinue:()=>void){
@@ -500,8 +510,9 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
       (currentProgress.querySelector('.loom-status strong') as HTMLElement).textContent = `${percent}%`;
       return;
     }
-    clear();
-    const section = document.createElement('section');
+    const section = currentProgress ?? document.createElement('section');
+    if (!currentProgress) clear();
+    else delete section.dataset.progress;
     section.className = 'story-card story-loom-card';
     if (status.phase === 'complete') {
       section.innerHTML = `<div class="loom-mark" aria-hidden="true"><i></i><i></i><i></i></div><span class="eyebrow">Повністю написано на цьому пристрої</span><h2>Нова оповідь пустила коріння</h2><p class="soft-copy" data-story></p><button class="button primary">Зберегти цю оповідь</button>`;
@@ -525,5 +536,5 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     root.append(section);
   }
 
-  return { clear, showWake, showMemoryBeat, showMemoryChapter, showEnding, showMemoryChoice, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp, showStoryLoom, showContractBoard, showWorkChoices, showExpeditionDecision, showExpeditionDebrief };
+  return { clear, showWake, showMemoryBeat, showMemoryChapter, showEnding, showMemoryChoice, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp, showStoryLoom, showContractBoard, showWorkChoices, showExpeditionDecision, showExpeditionDebrief, refreshExpeditionNarrative };
 }

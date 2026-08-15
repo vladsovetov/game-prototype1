@@ -8,6 +8,7 @@ import { createGameController } from './game-controller';
 import { createSaveStore } from './persistence/save-store';
 import { createCanvasRenderer } from './ui/canvas-renderer';
 import { createPanels } from './ui/panels';
+import { createLocalStoryWriter } from './story/local-story-writer';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas');
 const modal = document.querySelector<HTMLElement>('#modal-root');
@@ -18,6 +19,7 @@ if (!canvas || !modal || !hud || !toasts) throw new Error('Application shell is 
 const store = createSaveStore(localStorage);
 const renderer = createCanvasRenderer(canvas);
 let controller: ReturnType<typeof createGameController> | undefined;
+const WRITER_PREFERENCE = 'unwritten.prototype.local-writer.v1';
 
 const panels = createPanels(modal, {
   onImport: (character: Character) => controller?.replaceCharacter(character),
@@ -26,6 +28,7 @@ const panels = createPanels(modal, {
   onPersonality: (name: string, description: string, quirk: QuirkId) => controller?.updatePersonality(name, description, QUIRKS[quirk]),
   onAppearance: (appearance: Appearance) => controller?.updateAppearance(appearance),
   onPersonalizationDone: () => controller?.finishPersonalization(),
+  onLocalStory: () => controller?.startLocalStory(),
 });
 
 const loaded = store.load();
@@ -39,5 +42,14 @@ if (loaded.kind === 'newer-version') {
   if (loaded.kind === 'corrupt') {
     setTimeout(() => alert('Your old local save could not be read, so a fresh meadow was opened.'), 50);
   }
-  controller = createGameController(state, renderer, panels, store, hud, toasts);
+  const localWriter = createLocalStoryWriter({
+    workerFactory: () => new Worker(new URL('./story/local-story-worker.ts', import.meta.url), { type: 'module' }),
+    onStatus: (status) => controller?.showWriterStatus(status),
+    onStory: (story) => controller?.applyLocalStory(story),
+  });
+  controller = createGameController(state, renderer, panels, store, hud, toasts, localWriter, {
+    enable: () => localStorage.setItem(WRITER_PREFERENCE, 'enabled'),
+    isEnabled: () => localStorage.getItem(WRITER_PREFERENCE) === 'enabled',
+  });
+  controller.autoLocalStory();
 }

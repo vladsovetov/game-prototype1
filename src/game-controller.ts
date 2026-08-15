@@ -9,12 +9,14 @@ import { SEED_NAMES, distance } from './domain/world';
 import type { createSaveStore } from './persistence/save-store';
 import type { createCanvasRenderer } from './ui/canvas-renderer';
 import type { createPanels } from './ui/panels';
+import type { createLocalStoryWriter, WriterStatus } from './story/local-story-writer';
 
 type Renderer = ReturnType<typeof createCanvasRenderer>;
 type Panels = ReturnType<typeof createPanels>;
 type Store = ReturnType<typeof createSaveStore>;
+type LocalWriter = ReturnType<typeof createLocalStoryWriter>;
 
-export function createGameController(initial: GameState, renderer: Renderer, panels: Panels, store: Store, hud: HTMLElement, toastRoot: HTMLElement) {
+export function createGameController(initial: GameState, renderer: Renderer, panels: Panels, store: Store, hud: HTMLElement, toastRoot: HTMLElement, localWriter?: LocalWriter, writerPreference?: { enable(): void; isEnabled(): boolean }) {
   let state = initial;
   const keys = new Set<string>();
   let previous = performance.now();
@@ -25,6 +27,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   let touchOrigin = { x: 0, y: 0 };
   let touchVector = { x: 0, y: 0 };
   let touchKnob: HTMLElement | undefined;
+  let writerPanelVisible = false;
 
   const isTutorial = () => !!state.tutorial && state.tutorial.step !== 'done';
   const hasBlockingStory = () => !!state.pendingChapter || hasReachedEnding(state);
@@ -413,6 +416,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   }
 
   function beginNewTale() {
+    localWriter?.cancel();
     keys.clear();
     resetTouch();
     clearToast();
@@ -420,6 +424,40 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     panels.clear();
     saveAndRefresh();
     panels.showWake(state.character, wake, true, storyFor(state));
+    if (writerPreference?.isEnabled()) localWriter?.start(state.character, state.worldSeed ?? 0);
+  }
+
+  function showWriterStatus(status: WriterStatus) {
+    if (!writerPanelVisible) return;
+    panels.showStoryLoom(status, dismissLocalStory, retryLocalStory);
+  }
+
+  function applyLocalStory(story: NonNullable<GameState['storyArc']>) {
+    if (story.seed !== (state.worldSeed ?? 0)) return;
+    state = { ...state, storyArc: story };
+    writerPreference?.enable();
+    saveAndRefresh();
+  }
+
+  function startLocalStory() {
+    writerPanelVisible = true;
+    localWriter?.start(state.character, state.worldSeed ?? 0);
+  }
+
+  function retryLocalStory() {
+    localWriter?.cancel();
+    startLocalStory();
+  }
+
+  function dismissLocalStory() {
+    writerPanelVisible = false;
+    if (state.tutorial?.step === 'personalize') panels.showPersonalize(state.character);
+    else panels.clear();
+  }
+
+  function autoLocalStory() {
+    writerPanelVisible = false;
+    if (writerPreference?.isEnabled() && state.storyArc?.source !== 'local-model') localWriter?.start(state.character, state.worldSeed ?? 0);
   }
 
   addEventListener('keydown', keydown);
@@ -450,6 +488,10 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     updateAppearance,
     finishPersonalization,
     beginNewTale,
+    showWriterStatus,
+    applyLocalStory,
+    startLocalStory,
+    autoLocalStory,
     destroy: () => {
       removeEventListener('keydown', keydown);
       removeEventListener('keyup', keyup);
@@ -460,6 +502,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       document.removeEventListener('visibilitychange', visibilityChanged);
       removeEventListener('resize', resize);
       cancelAnimationFrame(frameId);
+      localWriter?.destroy();
     },
   };
 }

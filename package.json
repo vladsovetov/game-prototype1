@@ -17,5 +17,8 @@
     "typescript": "latest",
     "vite": "latest",
     "vitest": "latest"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.2.0"
   }
 }

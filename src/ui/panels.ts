@@ -5,6 +5,7 @@ import { LANTERN_HOUSE_ENDING, memoryChapter, type MemoryChapter } from '../doma
 import { storyFor } from '../domain/story';
 import { SEED_NAMES, worldFor } from '../domain/world';
 import type { Appearance, Character, GameState, QuirkId, StoryArc } from '../domain/types';
+import type { WriterStatus } from '../story/local-story-writer';
 
 export interface PanelActions {
   onImport(character: Character): void;
@@ -13,6 +14,7 @@ export interface PanelActions {
   onPersonality(name: string, description: string, quirk: QuirkId): void;
   onAppearance(appearance: Appearance): void;
   onPersonalizationDone(): void;
+  onLocalStory(): void;
 }
 
 export function createPanels(root: HTMLElement, actions: PanelActions) {
@@ -141,11 +143,12 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     clear();
     const section = document.createElement('section');
     section.className = 'story-card personalize-card';
-    section.innerHTML = `<span class="eyebrow">First memory made</span><h2>Make them yours</h2><p class="soft-copy">Now that you have met <b data-name></b>, you can add more of yourself—or leave the mystery intact.</p><div class="personalize-actions"><button class="personalize-choice" data-personality><span>01</span><b>Add personality</b><small>Give the world more to notice</small></button><button class="personalize-choice" data-look><span>02</span><b>Shape their look</b><small>Choose body, material, and colors</small></button><button class="personalize-choice" data-ai><span>03</span><b>Create with your AI</b><small>Bring in a richer imagined character</small></button></div><button class="text-button" data-done>Keep exploring <span aria-hidden="true">→</span></button>`;
+    section.innerHTML = `<span class="eyebrow">First memory made</span><h2>Make them yours</h2><p class="soft-copy">Now that you have met <b data-name></b>, you can add more of yourself—or leave the mystery intact.</p><div class="personalize-actions"><button class="personalize-choice" data-personality><span>01</span><b>Add personality</b><small>Give the world more to notice</small></button><button class="personalize-choice" data-look><span>02</span><b>Shape their look</b><small>Choose body, material, and colors</small></button><button class="personalize-choice" data-ai><span>03</span><b>Create with your AI</b><small>Bring in a richer imagined character</small></button><button class="personalize-choice local-writer-choice" data-local aria-label="Let this device write the tale"><span>04 · LOCAL</span><b>Let this device write the tale</b><small>120–180 MB once · writing stays here</small></button></div><button class="text-button" data-done>Keep exploring <span aria-hidden="true">→</span></button>`;
     (section.querySelector('[data-name]') as HTMLElement).textContent = character.name;
     section.querySelector('[data-personality]')?.addEventListener('click', () => showPersonality(character));
     section.querySelector('[data-look]')?.addEventListener('click', () => showAppearance(character));
     section.querySelector('[data-ai]')?.addEventListener('click', () => showAI(() => showPersonalize(currentCharacter ?? character)));
+    section.querySelector('[data-local]')?.addEventListener('click', actions.onLocalStory);
     section.querySelector('[data-done]')?.addEventListener('click', actions.onPersonalizationDone);
     root.append(section);
   }
@@ -366,5 +369,32 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     });
   }
 
-  return { clear, showWake, showMemoryBeat, showMemoryChapter, showEnding, showMemoryChoice, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp };
+  function showStoryLoom(status: WriterStatus, onDismiss: () => void, onRetry: () => void) {
+    clear();
+    const section = document.createElement('section');
+    section.className = 'story-card story-loom-card';
+    const percent = Math.round(status.progress * 100);
+    if (status.phase === 'complete') {
+      section.innerHTML = `<div class="loom-mark" aria-hidden="true"><i></i><i></i><i></i></div><span class="eyebrow">Written entirely on this device</span><h2>A new tale has taken root</h2><p class="soft-copy" data-story></p><button class="button primary">Keep this tale</button>`;
+      (section.querySelector('[data-story]') as HTMLElement).textContent = status.story.premise;
+      section.querySelector('button')?.addEventListener('click', onDismiss);
+    } else if (status.phase === 'error') {
+      section.innerHTML = `<div class="loom-mark broken" aria-hidden="true"><i></i><i></i><i></i></div><span class="eyebrow">Your current tale is safe</span><h2>The story thread slipped</h2><p class="soft-copy" data-error></p><div class="choice-row"><button class="button primary" data-retry>Try again</button><button class="button ghost-light" data-dismiss>Use the story already here</button></div>`;
+      (section.querySelector('[data-error]') as HTMLElement).textContent = status.message;
+      section.querySelector('[data-retry]')?.addEventListener('click', onRetry);
+      section.querySelector('[data-dismiss]')?.addEventListener('click', onDismiss);
+    } else {
+      const stage = status.phase === 'download' ? 'Bringing the small writer into this browser' : status.phase === 'read' ? 'Reading your companion and this meadow' : 'Weaving a private story';
+      section.innerHTML = `<div class="loom-mark active" aria-hidden="true"><i></i><i></i><i></i></div><span class="eyebrow">No prompt leaves this device</span><h2>This device is weaving</h2><p class="soft-copy">The first use downloads about 120–180 MB. You can keep playing; the tale already here remains safe.</p><div class="loom-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span></span></div><div class="loom-status"><b></b><strong></strong></div><button class="text-button">Keep exploring while it writes →</button>`;
+      const progress = section.querySelector<HTMLElement>('[role=progressbar]')!;
+      progress.setAttribute('aria-valuenow', String(percent));
+      (progress.querySelector('span') as HTMLElement).style.width = `${percent}%`;
+      (section.querySelector('.loom-status b') as HTMLElement).textContent = stage;
+      (section.querySelector('.loom-status strong') as HTMLElement).textContent = `${percent}%`;
+      section.querySelector('button')?.addEventListener('click', onDismiss);
+    }
+    root.append(section);
+  }
+
+  return { clear, showWake, showMemoryBeat, showMemoryChapter, showEnding, showMemoryChoice, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp, showStoryLoom };
 }

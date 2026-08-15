@@ -17,6 +17,16 @@ type Panels = ReturnType<typeof createPanels>;
 type Store = ReturnType<typeof createSaveStore>;
 type LocalWriter = ReturnType<typeof createLocalStoryWriter>;
 
+const PHYSICAL_GAME_KEYS: Readonly<Record<string, string>> = {
+  KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd',
+  KeyF: 'f', KeyE: 'e', KeyJ: 'j', KeyC: 'c',
+};
+const MOVEMENT_KEYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright']);
+
+function gameKey(event: KeyboardEvent) {
+  return PHYSICAL_GAME_KEYS[event.code] ?? event.key.toLowerCase();
+}
+
 export function createGameController(initial: GameState, renderer: Renderer, panels: Panels, store: Store, hud: HTMLElement, toastRoot: HTMLElement, localWriter?: LocalWriter, writerPreference?: { enable(): void; isEnabled(): boolean }) {
   let state = initial;
   const keys = new Set<string>();
@@ -314,7 +324,8 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   function keydown(event: KeyboardEvent) {
     if ((event.target as HTMLElement).matches('textarea,input,select')) return;
     if (hasBlockingStory()) return;
-    const key = event.key.toLowerCase();
+    const key = gameKey(event);
+    if (MOVEMENT_KEYS.has(key)) event.preventDefault();
     keys.add(key);
     if (key === 'f' && (!isTutorial() || state.tutorial?.step === 'gift' || state.tutorial?.step === 'combine')) useGift();
     if (key === 'e' && (!isTutorial() || state.tutorial?.step === 'resonate' || state.tutorial?.step === 'plant')) interact();
@@ -322,7 +333,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     if (!isTutorial() && key === 'c') panels.showCharacter(state.character);
   }
 
-  function keyup(event: KeyboardEvent) { keys.delete(event.key.toLowerCase()); }
+  function keyup(event: KeyboardEvent) { keys.delete(gameKey(event)); }
 
   function wake() {
     state = advanceTutorial(state, 'wake');

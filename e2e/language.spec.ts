@@ -23,9 +23,9 @@ test.describe('language selection', () => {
   test.use({ locale: 'de-DE' });
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => localStorage.clear());
-    await page.reload();
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+    await page.reload({ waitUntil: 'domcontentloaded' });
   });
 
   test('falls back to English and keeps game progress when another language is chosen', async ({ page }) => {
@@ -49,11 +49,17 @@ test.describe('language selection', () => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
 
     page.once('dialog', (dialog) => dialog.accept());
-    await page.getByTestId('reload-playthrough').click();
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
+      page.getByTestId('reload-playthrough').click(),
+    ]);
 
     await expect(page.getByText('Ваш случайный спутник')).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
-    expect((await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), SAVE)).worldSeed).not.toBe(seed);
+    await expect.poll(async () => {
+      const raw = await page.evaluate((key) => localStorage.getItem(key), SAVE);
+      return raw ? JSON.parse(raw).worldSeed : null;
+    }).not.toBe(seed);
     expect(await page.evaluate(() => localStorage.getItem('unwritten.prototype.local-writer.v1'))).toBeNull();
   });
 

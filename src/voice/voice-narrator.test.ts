@@ -37,4 +37,39 @@ describe('voice narrator', () => {
     expect(spoken).toEqual(['Притулок щойно клацнув.']);
     expect(statuses.map((item) => item.phase)).toContain('speaking');
   });
+
+  it('does not cancel the first utterance, so the browser keeps the click that started it', () => {
+    const calls: string[] = [];
+    const previousUtterance = globalThis.SpeechSynthesisUtterance;
+    const previousSpeech = globalThis.speechSynthesis;
+    class FakeUtterance {
+      text: string;
+      lang = '';
+      rate = 1;
+      volume = 1;
+      voice: { lang: string; name: string } | null = null;
+      onstart: (() => void) | null = null;
+      onend: (() => void) | null = null;
+      onerror: ((event: { error: string }) => void) | null = null;
+      constructor(text: string) { this.text = text; }
+    }
+    globalThis.SpeechSynthesisUtterance = FakeUtterance as unknown as typeof SpeechSynthesisUtterance;
+    globalThis.speechSynthesis = {
+      paused: false,
+      getVoices: () => [{ lang: 'uk-UA', name: 'Lesya' }],
+      cancel: () => { calls.push('cancel'); },
+      speak: () => { calls.push('speak'); },
+      resume: () => {},
+      addEventListener: () => {},
+    } as unknown as SpeechSynthesis;
+
+    const preference = new MemoryPreference();
+    const narrator = createVoiceNarrator({ preference, locale: 'uk' });
+    narrator.setEnabled(true);
+    narrator.speak('Привіт з галявини.');
+    expect(calls).toEqual(['speak']);
+    narrator.destroy();
+    globalThis.SpeechSynthesisUtterance = previousUtterance;
+    globalThis.speechSynthesis = previousSpeech;
+  });
 });

@@ -14,6 +14,8 @@ function progressFromSave(raw: string | null) {
     anomalies: state.anomalies,
     rewarded: state.rewarded,
     seeds: state.seeds,
+    premise: state.storyArc?.premise,
+    worldName: state.storyArc?.worldName,
   };
 }
 
@@ -38,6 +40,21 @@ test.describe('language selection', () => {
     await expect(page.getByText('Ваш випадковий супутник')).toBeVisible();
     expect(progressFromSave(await page.evaluate((key) => localStorage.getItem(key), SAVE))).toEqual(progressBefore);
     expect(await page.evaluate((key) => localStorage.getItem(key), LOCALE)).toBe('uk');
+  });
+
+  test('start-over clears the save and opens a new beginning', async ({ page }) => {
+    const seed = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).worldSeed, SAVE);
+    await page.evaluate(() => localStorage.setItem('unwritten.prototype.local-writer.v1', 'enabled'));
+    await page.getByRole('button', { name: 'Русский' }).click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
+
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.getByTestId('reload-playthrough').click();
+
+    await expect(page.getByText('Ваш случайный спутник')).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
+    expect((await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), SAVE)).worldSeed).not.toBe(seed);
+    expect(await page.evaluate(() => localStorage.getItem('unwritten.prototype.local-writer.v1'))).toBeNull();
   });
 
   test('persists Russian after reload', async ({ page }) => {

@@ -7,7 +7,7 @@ import { prepareNewRun } from './run';
 describe('Ukrainian save migration', () => {
   afterEach(() => setActiveLocale('uk'));
 
-  it('replaces built-in English catalog and story text without losing progress', () => {
+  it('replaces built-in English catalog text without rewriting the tale', () => {
     const state = prepareNewRun(generateCharacter(8), 2468);
     state.character.gift = { id: 'reveal', name: 'Reveal', description: 'Shows what the world has hidden.' };
     state.character.description = 'A porcelain fox that remembers vanished roads.';
@@ -19,8 +19,7 @@ describe('Ukrainian save migration', () => {
 
     expect(localized.character.gift.name).toBe('Ручний ліхтар');
     expect(localized.character.description.toLocaleLowerCase('uk-UA')).toContain('порцелянова лисиця');
-    expect(localized.storyArc?.premise).toMatch(/[А-ЯІЇЄҐа-яіїєґ]/);
-    expect(localized.storyArc?.premise).not.toContain('English');
+    expect(localized.storyArc?.premise).toBe('An old English meadow story.');
     expect(localized.discoveries).toEqual(['Закритий дороговказ → Пригаданий дороговказ']);
     expect(localized.rewarded).toEqual(['sign']);
   });
@@ -40,7 +39,7 @@ describe('Ukrainian save migration', () => {
     expect(localizeState(state).character.description.toLocaleLowerCase('uk-UA')).toContain('порцеляновий птах');
   });
 
-  it('rebuilds English story popups after the player switches to Ukrainian', () => {
+  it('keeps a generated tale in the language it was written in', () => {
     const state = prepareNewRun(generateCharacter(8), 2468);
     state.storyArc = {
       ...state.storyArc!,
@@ -52,8 +51,8 @@ describe('Ukrainian save migration', () => {
     };
 
     const localized = localizeState(state);
-    expect(localized.storyArc?.locale).toBe('uk');
-    expect(localized.storyArc?.firstClue).toMatch(/[А-ЯІЇЄҐа-яіїєґ]/);
-    expect(localized.storyArc?.firstClue).not.toContain('Latin');
+    expect(localized.storyArc?.locale).toBe('en');
+    expect(localized.storyArc?.firstClue).toBe('A Latin clue returns to the clearing.');
+    expect(localized.storyArc?.premise).toBe('An old English meadow story.');
   });
 });

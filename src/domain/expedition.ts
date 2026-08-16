@@ -184,13 +184,6 @@ export function expeditionNarrativeFor(state:GameState):ExpeditionNarrative|unde
   return run.narrative??fallbackNarrative(run.contractId,[...run.siteIds,run.optionalSiteId],run.seed,expeditionMetaFor(state).reports.flatMap((report)=>report.narrativeFingerprint?[report.narrativeFingerprint]:[]));
 }
 
-function narrativeMatchesLocale(narrative:ExpeditionNarrative,locale:Locale){
-  const text=`${narrative.title} ${narrative.cause} ${narrative.optionalLead}`;
-  const latin=/[A-Za-z]/.test(text);
-  const cyrillic=/[А-ЯЁІЇЄҐа-яёіїєґ]/.test(text);
-  return locale==='en'?latin&&!cyrillic:cyrillic;
-}
-
 function localizeRareFind(find:string,contractId:ContractId,locale:Locale){
   for(const source of ['en','uk','ru'] as const){
     if(FALLBACK_LINE[source].rare[contractId]===find)return FALLBACK_LINE[locale].rare[contractId];
@@ -227,7 +220,7 @@ export function localizeExpedition(run:ExpeditionProgress,recentFingerprints:str
     const site=SITE_NAMES[action.siteId]??say('object');
     return {...action,title:`${VERBS[action.tool]} ${say('near')} ${site}`,outcome:RESULTS[action.tool].outcome};
   });
-  const keepNarrative=run.narrative.source==='local-model'&&narrativeMatchesLocale(run.narrative,locale);
+  const keepNarrative=run.narrative.source==='local-model';
   return {
     ...run,
     completed,

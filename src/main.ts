@@ -9,10 +9,11 @@ import { createSaveStore } from './persistence/save-store';
 import { createCanvasRenderer } from './ui/canvas-renderer';
 import { createPanels } from './ui/panels';
 import { createLocalStoryWriter } from './story/local-story-writer';
-import { createLocalePreference, setActiveLocale } from './i18n/locale';
+import { createLocalePreference, LOCALE_SWITCH_SESSION_KEY, setActiveLocale } from './i18n/locale';
 import { createVoicePreference } from './i18n/voice-preference';
 import { t } from './i18n/messages';
-import { createLanguageSwitcher } from './ui/language-switcher';
+import { resetPlaythrough, WRITER_PREFERENCE_KEY } from './persistence/playthrough-reset';
+import { createSiteChrome } from './ui/language-switcher';
 import { createVersionMark } from './ui/version-mark';
 import { createVoiceNarrator } from './voice/voice-narrator';
 
@@ -38,19 +39,24 @@ const hud = document.querySelector<HTMLElement>('#hud');
 const toasts = document.querySelector<HTMLElement>('#toast-root');
 if (!canvas || !modal || !hud || !toasts) throw new Error(t('incompleteShell'));
 canvas.setAttribute('aria-label', t('canvasLabel', { brand: t('brand') }));
-document.body.append(createLanguageSwitcher(locale, (nextLocale) => {
+const resetAndReload = () => {
+  void resetPlaythrough(localStorage).then(() => location.reload());
+};
+document.body.append(createSiteChrome(locale, (nextLocale) => {
   localePreference.save(nextLocale);
+  sessionStorage.setItem(LOCALE_SWITCH_SESSION_KEY, '1');
   location.reload();
+}, () => {
+  if (confirm(t('reloadGameConfirm'))) resetAndReload();
 }), createVersionMark());
 
 const store = createSaveStore(localStorage);
 const renderer = createCanvasRenderer(canvas);
 let controller: ReturnType<typeof createGameController> | undefined;
-const WRITER_PREFERENCE = 'unwritten.prototype.local-writer.v1';
 
 const panels = createPanels(modal, {
   onImport: (character: Character) => controller?.replaceCharacter(character),
-  onReset: () => { store.clear(); location.reload(); },
+  onReset: resetAndReload,
   onNewTale: () => controller?.beginNewTale(),
   onPersonality: (name: string, description: string, quirk: QuirkId) => controller?.updatePersonality(name, description, QUIRKS[quirk]),
   onAppearance: (appearance: Appearance) => controller?.updateAppearance(appearance),
@@ -83,8 +89,10 @@ if (loaded.kind === 'newer-version') {
     onRelic: (eventId, relic) => controller?.applyRelicCard(eventId, relic),
   }, locale);
   controller = createGameController(state, renderer, panels, store, hud, toasts, localWriter, {
-    enable: () => localStorage.setItem(WRITER_PREFERENCE, 'enabled'),
-    isEnabled: () => localStorage.getItem(WRITER_PREFERENCE) === 'enabled',
+    enable: () => localStorage.setItem(WRITER_PREFERENCE_KEY, 'enabled'),
+    isEnabled: () => localStorage.getItem(WRITER_PREFERENCE_KEY) === 'enabled',
   }, voice);
-  controller.autoLocalStory();
+  const localeOnly = sessionStorage.getItem(LOCALE_SWITCH_SESSION_KEY);
+  if (localeOnly) sessionStorage.removeItem(LOCALE_SWITCH_SESSION_KEY);
+  else controller.autoLocalStory();
 }

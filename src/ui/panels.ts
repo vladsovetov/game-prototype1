@@ -700,7 +700,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
 
   function showHelp() {
     const c = shell(t('howToTravel'), true);
-    c.innerHTML = `<div data-voice-slot></div><p class="soft-copy voice-help-copy"></p><div class="controls keyboard-help"><b></b><span></span><b>F</b><span></span><b>E</b><span></span><b>J</b><span></span><b>C</b><span></span></div><div class="touch-help"><div class="touch-help-mark">●</div><div><b></b><span></span></div><div class="touch-help-mark">✦</div><div><b></b><span></span></div></div><div class="help-map"><div class="help-map-row"><i class="legend-tool"></i><span></span></div><div class="help-map-row"><i class="legend-use"></i><span></span></div><p></p></div><p class="soft-copy help-note"></p><div class="new-tale-note"><span class="eyebrow"></span><p></p><button class="button danger"></button></div>`;
+    c.innerHTML = `<div data-voice-slot></div><p class="soft-copy voice-help-copy"></p><div class="controls keyboard-help"><b></b><span></span><b>F</b><span></span><b>E</b><span></span><b>J</b><span></span><b>C</b><span></span></div><div class="touch-help"><div class="touch-help-mark">●</div><div><b></b><span></span></div><div class="touch-help-mark">✦</div><div><b></b><span></span></div></div><div class="help-map"><div class="help-map-row"><i class="legend-tool"></i><span></span></div><div class="help-map-row"><i class="legend-use"></i><span></span></div><p></p></div><p class="soft-copy help-note"></p><div class="new-tale-note"><span class="eyebrow"></span><p></p><button class="button danger" data-new-tale></button></div><div class="new-tale-note"><span class="eyebrow"></span><p></p><button class="button danger" data-reload-playthrough></button></div>`;
     mountVoiceOffer(c.querySelector('[data-voice-slot]')!, true);
     (c.querySelector('.voice-help-copy') as HTMLElement).textContent = t('voiceHelpCopy');
     const keys = c.querySelectorAll('.keyboard-help b, .keyboard-help span');
@@ -720,11 +720,18 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     map[1]!.textContent = t('helpMapUse');
     map[2]!.textContent = t('helpMapTap');
     (c.querySelector('.help-note') as HTMLElement).textContent = `${t('helpStructure')} ${t('noTimer')} ${t('helpRadio')}`;
-    (c.querySelector('.new-tale-note .eyebrow') as HTMLElement).textContent = t('anotherStart');
-    (c.querySelector('.new-tale-note p') as HTMLElement).textContent = t('newTaleCopy');
-    (c.querySelector('.danger') as HTMLElement).textContent = t('startOtherTale');
-    c.querySelector('.danger')?.addEventListener('click', () => {
+    const notes = c.querySelectorAll('.new-tale-note');
+    (notes[0]!.querySelector('.eyebrow') as HTMLElement).textContent = t('anotherStart');
+    (notes[0]!.querySelector('p') as HTMLElement).textContent = t('newTaleCopy');
+    (c.querySelector('[data-new-tale]') as HTMLElement).textContent = t('startOtherTale');
+    c.querySelector('[data-new-tale]')?.addEventListener('click', () => {
       if (confirm(t('newTaleConfirm'))) actions.onNewTale();
+    });
+    (notes[1]!.querySelector('.eyebrow') as HTMLElement).textContent = t('reloadGame');
+    (notes[1]!.querySelector('p') as HTMLElement).textContent = t('reloadGameCopy');
+    (c.querySelector('[data-reload-playthrough]') as HTMLElement).textContent = t('reloadGame');
+    c.querySelector('[data-reload-playthrough]')?.addEventListener('click', () => {
+      if (confirm(t('reloadGameConfirm'))) actions.onReset();
     });
   }
 

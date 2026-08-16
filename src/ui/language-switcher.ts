@@ -21,3 +21,21 @@ export function createLanguageSwitcher(active: Locale, onSelect: (locale: Locale
   }
   return nav;
 }
+
+export function createReloadButton(onReload: () => void) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'site-reload';
+  button.dataset.testid = 'reload-playthrough';
+  button.textContent = t('reloadGame');
+  button.setAttribute('aria-label', t('reloadGameAria'));
+  button.addEventListener('click', onReload);
+  return button;
+}
+
+export function createSiteChrome(active: Locale, onSelect: (locale: Locale) => void, onReload: () => void) {
+  const chrome = document.createElement('div');
+  chrome.className = 'site-chrome';
+  chrome.append(createLanguageSwitcher(active, onSelect), createReloadButton(onReload));
+  return chrome;
+}

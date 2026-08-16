@@ -154,4 +154,16 @@ describe('expedition director', () => {
     const localized = localizeState(started.state);
     expect(localized.expedition?.narrative.title).toMatch(/[А-ЯІЇЄҐа-яіїєґ]/);
   });
+
+  it('keeps a local-model expedition card when the chrome language changes', () => {
+    setActiveLocale('en');
+    const started = startExpedition(initial(), 'water-route', ['mend', 'reveal'], 11);
+    started.state.expedition = {
+      ...started.state.expedition!,
+      narrative: { ...started.state.expedition!.narrative, source: 'local-model', title: 'A borrowed English title' },
+    };
+
+    setActiveLocale('uk');
+    expect(localizeState(started.state).expedition?.narrative.title).toBe('A borrowed English title');
+  });
 });

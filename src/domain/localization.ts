@@ -1,5 +1,4 @@
 import { BURDENS, GIFTS, QUIRKS } from './catalog';
-import { createWovenStory } from './story';
 import type { GameState } from './types';
 import { generatedDescription } from './character';
 import { gearForDirection } from './equipment';
@@ -85,16 +84,6 @@ function builtInDescription(description: string, locale: Locale) {
   }
 }
 
-function storyNeedsRebuild(state: GameState, locale: Locale) {
-  const arc = state.storyArc;
-  if (!arc) return false;
-  if (arc.locale) return arc.locale !== locale;
-  const copy = [arc.worldName, arc.premise, arc.question, arc.ending.title].join(' ');
-  const looksEnglish = /\b(the|and|was|were|road|memory|home|keeper|meadow|story|light|traveler|place|storm|who)\b/i.test(copy);
-  if (looksEnglish) return locale !== 'en';
-  return locale !== 'uk';
-}
-
 export function localizeState(state: GameState): GameState {
   const locale = getActiveLocale();
   const description = builtInDescription(state.character.description, locale);
@@ -133,7 +122,6 @@ export function localizeState(state: GameState): GameState {
       const legacy = DISCOVERIES[item];
       return legacy ? localizeDiscovery(legacy) : item;
     }),
-    storyArc: storyNeedsRebuild(state, locale) ? createWovenStory(character, seed) : state.storyArc,
   });
   const beat = localized.expedition && localized.season ? beatForExpedition(localized.season, localized.expedition.id) : undefined;
   if (localized.expedition && localized.season && beat && localized.expedition.narrative.source === 'fallback') {

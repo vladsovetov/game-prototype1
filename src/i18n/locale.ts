@@ -2,6 +2,7 @@ export const SUPPORTED_LOCALES = ['en', 'uk', 'ru'] as const;
 export type Locale = typeof SUPPORTED_LOCALES[number];
 
 export const LOCALE_STORAGE_KEY = 'unwritten.prototype.locale.v1';
+export const LOCALE_SWITCH_SESSION_KEY = 'unwritten.prototype.locale-switch';
 
 let activeLocale: Locale = 'uk';
 

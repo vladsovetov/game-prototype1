@@ -18,11 +18,18 @@ button, textarea, input, select { font: inherit; }
 button { cursor: pointer; }
 h1, h2, h3, p { margin-top: 0; }
 
-.language-switcher {
+.site-chrome {
   position: fixed;
   z-index: 80;
   top: max(12px, env(safe-area-inset-top));
   left: max(12px, env(safe-area-inset-left));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.language-switcher,
+.site-reload {
   display: flex;
   gap: 2px;
   padding: 4px;
@@ -52,7 +59,18 @@ h1, h2, h3, p { margin-top: 0; }
   box-shadow: 0 2px 8px rgba(0,0,0,.18);
 }
 
-.language-switcher button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.language-switcher button:focus-visible,
+.site-reload:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+.site-reload {
+  align-items: center;
+  min-height: 40px;
+  padding: 0 12px;
+  color: #f2d795;
+  font: 700 10px/1 system-ui, sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
 
 .version-mark {
   position: fixed;

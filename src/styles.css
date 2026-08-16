@@ -143,6 +143,22 @@ h1, h2, h3, p { margin-top: 0; }
 .first-memory span { color: var(--ink-soft); font-size: 12px; line-height: 1.4; }
 .wake-actions { display: grid; gap: 13px; }
 .wake-actions .text-button { justify-self: start; }
+.voice-offer {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border: 1px solid #315e5430;
+  border-radius: 14px 5px;
+  background: #fffdf4a8;
+  cursor: pointer;
+}
+.voice-offer input { margin-top: 3px; accent-color: #315e54; }
+.voice-offer b { display: block; font: 650 14px/1.25 "Iowan Old Style", Georgia, serif; }
+.voice-offer small { display: block; margin-top: 3px; color: var(--ink-soft); font-size: 11px; line-height: 1.35; }
+.voice-help { margin: 0 0 10px; }
+.voice-help-copy { margin: 0 0 18px; font-size: 13px; }
 .wake-local { display: grid; grid-template-columns: 1fr auto; gap: 3px 15px; align-items: center; }
 .wake-local small { grid-column: 1 / -1; color: #684f28; font-size: 9px; font-weight: 650; }
 .memory-beat { width: min(560px, calc(100vw - 40px)); max-height: calc(100dvh - 24px); overflow: auto; }
@@ -349,6 +365,9 @@ textarea { min-height: 180px; resize: vertical; font: 13px/1.55 ui-monospace, SF
   .wake-card h1 { margin: 10px 0 8px; font-size: 44px; }
   .wake-card p { margin-bottom: 17px; font-size: 15px; line-height: 1.45; }
   .wake-card .first-memory { margin-bottom: 17px; padding: 11px 13px; }
+  .voice-offer { margin-top: 10px; padding: 8px 10px; }
+  .voice-offer b { font-size: 13px; }
+  .voice-offer small { font-size: 10px; }
   .memory-beat, .memory-choice-card, .memory-chapter-card, .story-loom-card { padding: 24px; }
   .memory-chapter-card h2 { max-width: calc(100% - 64px); font-size: clamp(36px, 11vw, 48px); }
   .chapter-number { right: 20px; top: 54px; width: 58px; height: 58px; }

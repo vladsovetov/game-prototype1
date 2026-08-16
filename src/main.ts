@@ -10,15 +10,28 @@ import { createCanvasRenderer } from './ui/canvas-renderer';
 import { createPanels } from './ui/panels';
 import { createLocalStoryWriter } from './story/local-story-writer';
 import { createLocalePreference, setActiveLocale } from './i18n/locale';
+import { createVoicePreference } from './i18n/voice-preference';
 import { t } from './i18n/messages';
 import { createLanguageSwitcher } from './ui/language-switcher';
 import { createVersionMark } from './ui/version-mark';
+import { createVoiceNarrator } from './voice/voice-narrator';
 
 const localePreference = createLocalePreference(localStorage, navigator.languages?.length ? navigator.languages : [navigator.language]);
 const locale = localePreference.load();
 setActiveLocale(locale);
 document.documentElement.lang = locale;
 document.title = t('brand');
+const voicePreference = createVoicePreference(localStorage);
+document.documentElement.dataset.voiceState = voicePreference.load() ? 'ready' : 'off';
+const voice = createVoiceNarrator({
+  workerFactory: () => new Worker(new URL('./voice/voice-worker.ts', import.meta.url), { type: 'module' }),
+  preference: voicePreference,
+  locale,
+  onStatus: (status) => {
+    document.documentElement.dataset.voiceState = status.phase;
+    panels.updateVoiceStatus(status);
+  },
+});
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas');
 const modal = document.querySelector<HTMLElement>('#modal-root');
@@ -47,6 +60,8 @@ const panels = createPanels(modal, {
   onEquip: (id: WearableId) => controller?.updateEquipment(id),
   onStartExpedition: (id: ContractId, loadout: [GiftId, GiftId]) => controller?.startContract(id, loadout),
   onBuildProject: (id: RefugeProjectId) => controller?.buildProject(id),
+  onToggleVoice: (enabled) => controller?.toggleVoice(enabled),
+  isVoiceEnabled: () => voice.isEnabled(),
 });
 
 const loaded = store.load();
@@ -71,6 +86,6 @@ if (loaded.kind === 'newer-version') {
   controller = createGameController(state, renderer, panels, store, hud, toasts, localWriter, {
     enable: () => localStorage.setItem(WRITER_PREFERENCE, 'enabled'),
     isEnabled: () => localStorage.getItem(WRITER_PREFERENCE) === 'enabled',
-  });
+  }, voice);
   controller.autoLocalStory();
 }

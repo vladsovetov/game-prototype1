@@ -129,7 +129,7 @@ test('gives an already-full older sanctuary its ending without losing saved choi
 
   await expect(page.getByRole('heading', { name: 'Хранитель Дому Ліхтарів' })).toBeVisible();
   const saved = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), SAVE_KEY);
-  expect(saved.character.name).toBe('Morrow');
+  expect(saved.character.name).toBe('Морроу');
   expect(saved.memoryDetails['road-home']).toBe('Обрана родина');
   expect(Object.keys(saved.plantings)).toHaveLength(6);
 });

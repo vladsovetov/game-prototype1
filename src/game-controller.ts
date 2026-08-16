@@ -23,6 +23,8 @@ import { seasonBeatName, seasonDirectorNotes, seasonProgress } from './domain/se
 import type { RadioRemark, Relic } from './domain/types';
 import { randomSeed } from './domain/random';
 import { t } from './i18n/messages';
+import type { VoiceNarrator } from './voice/voice-narrator';
+import { chapterNarrative, endingNarrative, loomNarrative, memoryBeatNarrative, memoryChoiceNarrative, radioNarrative, tutorialNarrative, wakeNarrative } from './voice/narrative-copy';
 
 type Renderer = ReturnType<typeof createCanvasRenderer>;
 type Panels = ReturnType<typeof createPanels>;
@@ -39,7 +41,7 @@ function gameKey(event: KeyboardEvent) {
   return PHYSICAL_GAME_KEYS[event.code] ?? event.key.toLowerCase();
 }
 
-export function createGameController(initial: GameState, renderer: Renderer, panels: Panels, store: Store, hud: HTMLElement, toastRoot: HTMLElement, localWriter?: LocalWriter, writerPreference?: { enable(): void; isEnabled(): boolean }) {
+export function createGameController(initial: GameState, renderer: Renderer, panels: Panels, store: Store, hud: HTMLElement, toastRoot: HTMLElement, localWriter?: LocalWriter, writerPreference?: { enable(): void; isEnabled(): boolean }, voice?: VoiceNarrator) {
   let state = initial;
   const keys = new Set<string>();
   let previous = performance.now();
@@ -63,6 +65,33 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   radioRoot.hidden = true;
   radioRoot.setAttribute('aria-live', 'polite');
   toastRoot.parentElement?.prepend(radioRoot);
+
+  let spokenKey = '';
+  const speakNarrative = (key: string, text: string) => {
+    if (!voice?.isEnabled() || !text.trim()) return;
+    if (key === spokenKey) return;
+    spokenKey = key;
+    voice.speak(text);
+  };
+  const speakVisibleNarrative = () => {
+    spokenKey = '';
+    if (state.pendingChapter) {
+      const chapter = storyFor(state).chapters[state.pendingChapter] ?? memoryChapter(state.pendingChapter);
+      if (chapter) speakNarrative(`chapter-${chapter.id}`, chapterNarrative(chapter.title, chapter.story));
+      return;
+    }
+    if (hasReachedEnding(state) && !state.endingSeen) {
+      const ending = storyFor(state).ending;
+      speakNarrative('ending', endingNarrative(ending.title, ending.story));
+      return;
+    }
+    const step = state.tutorial?.step;
+    if (step === 'wake') speakNarrative('wake', wakeNarrative(state));
+    else if (step === 'clue') speakNarrative('clue', memoryBeatNarrative(t('clueReturned'), storyFor(state).firstClue));
+    else if (step === 'recovered') speakNarrative('recovered', memoryBeatNarrative(t('memoryRestored'), storyFor(state).recovered));
+    else if (step === 'remember') speakNarrative('remember', memoryChoiceNarrative(state));
+    else if (isTutorial() && step && step !== 'personalize' && step !== 'done') speakNarrative(`tutorial-${step}`, tutorialNarrative(state));
+  };
 
   const isTutorial = () => !!state.tutorial && state.tutorial.step !== 'done';
   const hasBlockingStory = () => !!state.pendingChapter || hasReachedEnding(state);
@@ -134,6 +163,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     const copy = document.createElement('p');
     copy.textContent = remark.text;
     radioRoot.append(label, copy);
+    speakNarrative(`radio-${remark.id}`, radioNarrative(remark));
     radioTimer = window.setTimeout(() => renderRadio(), RADIO_HOLD_MS);
   }
 
@@ -159,6 +189,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       const key = hud.querySelector<HTMLElement>('.objective-key')!;
       if (objective.key) key.textContent = isTouchLayout() ? (objective.key === 'WASD' ? t('drag') : t('touch')) : objective.key;
       else key.remove();
+      speakNarrative(`tutorial-${state.tutorial?.step}-${objective.title}`, tutorialNarrative(state));
       if (isTouchLayout()) renderTouchControls(objective.key === 'E');
       mountMinimap();
       return;
@@ -317,8 +348,10 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     const story = storyFor(state);
     if (state.tutorial?.step === 'clue') {
       panels.showMemoryBeat(t('clueReturned'), story.firstClue, t('finishMemory'), finishClue, story.chapters.sign?.title);
+      speakNarrative('clue', memoryBeatNarrative(t('clueReturned'), story.firstClue));
     } else if (state.tutorial?.step === 'recovered') {
       panels.showMemoryBeat(t('memoryRestored'), story.recovered, t('takeHome'), finishRecoveredMemory, story.chapters.sign?.title);
+      speakNarrative('recovered', memoryBeatNarrative(t('memoryRestored'), story.recovered));
     }
   }
 
@@ -338,6 +371,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     }
     clearToast();
     panels.showMemoryChapter(chapter, state.rewarded.length, finishMemoryChapter);
+    speakNarrative(`chapter-${chapter.id}`, chapterNarrative(chapter.title, chapter.story));
   }
 
   function finishEnding() {
@@ -351,16 +385,25 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     if (!hasReachedEnding(state)) return;
     clearToast();
     const season = seasonProgress(state.season);
-    panels.showEnding(state.character, storyFor(state).ending, finishEnding, t('endingNext', {
+    const nextHint = t('endingNext', {
       total: season.total || 6,
       remaining: Math.max(0, (season.total || 6) - season.resolved),
-    }));
+    });
+    panels.showEnding(state.character, storyFor(state).ending, finishEnding, nextHint);
+    speakNarrative('ending', endingNarrative(storyFor(state).ending.title, storyFor(state).ending.story, nextHint));
   }
 
   function useGift() {
     if(!isTutorial()&&state.expedition?.status==='active'){
       if(!expeditionTarget(state)||distance(state.player,expeditionTarget(state)!)>165){toast(t('followGold'));return}
-      panels.showWorkChoices(state,performExpeditionWork);return;
+      panels.showWorkChoices(state,performExpeditionWork);
+      const run=state.expedition;
+      const narrative=expeditionNarrativeFor(state);
+      if(run&&narrative){
+        const siteId=run.completed.length<run.requiredTotal?run.siteIds[run.completed.length]:run.optionalSiteId;
+        speakNarrative(`work-${run.id}-${run.completed.length}`,memoryBeatNarrative(narrative.title,narrative.siteNotes.find((item)=>item.siteId===siteId)?.observation??narrative.cause));
+      }
+      return;
     }
     const before = state.tutorial?.step;
     const targetId = state.tutorial?.targetAnomalyId;
@@ -389,7 +432,11 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   function performExpeditionWork(tool:GiftId){
     const worked=applyWorkAction(state,tool);state=worked.state;panels.clear();saveAndRefresh();toast(worked.message);
-    if(worked.ok&&state.expedition?.status==='decision')panels.showExpeditionDecision(state,decideExpedition);
+    if(worked.ok&&state.expedition?.status==='decision'){
+      panels.showExpeditionDecision(state,decideExpedition);
+      const narrative=expeditionNarrativeFor(state);
+      if(narrative)speakNarrative(`decision-${state.expedition.id}`,memoryBeatNarrative(t('stayOrGo'),`${narrative.optionalLead} ${narrative.warning}`));
+    }
   }
 
   function decideExpedition(accept:boolean){
@@ -408,9 +455,13 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
           const season=seasonProgress(state.season);
           const note=season.complete?t('debriefSeasonDone'):t('debriefSeason',{done:season.resolved,total:season.total,next:season.nextBeat?seasonBeatName(season.nextBeat.id):''});
           panels.showExpeditionDebrief(completed.report,()=>{
-            if(season.complete)panels.showSeasonClose(state,panels.clear);
+            if(season.complete){
+              panels.showSeasonClose(state,panels.clear);
+              speakNarrative('season-close', t('seasonCloseCopy'));
+            }
             else panels.clear();
           },note);
+          speakNarrative(`debrief-${completed.report.id}`, memoryBeatNarrative(completed.report.title, completed.report.summary));
         }
         renderRadio();
         return;
@@ -447,7 +498,10 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
         }
         apply(result);
         if (result.changed && before === 'plant') {
-          if (isRoadHomeRoute) panels.showMemoryChoice(state.character, rememberMemory, storyFor(state));
+          if (isRoadHomeRoute) {
+            panels.showMemoryChoice(state.character, rememberMemory, storyFor(state));
+            speakNarrative('remember', memoryChoiceNarrative(state));
+          }
           else panels.showPersonalize(state.character);
         }
         if (result.changed && !isTutorial()) showPendingEnding();
@@ -536,7 +590,10 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     if (state.pendingChapter) showPendingMemoryChapter();
     else if (hasReachedEnding(state)) showPendingEnding();
     else if (state.tutorial?.step === 'clue' || state.tutorial?.step === 'recovered') showCurrentStoryStep();
-    else if (state.tutorial?.step === 'remember') panels.showMemoryChoice(character, rememberMemory, storyFor(state));
+    else if (state.tutorial?.step === 'remember') {
+      panels.showMemoryChoice(character, rememberMemory, storyFor(state));
+      speakNarrative('remember', memoryChoiceNarrative(state));
+    }
     else if (state.tutorial?.step === 'personalize') panels.showPersonalize(character);
     else panels.clear();
     toast(t('entersMemory', { name: character.name }));
@@ -667,12 +724,14 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     panels.clear();
     saveAndRefresh();
     panels.showWake(state.character, wake, true, storyFor(state));
+    speakNarrative('wake', wakeNarrative(state));
     if (writerPreference?.isEnabled()) localWriter?.start(state.character, state.worldSeed ?? 0);
   }
 
   function showWriterStatus(status: WriterStatus) {
     if (!writerPanelVisible) return;
     panels.showStoryLoom(status, dismissLocalStory, retryLocalStory);
+    if (status.phase === 'complete') speakNarrative(`loom-${status.story.seed}`, loomNarrative(status.story.premise));
   }
 
   function applyLocalStory(story: NonNullable<GameState['storyArc']>) {
@@ -681,7 +740,10 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     if (state.tutorial?.step === 'wake') state = prepareTutorial(state);
     writerPreference?.enable();
     saveAndRefresh();
-    if (!writerPanelVisible && state.tutorial?.step === 'wake') panels.showWake(state.character, wake, true, storyFor(state));
+    if (!writerPanelVisible && state.tutorial?.step === 'wake') {
+      panels.showWake(state.character, wake, true, storyFor(state));
+      speakNarrative('wake', wakeNarrative(state));
+    }
   }
 
   function startLocalStory() {
@@ -696,9 +758,19 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   function dismissLocalStory() {
     writerPanelVisible = false;
-    if (state.tutorial?.step === 'wake') panels.showWake(state.character, wake, true, storyFor(state));
+    if (state.tutorial?.step === 'wake') {
+      panels.showWake(state.character, wake, true, storyFor(state));
+      speakNarrative('wake', wakeNarrative(state));
+    }
     else if (state.tutorial?.step === 'personalize') panels.showPersonalize(state.character);
     else panels.clear();
+  }
+
+  function toggleVoice(enabled: boolean) {
+    voice?.setEnabled(enabled);
+    spokenKey = '';
+    if (enabled) speakVisibleNarrative();
+    panels.updateVoiceStatus(voice?.status() ?? { phase: enabled ? 'ready' : 'off', progress: enabled ? 1 : 0 });
   }
 
   function autoLocalStory() {
@@ -722,9 +794,15 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   store.save(state);
   if (state.pendingChapter) showPendingMemoryChapter();
   else if (hasReachedEnding(state)) showPendingEnding();
-  else if (state.tutorial?.step === 'wake') panels.showWake(state.character, wake, state.tutorial.targetAnomalyId === 'sign', storyFor(state));
+  else if (state.tutorial?.step === 'wake') {
+    panels.showWake(state.character, wake, state.tutorial.targetAnomalyId === 'sign', storyFor(state));
+    speakNarrative('wake', wakeNarrative(state));
+  }
   else if (state.tutorial?.step === 'clue' || state.tutorial?.step === 'recovered') showCurrentStoryStep();
-  else if (state.tutorial?.step === 'remember') panels.showMemoryChoice(state.character, rememberMemory, storyFor(state));
+  else if (state.tutorial?.step === 'remember') {
+    panels.showMemoryChoice(state.character, rememberMemory, storyFor(state));
+    speakNarrative('remember', memoryChoiceNarrative(state));
+  }
   else if (state.tutorial?.step === 'personalize') panels.showPersonalize(state.character);
   else panels.clear();
   frameId = requestAnimationFrame(frame);
@@ -746,6 +824,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     applyRelicCard,
     startLocalStory,
     autoLocalStory,
+    toggleVoice,
     destroy: () => {
       removeEventListener('keydown', keydown);
       removeEventListener('keyup', keyup);
@@ -758,6 +837,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       cancelAnimationFrame(frameId);
       clearTimeout(radioTimer);
       radioRoot.remove();
+      voice?.stop();
       localWriter?.destroy();
     },
   };

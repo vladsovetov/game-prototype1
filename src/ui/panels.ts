@@ -12,6 +12,9 @@ import { CONTRACTS, REFUGE_PROJECTS, availableWorkActions, expeditionMetaFor, ex
 import { seasonBeatName, seasonProgress, seasonSourceRevealed, seasonThroughline } from '../domain/season';
 import { GIFTS } from '../domain/catalog';
 import type { ContractId, ExpeditionReport, GiftId, RefugeProjectId } from '../domain/types';
+import { fieldVoiceFor } from '../voice/voice-catalog';
+import type { VoiceStatus } from '../voice/voice-narrator';
+import { getActiveLocale } from '../i18n/locale';
 
 export interface PanelActions {
   onImport(character: Character): void;
@@ -24,11 +27,50 @@ export interface PanelActions {
   onEquip(id: WearableId): void;
   onStartExpedition(id: ContractId, loadout: [GiftId, GiftId]): void;
   onBuildProject(id: RefugeProjectId): void;
+  onToggleVoice?(enabled: boolean): void;
+  isVoiceEnabled?(): boolean;
 }
 
 export function createPanels(root: HTMLElement, actions: PanelActions) {
   let currentCharacter: Character | undefined;
   const clear = () => root.replaceChildren();
+
+  function voiceStatusCopy(status?: VoiceStatus) {
+    if (!status || status.phase === 'off') return t('voiceOfferHint', { size: fieldVoiceFor(getActiveLocale()).sizeMb });
+    if (status.phase === 'download') return t('voiceDownloading', { percent: Math.round(status.progress * 100) });
+    if (status.phase === 'speaking') return t('voiceSpeaking');
+    if (status.phase === 'error') return status.message ?? t('voiceError');
+    return t('voiceReady');
+  }
+
+  function mountVoiceOffer(parent: HTMLElement, compact = false) {
+    if (!actions.onToggleVoice) return;
+    const label = document.createElement('label');
+    label.className = compact ? 'voice-offer voice-help' : 'voice-offer';
+    label.innerHTML = `<input type="checkbox" data-testid="voice-offer" /><span><b></b><small data-testid="voice-status"></small></span>`;
+    const input = label.querySelector('input')!;
+    input.checked = !!actions.isVoiceEnabled?.();
+    input.setAttribute('aria-label', t('voiceOfferAria'));
+    (label.querySelector('b') as HTMLElement).textContent = compact ? t('voiceHelp') : t('voiceOffer');
+    const status = label.querySelector<HTMLElement>('[data-testid=voice-status]')!;
+    status.textContent = compact
+      ? (input.checked ? t('voiceOn') : t('voiceOff'))
+      : voiceStatusCopy();
+    input.addEventListener('change', () => actions.onToggleVoice?.(input.checked));
+    parent.append(label);
+  }
+
+  function updateVoiceStatus(status: VoiceStatus) {
+    document.documentElement.dataset.voiceState = status.phase;
+    for (const node of root.querySelectorAll<HTMLElement>('[data-testid=voice-status]')) {
+      node.dataset.state = status.phase;
+      node.textContent = node.closest('.voice-help')
+        ? (status.phase === 'off' ? t('voiceOff') : status.phase === 'error' ? t('voiceError') : t('voiceOn'))
+        : voiceStatusCopy(status);
+    }
+    const offer = root.querySelector<HTMLInputElement>('[data-testid=voice-offer]');
+    if (offer) offer.checked = status.phase !== 'off';
+  }
 
   const shell = (title: string, compact = false, onClose: () => void = clear) => {
     clear();
@@ -78,6 +120,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     (wake.querySelector('span') as HTMLElement).textContent = localReady ? t('enterWorld') : t('wakeNow');
     wake.addEventListener('click', onWake);
     actionsRoot.append(wake);
+    mountVoiceOffer(section);
     root.append(section);
   }
 
@@ -660,7 +703,9 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
 
   function showHelp() {
     const c = shell(t('howToTravel'), true);
-    c.innerHTML = `<div class="controls keyboard-help"><b></b><span></span><b>F</b><span></span><b>E</b><span></span><b>J</b><span></span><b>C</b><span></span></div><div class="touch-help"><div class="touch-help-mark">●</div><div><b></b><span></span></div><div class="touch-help-mark">✦</div><div><b></b><span></span></div></div><div class="help-map"><div class="help-map-row"><i class="legend-tool"></i><span></span></div><div class="help-map-row"><i class="legend-use"></i><span></span></div><p></p></div><p class="soft-copy help-note"></p><div class="new-tale-note"><span class="eyebrow"></span><p></p><button class="button danger"></button></div>`;
+    c.innerHTML = `<div data-voice-slot></div><p class="soft-copy voice-help-copy"></p><div class="controls keyboard-help"><b></b><span></span><b>F</b><span></span><b>E</b><span></span><b>J</b><span></span><b>C</b><span></span></div><div class="touch-help"><div class="touch-help-mark">●</div><div><b></b><span></span></div><div class="touch-help-mark">✦</div><div><b></b><span></span></div></div><div class="help-map"><div class="help-map-row"><i class="legend-tool"></i><span></span></div><div class="help-map-row"><i class="legend-use"></i><span></span></div><p></p></div><p class="soft-copy help-note"></p><div class="new-tale-note"><span class="eyebrow"></span><p></p><button class="button danger"></button></div>`;
+    mountVoiceOffer(c.querySelector('[data-voice-slot]')!, true);
+    (c.querySelector('.voice-help-copy') as HTMLElement).textContent = t('voiceHelpCopy');
     const keys = c.querySelectorAll('.keyboard-help b, .keyboard-help span');
     keys[0]!.textContent = t('wasd');
     keys[1]!.textContent = t('helpMove');
@@ -736,5 +781,5 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
     root.append(section);
   }
 
-  return { clear, showWake, showMemoryBeat, showMemoryChapter, showEnding, showWhatNext, showSeasonClose, showMemoryChoice, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp, showStoryLoom, showContractBoard, showWorkChoices, showExpeditionDecision, showExpeditionDebrief, refreshExpeditionNarrative };
+  return { clear, showWake, showMemoryBeat, showMemoryChapter, showEnding, showWhatNext, showSeasonClose, showMemoryChoice, showNewerSave, showPersonalize, showImport, showAI, showCharacter, showJournal, showHelp, showStoryLoom, showContractBoard, showWorkChoices, showExpeditionDecision, showExpeditionDebrief, refreshExpeditionNarrative, updateVoiceStatus };
 }

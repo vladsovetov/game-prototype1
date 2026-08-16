@@ -76,3 +76,48 @@ test('starts a hidden season, speaks on the radio, and packs a trusted relic', a
   await page.getByTestId('character-button').click();
   await expect(page.getByTestId('relic-list')).toContainText(finished.relics![0]!.name);
 });
+
+function aboveControl(notice: { y: number; height: number }, control: { y: number }) {
+  return notice.y + notice.height < control.y - 4;
+}
+
+test('keeps the earpiece and toasts off the phone joystick, map, and actions', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  await page.getByTestId('contracts-button').click();
+  await page.locator('[data-tool="mend"]').click();
+  await page.locator('[data-tool="reveal"]').click();
+  await page.getByRole('button', { name: /Вирушити/ }).first().click();
+
+  const toast = page.locator('.toast');
+  const joystick = page.getByTestId('touch-joystick');
+  const map = page.getByTestId('minimap');
+  const actions = page.locator('.touch-actions');
+  await expect(toast).toBeVisible();
+  await expect(joystick).toBeVisible();
+
+  const toastBox = await toast.boundingBox();
+  const stickBox = await joystick.boundingBox();
+  const mapBox = await map.boundingBox();
+  const actionBox = await actions.boundingBox();
+  if (!toastBox || !stickBox || !mapBox || !actionBox) throw new Error('Phone notice or controls have no bounds.');
+  expect(aboveControl(toastBox, stickBox)).toBe(true);
+  expect(aboveControl(toastBox, mapBox)).toBe(true);
+  expect(aboveControl(toastBox, actionBox)).toBe(true);
+  await expect(page.getByTestId('notice-root')).toHaveCSS('pointer-events', 'none');
+
+  await page.keyboard.down('KeyD');
+  const radio = page.getByTestId('radio-remark');
+  await expect(radio).toBeVisible({ timeout: 8000 });
+  await page.keyboard.up('KeyD');
+  await expect(radio).toContainText('У навушнику');
+
+  const radioBox = await radio.boundingBox();
+  const liveStick = await joystick.boundingBox();
+  const liveMap = await map.boundingBox();
+  const liveActions = await actions.boundingBox();
+  if (!radioBox || !liveStick || !liveMap || !liveActions) throw new Error('Earpiece or controls have no bounds.');
+  expect(aboveControl(radioBox, liveStick)).toBe(true);
+  expect(aboveControl(radioBox, liveMap)).toBe(true);
+  expect(aboveControl(radioBox, liveActions)).toBe(true);
+});

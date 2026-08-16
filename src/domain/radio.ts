@@ -3,6 +3,7 @@ import { beatForExpedition, ensureSeason, seasonHook } from './season';
 import type { GameState, RadioLog, RadioRemark, RadioVoice, SeasonBeatId } from './types';
 
 export const RADIO_WALK_GAP = 420;
+export const RADIO_HOLD_MS = 5600;
 
 interface RadioLine {
   id: string;

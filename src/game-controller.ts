@@ -17,7 +17,7 @@ import { gearForDirection } from './domain/equipment';
 import type { WearableId } from './domain/types';
 import { movementPose } from './ui/canvas-renderer';
 import { CONTRACTS, applyExpeditionNarrative, applyWorkAction, buildRefugeProject, chooseOptionalLead, completeExpedition, expeditionMetaFor, expeditionNarrativeFor, expeditionTarget, startExpedition } from './domain/expedition';
-import { canSpeakRadio, nextRadioRemark, radioDirectorNotes, replaceLastRadio, speakRadio } from './domain/radio';
+import { canSpeakRadio, nextRadioRemark, RADIO_HOLD_MS, radioDirectorNotes, replaceLastRadio, speakRadio } from './domain/radio';
 import { RELIC_COLORS, RELIC_FORMS, replaceLastRelic } from './domain/relics';
 import { seasonBeatName, seasonDirectorNotes, seasonProgress } from './domain/season';
 import type { RadioRemark, Relic } from './domain/types';
@@ -44,6 +44,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   const keys = new Set<string>();
   let previous = performance.now();
   let toastTimer = 0;
+  let radioTimer = 0;
   let frameId = 0;
   let wasNearResonance = false;
   let touchPointer: number | undefined;
@@ -61,7 +62,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   radioRoot.dataset.testid = 'radio-remark';
   radioRoot.hidden = true;
   radioRoot.setAttribute('aria-live', 'polite');
-  toastRoot.parentElement?.append(radioRoot);
+  toastRoot.parentElement?.prepend(radioRoot);
 
   const isTutorial = () => !!state.tutorial && state.tutorial.step !== 'done';
   const hasBlockingStory = () => !!state.pendingChapter || hasReachedEnding(state);
@@ -120,6 +121,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   }
 
   function renderRadio(remark?: RadioRemark) {
+    clearTimeout(radioTimer);
     if (!remark) {
       radioRoot.hidden = true;
       radioRoot.replaceChildren();
@@ -132,6 +134,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     const copy = document.createElement('p');
     copy.textContent = remark.text;
     radioRoot.append(label, copy);
+    radioTimer = window.setTimeout(() => renderRadio(), RADIO_HOLD_MS);
   }
 
   function updateHud() {
@@ -753,6 +756,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       document.removeEventListener('visibilitychange', visibilityChanged);
       removeEventListener('resize', resize);
       cancelAnimationFrame(frameId);
+      clearTimeout(radioTimer);
       radioRoot.remove();
       localWriter?.destroy();
     },

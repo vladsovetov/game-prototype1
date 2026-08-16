@@ -12,17 +12,22 @@ const languageInstruction:Record<Locale,string>={
 
 export function openingPrompt(locale:Locale,character:PromptCharacter,seed:number):PromptMessage[]{
   const schema='{"place":"place name, max 64 characters","role":"grounded role","disaster":"specific past event","vow":"short promise","motif":"physical motif","truth":"hidden personal truth"}';
+  const example=locale==='uk'
+    ? '{"place":"Сад Малих Місяців","role":"садівник світла","disaster":"вітер забрав імена","vow":"Я залишу світло.","motif":"золоті зерна","truth":"дім будували для інших"}'
+    : locale==='ru'
+      ? '{"place":"Сад Малых Лун","role":"садовник света","disaster":"ветер унёс имена","vow":"Я оставлю свет.","motif":"золотые зёрна","truth":"дом строили для других"}'
+      : '{"place":"Garden of Small Moons","role":"gardener of light","disaster":"the wind took the names","vow":"I will leave a light.","motif":"golden seeds","truth":"home was built for others"}';
   if(locale==='uk')return[
-    {role:'system',content:`Ти пишеш затишну польову історію. ${languageInstruction.uk} Поверни лише валідний JSON без markdown, пояснень чи англійських слів.`},
-    {role:'user',content:`Створи відмінний початок світу для ${character.name}. Супутник: ${character.description}. Інструмент: ${character.gift}. Стиль роботи: ${character.burden}. Риса: ${character.quirk}. Випадкове зерно: ${seed}. Схема: ${schema}`},
+    {role:'system',content:`Ти пишеш затишну польову історію. ${languageInstruction.uk} Поверни лише один валідний JSON без markdown, пояснень чи англійських слів. Усі шість полів короткі.`},
+    {role:'user',content:`Створи відмінний початок світу для ${character.name}. Супутник: ${character.description}. Інструмент: ${character.gift}. Стиль роботи: ${character.burden}. Риса: ${character.quirk}. Випадкове зерно: ${seed}. Схема: ${schema} Приклад: ${example}`},
   ];
   if(locale==='ru')return[
-    {role:'system',content:`Ты пишешь уютную полевую историю. ${languageInstruction.ru} Верни только валидный JSON без markdown, пояснений или английских слов.`},
-    {role:'user',content:`Создай непохожее на прошлые начало мира для ${character.name}. Спутник: ${character.description}. Инструмент: ${character.gift}. Стиль работы: ${character.burden}. Черта: ${character.quirk}. Случайное зерно: ${seed}. Схема: ${schema}`},
+    {role:'system',content:`Ты пишешь уютную полевую историю. ${languageInstruction.ru} Верни только один валидный JSON без markdown, пояснений или английских слов. Все шесть полей короткие.`},
+    {role:'user',content:`Создай непохожее на прошлые начало мира для ${character.name}. Спутник: ${character.description}. Инструмент: ${character.gift}. Стиль работы: ${character.burden}. Черта: ${character.quirk}. Случайное зерно: ${seed}. Схема: ${schema} Пример: ${example}`},
   ];
   return[
-    {role:'system',content:`You write a cozy field story. ${languageInstruction.en} Return one valid JSON object without markdown or explanations.`},
-    {role:'user',content:`Create a distinctive new world opening for ${character.name}. Companion: ${character.description}. Tool: ${character.gift}. Work style: ${character.burden}. Trait: ${character.quirk}. Random seed: ${seed}. Schema: ${schema}`},
+    {role:'system',content:`You write a cozy field story. ${languageInstruction.en} Return one valid JSON object without markdown or explanations. Keep all six fields short.`},
+    {role:'user',content:`Create a distinctive new world opening for ${character.name}. Companion: ${character.description}. Tool: ${character.gift}. Work style: ${character.burden}. Trait: ${character.quirk}. Random seed: ${seed}. Schema: ${schema} Example: ${example}`},
   ];
 }
 

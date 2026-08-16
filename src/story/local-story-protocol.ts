@@ -65,15 +65,64 @@ function expeditionReason(locale: Locale, key: keyof typeof EXPEDITION_REASONS.u
   return EXPEDITION_REASONS[locale][key];
 }
 
-export function parseStoryIngredients(raw: string, locale: Locale = 'uk'): StoryParseResult {
-  const start = raw.indexOf('{');
-  const end = raw.lastIndexOf('}');
-  if (start < 0 || end <= start) return { ok: false, reason: storyReason(locale, 'noObject') };
-  let parsed: unknown;
+function extractJsonObject(raw: string) {
+  let best: string | undefined;
+  for (let start = 0; start < raw.length; start++) {
+    if (raw[start] !== '{') continue;
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    let end = -1;
+    for (let index = start; index < raw.length; index++) {
+      const character = raw[index]!;
+      if (inString) {
+        if (escape) escape = false;
+        else if (character === '\\') escape = true;
+        else if (character === '"') inString = false;
+        continue;
+      }
+      if (character === '"') inString = true;
+      else if (character === '{') depth++;
+      else if (character === '}') {
+        depth--;
+        if (depth === 0) {
+          end = index;
+          break;
+        }
+      }
+    }
+    if (end >= 0) {
+      best = raw.slice(start, end + 1);
+      start = end;
+      continue;
+    }
+    let repaired = raw.slice(start);
+    if (escape) repaired += ' ';
+    if (inString) repaired += '"';
+    repaired = repaired.replace(/,\s*$/, '');
+    while (depth > 0) {
+      repaired += '}';
+      depth--;
+    }
+    return repaired;
+  }
+  return best;
+}
+
+function parseJsonObject(raw: string) {
+  const object = extractJsonObject(raw);
+  if (!object) return;
   try {
-    parsed = JSON.parse(raw.slice(start, end + 1));
+    return JSON.parse(object) as unknown;
   } catch {
-    return { ok: false, reason: storyReason(locale, 'incomplete') };
+    return;
+  }
+}
+
+export function parseStoryIngredients(raw: string, locale: Locale = 'uk'): StoryParseResult {
+  const parsed = parseJsonObject(raw);
+  if (parsed === undefined) {
+    return { ok: false, reason: raw.includes('{') ? storyReason(locale, 'incomplete') : storyReason(locale, 'noObject') };
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { ok: false, reason: storyReason(locale, 'shape') };
   const source = parsed as Record<string, unknown>;
@@ -117,9 +166,8 @@ export type ExpeditionParseResult={ok:true;value:ExpeditionNarrative}|{ok:false;
 const bounded=(value:unknown,max:number,locale:Locale):value is string=>typeof value==='string'&&!!value.trim()&&value.trim().length<=max&&languageText(value,locale);
 
 export function parseExpeditionNarrative(raw:string,siteIds:string[],recentFingerprints:string[],locale:Locale='uk'):ExpeditionParseResult{
-  const start=raw.indexOf('{'),end=raw.lastIndexOf('}');
-  if(start<0||end<=start)return{ok:false,reason:expeditionReason(locale,'noCard')};
-  let parsed:unknown;try{parsed=JSON.parse(raw.slice(start,end+1))}catch{return{ok:false,reason:expeditionReason(locale,'incomplete')}}
+  const parsed=parseJsonObject(raw);
+  if(parsed===undefined)return{ok:false,reason:raw.includes('{')?expeditionReason(locale,'incomplete'):expeditionReason(locale,'noCard')};
   if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))return{ok:false,reason:expeditionReason(locale,'shape')};
   const card=parsed as Record<string,unknown>;
   if(!bounded(card.title,72,locale)||!bounded(card.cause,180,locale)||!bounded(card.optionalLead,160,locale)||!bounded(card.warning,140,locale))return{ok:false,reason:expeditionReason(locale,'language')};
@@ -139,9 +187,8 @@ export function parseExpeditionNarrative(raw:string,siteIds:string[],recentFinge
 
 export type RadioParseResult={ok:true;value:Pick<RadioRemark,'text'|'mistaken'>}|{ok:false;reason:string};
 export function parseRadioRemark(raw:string,locale:Locale='uk'):RadioParseResult{
-  const start=raw.indexOf('{'),end=raw.lastIndexOf('}');
-  if(start<0||end<=start)return{ok:false,reason:expeditionReason(locale,'noCard')};
-  let parsed:unknown;try{parsed=JSON.parse(raw.slice(start,end+1))}catch{return{ok:false,reason:expeditionReason(locale,'incomplete')}}
+  const parsed=parseJsonObject(raw);
+  if(parsed===undefined)return{ok:false,reason:raw.includes('{')?expeditionReason(locale,'incomplete'):expeditionReason(locale,'noCard')};
   if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))return{ok:false,reason:expeditionReason(locale,'shape')};
   const card=parsed as Record<string,unknown>;
   if(!bounded(card.text,160,locale))return{ok:false,reason:expeditionReason(locale,'language')};
@@ -150,9 +197,8 @@ export function parseRadioRemark(raw:string,locale:Locale='uk'):RadioParseResult
 
 export type RelicParseResult={ok:true;value:Omit<Relic,'id'|'eventId'|'wearableId'|'source'>}|{ok:false;reason:string};
 export function parseRelicCard(raw:string,seed:number,locale:Locale='uk'):RelicParseResult{
-  const start=raw.indexOf('{'),end=raw.lastIndexOf('}');
-  if(start<0||end<=start)return{ok:false,reason:expeditionReason(locale,'noCard')};
-  let parsed:unknown;try{parsed=JSON.parse(raw.slice(start,end+1))}catch{return{ok:false,reason:expeditionReason(locale,'incomplete')}}
+  const parsed=parseJsonObject(raw);
+  if(parsed===undefined)return{ok:false,reason:raw.includes('{')?expeditionReason(locale,'incomplete'):expeditionReason(locale,'noCard')};
   if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))return{ok:false,reason:expeditionReason(locale,'shape')};
   const card=parsed as Record<string,unknown>;
   if(!bounded(card.name,48,locale)||!bounded(card.story,180,locale)||!bounded(card.symbol,32,locale))return{ok:false,reason:expeditionReason(locale,'language')};

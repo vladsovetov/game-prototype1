@@ -122,7 +122,7 @@ export function createLocalStoryWriter(options: WriterOptions, locale: Locale = 
     const parsed = parseStoryIngredients(raw, locale);
     let ingredients: StoryIngredients;
     if (parsed.ok) ingredients = parsed.value;
-    else if (raw && !raw.includes('{') && !raw.includes('}')) ingredients = modelDirectedIngredients(raw, active.seed, locale);
+    else if (raw) ingredients = modelDirectedIngredients(raw, active.seed, locale);
     else {
       active = undefined;
       updateStatus({ phase: 'error', progress: 0, message: parsed.reason });

@@ -17,6 +17,14 @@ describe('local story protocol', () => {
     expect(result).toEqual({ ok: true, value: valid });
   });
 
+  it('uses the last JSON object and closes a truncated tale object', () => {
+    const schema = '{"place":"place name, max 64 characters","role":"grounded role","disaster":"specific past event","vow":"short promise","motif":"physical motif","truth":"hidden personal truth"}';
+    expect(parseStoryIngredients(`Схема: ${schema}\n${JSON.stringify(valid)}`)).toEqual({ ok: true, value: valid });
+
+    const truncated = '{"place":"Скляний сад","role":"хранитель малих буревіїв","disaster":"північна дорога зникла під дощем","vow":"Жоден мандрівник не залишиться без світла.","motif":"мідне листя","truth":"домом була обіцянка, яку вони берегли разом"';
+    expect(parseStoryIngredients(truncated)).toEqual({ ok: true, value: valid });
+  });
+
   it('rejects empty, missing, and overlong required fields', () => {
     expect(parseStoryIngredients(JSON.stringify({ ...valid, vow: '' })).ok).toBe(false);
     expect(parseStoryIngredients(JSON.stringify({ ...valid, truth: 'x'.repeat(181) })).ok).toBe(false);

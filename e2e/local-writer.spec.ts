@@ -18,9 +18,9 @@ test.beforeEach(async ({ page }) => {
     }
     Object.defineProperty(window, 'Worker', { value: FakeStoryWorker, configurable: true });
   });
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
   await page.evaluate(() => localStorage.clear());
-  await page.reload();
+  await page.reload({ waitUntil: 'domcontentloaded' });
 });
 
 test('generates the story, world direction, palette, and equipment before play', async ({ page }) => {

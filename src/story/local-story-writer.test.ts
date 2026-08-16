@@ -46,18 +46,28 @@ describe('local story writer', () => {
     expect(stories[0]).toContain('The Glass Orchard');
   });
 
-  it('keeps the existing story after worker or validation failure', () => {
+  it('keeps the existing story after a worker failure', () => {
     const worker = new FakeWorker();
     const statuses: WriterStatus[] = [];
     const stories: string[] = [];
     const writer = createLocalStoryWriter({ workerFactory: () => worker, onStatus: (status) => statuses.push(status), onStory: (story) => stories.push(story.source) });
     const first = writer.start(generateCharacter(4), 99);
     worker.emit({ type: 'error', jobId: first, message: 'Model unavailable' });
-    const second = writer.start(generateCharacter(4), 99);
-    worker.emit({ type: 'complete', jobId: second, raw: '{broken}' });
 
     expect(stories).toEqual([]);
     expect(statuses.at(-1)).toMatchObject({ phase: 'error' });
+  });
+
+  it('finishes a tale from a truncated JSON object instead of failing the opening', () => {
+    const worker = new FakeWorker();
+    const statuses: WriterStatus[] = [];
+    const stories: string[] = [];
+    const writer = createLocalStoryWriter({ workerFactory: () => worker, onStatus: (status) => statuses.push(status), onStory: (story) => stories.push(story.source) });
+    const jobId = writer.start(generateCharacter(4), 99);
+    worker.emit({ type: 'complete', jobId, raw: '{"place":"Скляний сад","role":"хранитель малих буревіїв"' });
+
+    expect(stories).toEqual(['local-model']);
+    expect(statuses.at(-1)).toMatchObject({ phase: 'complete' });
   });
 
   it('turns a real non-JSON model response into a coherent Ukrainian story', () => {

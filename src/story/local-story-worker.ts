@@ -86,18 +86,19 @@ self.onmessage = async (event: MessageEvent<StoryWorkerRequest>) => {
           ? relicPrompt(event.data.locale,{character,eventTitle:event.data.eventTitle,allowedForms:event.data.allowedForms,allowedColors:event.data.allowedColors})
           : openingPrompt(event.data.locale,character,seed);
     const completeType=kind==='generate-expedition'?'complete-expedition':kind==='generate-radio'?'complete-radio':kind==='generate-relic'?'complete-relic':'complete';
-    const maxTokens=kind==='generate-expedition'?420:kind==='generate-radio'?90:kind==='generate-relic'?180:220;
+    const maxTokens=kind==='generate-expedition'?420:kind==='generate-radio'?90:kind==='generate-relic'?180:360;
+    const temperature=kind==='generate'?0.72:0.88;
     send({ type: 'progress', jobId, stage: 'weave', progress: .1 });
     let output: Awaited<ReturnType<Generator>>;
     try {
-      output = await localGenerator(prompt, { max_new_tokens: maxTokens, do_sample: true, temperature: .88, top_p: .92, repetition_penalty:1.12 });
+      output = await localGenerator(prompt, { max_new_tokens: maxTokens, do_sample: true, temperature, top_p: .92, repetition_penalty:1.12, return_full_text: false });
     } catch (error) {
       const fallback = fallbackStoryDevice(loadedDevice ?? 'webgpu');
       if (!fallback || latestJobId !== jobId) throw error;
       generatorPromise = undefined;
       const retry = await load(jobId, fallback);
       if (latestJobId !== jobId) return;
-      output = await retry(prompt, { max_new_tokens: maxTokens, do_sample: true, temperature: .88, top_p: .92, repetition_penalty:1.12 });
+      output = await retry(prompt, { max_new_tokens: maxTokens, do_sample: true, temperature, top_p: .92, repetition_penalty:1.12, return_full_text: false });
     }
     if (latestJobId !== jobId) return;
     send({ type: 'progress', jobId, stage: 'weave', progress: 1 });

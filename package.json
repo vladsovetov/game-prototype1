@@ -1,6 +1,6 @@
 {
   "name": "the-unwritten-prototype",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -19,7 +19,6 @@
     "vitest": "latest"
   },
   "dependencies": {
-    "@diffusionstudio/vits-web": "^1.0.3",
     "@huggingface/transformers": "^4.2.0"
   }
 }

@@ -15,7 +15,12 @@ export function configureOnDeviceRuntime(wasm?: OnnxWasmEnv) {
   wasm.numThreads = 1;
 }
 
-export async function preferredStoryDevice(gpu?: GpuLike): Promise<StoryDevice> {
+export function isConstrainedStoryHost(userAgent = '') {
+  return /iPhone|iPad|iPod|Android|Mobile/i.test(userAgent);
+}
+
+export async function preferredStoryDevice(gpu?: GpuLike, userAgent = ''): Promise<StoryDevice> {
+  if (isConstrainedStoryHost(userAgent)) return 'wasm';
   if (!gpu) return 'wasm';
   try {
     return (await gpu.requestAdapter()) ? 'webgpu' : 'wasm';

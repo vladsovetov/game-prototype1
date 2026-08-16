@@ -12,9 +12,7 @@ import { CONTRACTS, REFUGE_PROJECTS, availableWorkActions, expeditionMetaFor, ex
 import { seasonBeatName, seasonProgress, seasonSourceRevealed, seasonThroughline } from '../domain/season';
 import { GIFTS } from '../domain/catalog';
 import type { ContractId, ExpeditionReport, GiftId, RefugeProjectId } from '../domain/types';
-import { fieldVoiceFor } from '../voice/voice-catalog';
 import type { VoiceStatus } from '../voice/voice-narrator';
-import { getActiveLocale } from '../i18n/locale';
 
 export interface PanelActions {
   onImport(character: Character): void;
@@ -36,8 +34,7 @@ export function createPanels(root: HTMLElement, actions: PanelActions) {
   const clear = () => root.replaceChildren();
 
   function voiceStatusCopy(status?: VoiceStatus) {
-    if (!status || status.phase === 'off') return t('voiceOfferHint', { size: fieldVoiceFor(getActiveLocale()).sizeMb });
-    if (status.phase === 'download') return t('voiceDownloading', { percent: Math.round(status.progress * 100) });
+    if (!status || status.phase === 'off') return t('voiceOfferHint');
     if (status.phase === 'speaking') return t('voiceSpeaking');
     if (status.phase === 'error') return status.message ?? t('voiceError');
     return t('voiceReady');

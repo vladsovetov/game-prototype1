@@ -8,6 +8,7 @@ import { configureOnDeviceRuntime, fallbackStoryDevice, preferredStoryDevice, st
 const MODEL = 'onnx-community/SmolLM2-135M-Instruct-ONNX';
 type Generator = Awaited<ReturnType<typeof pipeline<'text-generation'>>>;
 let generatorPromise: Promise<Generator> | undefined;
+let loadedDevice: StoryDevice | undefined;
 let latestJobId: string | undefined;
 
 function send(message: StoryWorkerMessage) {
@@ -31,20 +32,23 @@ async function createGenerator(jobId: string, device: StoryDevice) {
   });
 }
 
-async function load(jobId: string) {
-  if (generatorPromise) return generatorPromise;
+async function load(jobId: string, force?: StoryDevice) {
+  if (generatorPromise && !force) return generatorPromise;
   generatorPromise = (async () => {
-    const preferred = await preferredStoryDevice(self.navigator.gpu);
+    const preferred = force ?? await preferredStoryDevice(self.navigator.gpu, self.navigator.userAgent);
+    loadedDevice = preferred;
     try {
       return await createGenerator(jobId, preferred);
     } catch (error) {
       const fallback = fallbackStoryDevice(preferred);
       if (!fallback) throw error;
+      loadedDevice = fallback;
       send({ type: 'progress', jobId, stage: 'read', progress: 0 });
       return createGenerator(jobId, fallback);
     }
   })().catch((error) => {
     generatorPromise = undefined;
+    loadedDevice = undefined;
     throw error;
   });
   return generatorPromise;
@@ -84,7 +88,17 @@ self.onmessage = async (event: MessageEvent<StoryWorkerRequest>) => {
     const completeType=kind==='generate-expedition'?'complete-expedition':kind==='generate-radio'?'complete-radio':kind==='generate-relic'?'complete-relic':'complete';
     const maxTokens=kind==='generate-expedition'?420:kind==='generate-radio'?90:kind==='generate-relic'?180:220;
     send({ type: 'progress', jobId, stage: 'weave', progress: .1 });
-    const output = await localGenerator(prompt, { max_new_tokens: maxTokens, do_sample: true, temperature: .88, top_p: .92, repetition_penalty:1.12 });
+    let output: Awaited<ReturnType<Generator>>;
+    try {
+      output = await localGenerator(prompt, { max_new_tokens: maxTokens, do_sample: true, temperature: .88, top_p: .92, repetition_penalty:1.12 });
+    } catch (error) {
+      const fallback = fallbackStoryDevice(loadedDevice ?? 'webgpu');
+      if (!fallback || latestJobId !== jobId) throw error;
+      generatorPromise = undefined;
+      const retry = await load(jobId, fallback);
+      if (latestJobId !== jobId) return;
+      output = await retry(prompt, { max_new_tokens: maxTokens, do_sample: true, temperature: .88, top_p: .92, repetition_penalty:1.12 });
+    }
     if (latestJobId !== jobId) return;
     send({ type: 'progress', jobId, stage: 'weave', progress: 1 });
     send({ type: completeType, jobId, raw: generatedText(output) });

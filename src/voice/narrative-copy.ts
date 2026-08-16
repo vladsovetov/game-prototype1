@@ -1,6 +1,5 @@
 import { t } from '../i18n/messages';
 import { storyFor } from '../domain/story';
-import { tutorialObjective } from '../domain/tutorial';
 import { ROAD_HOME } from '../domain/memory';
 import type { GameState, RadioRemark, StoryArc } from '../domain/types';
 
@@ -18,11 +17,6 @@ export function wakeNarrative(state: GameState) {
   const isRoadHome = !state.tutorial || state.tutorial.targetAnomalyId === 'sign';
   if (!isRoadHome) return joinSpeech(t('wakePurposeDiscovery', { name: state.character.name }), t('followGlow', { gift: state.character.gift.name }));
   return joinSpeech(t('wakePurposeRoad', { name: state.character.name }), shortPremise(story));
-}
-
-export function tutorialNarrative(state: GameState) {
-  const objective = tutorialObjective(state);
-  return joinSpeech(objective.title, objective.action);
 }
 
 export function memoryBeatNarrative(title: string, copy: string) {

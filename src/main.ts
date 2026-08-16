@@ -24,7 +24,6 @@ document.title = t('brand');
 const voicePreference = createVoicePreference(localStorage);
 document.documentElement.dataset.voiceState = voicePreference.load() ? 'ready' : 'off';
 const voice = createVoiceNarrator({
-  workerFactory: () => new Worker(new URL('./voice/voice-worker.ts', import.meta.url), { type: 'module' }),
   preference: voicePreference,
   locale,
   onStatus: (status) => {

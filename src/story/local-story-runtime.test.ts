@@ -9,6 +9,11 @@ describe('on-device story runtime', () => {
     expect(await preferredStoryDevice({ requestAdapter: async () => { throw new Error('blocked'); } })).toBe('wasm');
   });
 
+  it('keeps phones on the CPU path even when a WebGPU adapter exists', async () => {
+    expect(await preferredStoryDevice({ requestAdapter: async () => ({}) }, 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)')).toBe('wasm');
+    expect(await preferredStoryDevice({ requestAdapter: async () => ({}) }, 'Mozilla/5.0 (Linux; Android 14)')).toBe('wasm');
+  });
+
   it('retries WASM after a WebGPU failure and does not loop after WASM fails', () => {
     expect(fallbackStoryDevice('webgpu')).toBe('wasm');
     expect(fallbackStoryDevice('wasm')).toBeUndefined();

@@ -24,7 +24,7 @@ import type { RadioRemark, Relic } from './domain/types';
 import { randomSeed } from './domain/random';
 import { t } from './i18n/messages';
 import type { VoiceNarrator } from './voice/voice-narrator';
-import { chapterNarrative, endingNarrative, loomNarrative, memoryBeatNarrative, memoryChoiceNarrative, radioNarrative, tutorialNarrative, wakeNarrative } from './voice/narrative-copy';
+import { chapterNarrative, endingNarrative, loomNarrative, memoryBeatNarrative, memoryChoiceNarrative, radioNarrative, wakeNarrative } from './voice/narrative-copy';
 
 type Renderer = ReturnType<typeof createCanvasRenderer>;
 type Panels = ReturnType<typeof createPanels>;
@@ -67,8 +67,13 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   toastRoot.parentElement?.prepend(radioRoot);
 
   let spokenKey = '';
+  const hushVoice = () => {
+    spokenKey = '';
+    voice?.stop();
+  };
   const speakNarrative = (key: string, text: string) => {
     if (!voice?.isEnabled() || !text.trim()) return;
+    if (writerPanelVisible && !key.startsWith('loom-')) return;
     if (key === spokenKey) return;
     spokenKey = key;
     voice.speak(text);
@@ -90,7 +95,6 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
     else if (step === 'clue') speakNarrative('clue', memoryBeatNarrative(t('clueReturned'), storyFor(state).firstClue));
     else if (step === 'recovered') speakNarrative('recovered', memoryBeatNarrative(t('memoryRestored'), storyFor(state).recovered));
     else if (step === 'remember') speakNarrative('remember', memoryChoiceNarrative(state));
-    else if (isTutorial() && step && step !== 'personalize' && step !== 'done') speakNarrative(`tutorial-${step}`, tutorialNarrative(state));
   };
 
   const isTutorial = () => !!state.tutorial && state.tutorial.step !== 'done';
@@ -189,7 +193,6 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
       const key = hud.querySelector<HTMLElement>('.objective-key')!;
       if (objective.key) key.textContent = isTouchLayout() ? (objective.key === 'WASD' ? t('drag') : t('touch')) : objective.key;
       else key.remove();
-      speakNarrative(`tutorial-${state.tutorial?.step}-${objective.title}`, tutorialNarrative(state));
       if (isTouchLayout()) renderTouchControls(objective.key === 'E');
       mountMinimap();
       return;
@@ -396,14 +399,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   function useGift() {
     if(!isTutorial()&&state.expedition?.status==='active'){
       if(!expeditionTarget(state)||distance(state.player,expeditionTarget(state)!)>165){toast(t('followGold'));return}
-      panels.showWorkChoices(state,performExpeditionWork);
-      const run=state.expedition;
-      const narrative=expeditionNarrativeFor(state);
-      if(run&&narrative){
-        const siteId=run.completed.length<run.requiredTotal?run.siteIds[run.completed.length]:run.optionalSiteId;
-        speakNarrative(`work-${run.id}-${run.completed.length}`,memoryBeatNarrative(narrative.title,narrative.siteNotes.find((item)=>item.siteId===siteId)?.observation??narrative.cause));
-      }
-      return;
+      panels.showWorkChoices(state,performExpeditionWork);return;
     }
     const before = state.tutorial?.step;
     const targetId = state.tutorial?.targetAnomalyId;
@@ -432,11 +428,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   function performExpeditionWork(tool:GiftId){
     const worked=applyWorkAction(state,tool);state=worked.state;panels.clear();saveAndRefresh();toast(worked.message);
-    if(worked.ok&&state.expedition?.status==='decision'){
-      panels.showExpeditionDecision(state,decideExpedition);
-      const narrative=expeditionNarrativeFor(state);
-      if(narrative)speakNarrative(`decision-${state.expedition.id}`,memoryBeatNarrative(t('stayOrGo'),`${narrative.optionalLead} ${narrative.warning}`));
-    }
+    if(worked.ok&&state.expedition?.status==='decision')panels.showExpeditionDecision(state,decideExpedition);
   }
 
   function decideExpedition(accept:boolean){
@@ -748,6 +740,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
 
   function startLocalStory() {
     writerPanelVisible = true;
+    hushVoice();
     localWriter?.start(state.character, state.worldSeed ?? 0);
   }
 
@@ -776,6 +769,7 @@ export function createGameController(initial: GameState, renderer: Renderer, pan
   function autoLocalStory() {
     writerPanelVisible = state.tutorial?.step === 'wake';
     if(!writerPreference?.isEnabled())return;
+    hushVoice();
     if(state.expedition&&expeditionNarrativeFor(state)?.source!=='local-model')startExpeditionDirector();
     else if(state.storyArc?.source!=='local-model')localWriter?.start(state.character,state.worldSeed??0);
   }
